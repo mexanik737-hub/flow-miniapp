@@ -926,6 +926,25 @@
     </div>
   </div>
 
+  <!-- Модалка регистрации -->
+  <div class="modal-overlay" id="reg-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Регистрация в сервисе</div>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.4;">
+        Заполните контактные данные для привязки заказов и учета суммы выкупа.
+      </div>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ваше имя: *</label>
+      <input type="text" id="reg-name" class="metro-input" placeholder="Иван">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Номер телефона: *</label>
+      <input type="tel" id="reg-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
+
+      <button class="btn-metro" onclick="submitRegistration()">Завершить регистрацию</button>
+    </div>
+  </div>
+
   <!-- Модалка карточки букета (мультифото) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
@@ -1056,7 +1075,7 @@
       </div>
 
       <div style="text-align:center; padding:10px 0 16px 0;">
-        <div style="padding:6px 12px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:12px; font-weight:800; display:inline-block; margin-bottom:10px;">
+        <div style="padding:6px 12px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:12px; font-weight:800; display:inline-block; margin-bottom:10px;" id="pay-timer-box">
           ⏳ Оплатите в течение: <span id="pay-timer-val">15:00</span>
         </div>
 
@@ -1255,6 +1274,17 @@
     const tgUsername = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
     const ADMIN_TELEGRAM_ID = "8900179932";
 
+    function applyTelegramTheme() {
+      const scheme = tg?.colorScheme || 'dark';
+      document.documentElement.setAttribute('data-theme', scheme);
+      if (tg) {
+        tg.setHeaderColor(scheme === 'light' ? '#ffffff' : '#090c12');
+        tg.setBackgroundColor(scheme === 'light' ? '#f8fafc' : '#090c12');
+      }
+    }
+    applyTelegramTheme();
+    if (tg?.onEvent) tg.onEvent('themeChanged', applyTelegramTheme);
+
     let catalog = [];
     let filteredCatalog = [];
     let cart = {};
@@ -1326,6 +1356,7 @@
         input.value = res;
       });
     }
+    bindPhoneMask(document.getElementById('reg-phone'));
     bindPhoneMask(document.getElementById('edit-prof-phone'));
     bindPhoneMask(document.getElementById('ord-rec-phone'));
 
@@ -1583,7 +1614,6 @@
         currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
       }
 
-      // Чистая плашка без скобок и маршрута
       document.getElementById('delivery-calc-badge').innerHTML = 
         `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
 
@@ -1915,9 +1945,37 @@
           }
           renderProfileUI();
         } else {
-          openEditProfileModal();
+          document.getElementById('reg-name').value = tgFirstName;
+          document.getElementById('reg-modal').classList.add('open');
         }
-      } catch (e) {}
+      } catch (e) {
+        if (!currentUser) {
+          document.getElementById('reg-name').value = tgFirstName;
+          document.getElementById('reg-modal').classList.add('open');
+        }
+      }
+    }
+
+    async function submitRegistration() {
+      const name = document.getElementById('reg-name').value.trim() || tgFirstName;
+      const phone = document.getElementById('reg-phone').value.trim();
+
+      if (!phone || phone.length < 18) {
+        toast("Введите номер полностью: +7 (***) ***-**-**");
+        return;
+      }
+
+      toast("Сохранение профиля...");
+      try {
+        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
+        currentUser = await res.json();
+        localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
+        document.getElementById('reg-modal').classList.remove('open');
+        renderProfileUI();
+        toast("Регистрация завершена");
+      } catch (e) {
+        toast("Ошибка связи с базой");
+      }
     }
 
     function renderProfileUI() {
@@ -1927,50 +1985,6 @@
       document.getElementById('prof-phone').innerText = currentUser.phone;
       document.getElementById('prof-spent').innerText = (currentUser.total_spent || 0) + ' ₽';
       document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
-    }
-
-    // Заказы клиента
-    async function loadUserOrders() {
-      const container = document.getElementById('user-orders-list');
-      try {
-        const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
-        const orders = await res.json();
-        if (!orders || !orders.length) {
-          container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>';
-          return;
-        }
-
-        container.innerHTML = orders.map(ord => `
-          <div class="box-card" style="margin-bottom:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
-              <span class="status-badge st-${ord.status.includes('Собирается') ? 'building' : (ord.status.includes('Отменен') ? 'cancelled' : 'await-pay')}">${ord.status}</span>
-            </div>
-            <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
-              ${ord.items.map(i => `• ${i.title} × ${i.qty}`).join('<br>')}
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
-              <span style="color:var(--text-muted);">${ord.date_time}</span>
-              <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
-            </div>
-          </div>
-        `).join('');
-      } catch (e) {}
-    }
-
-    // FAQ в профиле
-    async function loadFaq() {
-      const container = document.getElementById('profile-faq-container');
-      try {
-        const res = await fetch(`${API_URL}?action=faq`);
-        const faq = await res.json();
-        container.innerHTML = faq.map(f => `
-          <div class="faq-pill-item" onclick="this.classList.toggle('open')">
-            <div class="faq-pill-header"><span>${f.question}</span><span>▼</span></div>
-            <div class="faq-pill-body">${f.answer}</div>
-          </div>
-        `).join('');
-      } catch (e) {}
     }
 
     // Панель Root
@@ -2029,7 +2043,6 @@
               <b>${ord.order_id}</b>
               <span class="status-badge st-building">${ord.status}</span>
             </div>
-            <!-- Сведения о заказе упорядочены через \n -->
             <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
               <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
               <b>Адрес:</b> ${ord.address}<br>
@@ -2446,7 +2459,7 @@
       else window.open(url, '_blank');
     }
 
-    // Старт приложения
+    // Инициализация
     loadCatalog();
     checkUserSession();
     if (String(userId) === ADMIN_TELEGRAM_ID) {
@@ -2454,6 +2467,18 @@
       document.getElementById('dock-root-btn').style.display = 'flex';
       document.getElementById('dock-pill-bar').classList.add('with-root');
     }
+
+    setInterval(() => {
+      const activeScreen = document.querySelector('.screen.active')?.id;
+      if (activeScreen === 'screen-profile') {
+        checkUserSession();
+        loadUserOrders();
+      }
+      if (activeScreen === 'screen-root' && isAdmin) {
+        const secOrders = document.getElementById('root-sec-orders').style.display !== 'none';
+        if (secOrders) loadRootOrders();
+      }
+    }, 10000);
   </script>
 </body>
 </html>
