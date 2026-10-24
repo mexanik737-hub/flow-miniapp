@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Магазин цветов</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #090a0d;
+      --surface: rgba(255, 255, 255, 0.05);
+      --surface-border: rgba(255, 255, 255, 0.1);
+      --surface-highlight: rgba(255, 255, 255, 0.2);
+      --text: #f2f2f7;
+      --text-muted: #8e8e93;
+      --gold: #d4af37;
+      --gold-surface: rgba(212, 175, 55, 0.12);
+      --gold-border: rgba(212, 175, 55, 0.35);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-image: 
+        radial-gradient(ellipse 100% 40% at 50% 0%, rgba(212, 175, 55, 0.14) 0%, transparent 80%),
+        linear-gradient(180deg, #0e0f14 0%, #07080a 100%);
+      background-attachment: fixed;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: calc(75px + env(safe-area-inset-bottom, 12px));
+    }
+
+    .app-wrapper {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      width: 100%;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--surface-border);
+      background: rgba(9, 10, 13, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand-box h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #fff;
+    }
+
+    .brand-box p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .balance-chip {
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: var(--gold-surface);
+      border: 1px solid var(--gold-border);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      padding: 14px 16px;
+    }
+    .screen.active {
+      display: block;
+      animation: tabFade 0.16s ease-out;
+    }
+
+    @keyframes tabFade {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+
+    .filter-chip {
+      padding: 7px 14px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .filter-chip.active {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: var(--surface-highlight);
+      color: #fff;
+    }
+
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+    }
+
+    .product-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .product-thumb {
+      width: 100%;
+      aspect-ratio: 1/1;
+      background: #16171d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-thumb-placeholder {
+      font-size: 32px;
+      opacity: 0.25;
+    }
+
+    .product-info {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      justify-content: space-between;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .product-title {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 31px;
+    }
+
+    .product-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .product-price {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+    }
+
+    .btn-buy {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: #000;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .btn-buy:active { transform: scale(0.92); }
+
+    .glass-card {
+      width: 100%;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(32, 35, 42, 0.9) 0%, rgba(15, 17, 21, 0.95) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .glass-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .card-id-text {
+      font-size: 12px;
+      font-family: ui-monospace, monospace;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .card-balance-val {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .card-rubles-sub {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-top: 6px;
+    }
+
+    .glass-card-bottom {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 14px;
+      margin-top: 20px;
+    }
+
+    .card-meta-lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .card-meta-val {
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .qr-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qr-canvas {
+      width: 170px;
+      height: 170px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .qr-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 14px;
+      line-height: 1.4;
+    }
+
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .cart-row-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .cart-row-item:last-child { border-bottom: none; }
+
+    .qty-ctrls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qty-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--surface-border);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: var(--radius-md);
+      background: var(--gold);
+      color: #000;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .primary-btn:active { transform: scale(0.98); }
+
+    .input-box {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--surface-border);
+      color: #fff;
+      font-size: 14px;
+      margin-top: 4px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    .input-box:focus { border-color: var(--gold); }
+
+    .dock-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      z-index: 100;
+      background: rgba(12, 13, 17, 0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--surface-border);
+      padding-bottom: env(safe-area-inset-bottom, 8px);
+    }
+
+    .dock {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 6px 0;
+    }
+
+    .dock-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .dock-tab svg { width: 20px; height: 20px; fill: currentColor; }
+    .dock-tab span { font-size: 10px; font-weight: 600; }
+    .dock-tab.active { color: var(--gold); }
+
+    #toast-msg {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-50px);
+      background: rgba(24, 26, 32, 0.95);
+      border: 1px solid var(--surface-highlight);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+    #toast-msg.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast-msg">Уведомление</div>
+
+  <div class="app-wrapper">
+    <header>
+      <div class="brand-box">
+        <h1>МАГАЗИН «ЦВЕТЫ»</h1>
+        <p>Зеленоград · Георгиевский пр-т, 37к2</p>
+      </div>
+      <div class="balance-chip" id="top-balance">500 б.</div>
+    </header>
+
+    <!-- Экран 1: Каталог -->
+    <section id="screen-catalog" class="screen active">
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="applyFilter('Все', this)">Все</div>
+        <div class="filter-chip" onclick="applyFilter('Роза эквадорская', this)">Эквадор</div>
+        <div class="filter-chip" onclick="applyFilter('Авторские букеты', this)">Авторские</div>
+        <div class="filter-chip" onclick="applyFilter('Популярное', this)">Популярное</div>
+      </div>
+      <div class="catalog-grid" id="catalog-wrap"></div>
+    </section>
+
+    <!-- Экран 2: Карта -->
+    <section id="screen-card" class="screen">
+      <div class="glass-card">
+        <div class="glass-card-top">
+          <span class="card-label">Карта лояльности</span>
+          <span class="card-id-text" id="view-card-num">FLW-00000</span>
+        </div>
+        <div>
+          <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted);">Баланс бонусов</div>
+          <div class="card-balance-val" id="view-bonuses">500</div>
+          <div class="card-rubles-sub" id="view-rubles">= 100 ₽ скидки</div>
+        </div>
+        <div class="glass-card-bottom">
+          <div>
+            <div class="card-meta-lbl">Кешбэк</div>
+            <div class="card-meta-val" id="view-rate">5%</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="card-meta-lbl">Сумма покупок</div>
+            <div class="card-meta-val" id="view-spent">0 ₽</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qr-card">
+        <canvas id="qr-canvas"></canvas>
+        <p class="qr-text">Покажите QR-код флористу на кассе на Георгиевском для расчета бонусами</p>
+      </div>
+    </section>
+
+    <!-- Экран 3: Корзина -->
+    <section id="screen-cart" class="screen">
+      <div class="section-card" id="cart-box">
+        <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
+      </div>
+      <div class="section-card">
+        <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+          <span style="color:var(--text-muted);">Букеты:</span>
+          <span id="order-subtotal">0 ₽</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px; color:#34d399;">
+          <span>Бонусы (до 30%):</span>
+          <span id="order-discount">-0 ₽</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--surface-border); padding-top:8px;">
+          <span style="font-size:14px; font-weight:700;">К оплате:</span>
+          <span id="order-total" style="font-size:18px; font-weight:800; color:var(--gold);">0 ₽</span>
+        </div>
+        <button class="primary-btn" onclick="submitOrder()">Отправить заказ в магазин</button>
+      </div>
+    </section>
+
+    <!-- Экран 4: Админка кассы -->
+    <section id="screen-admin" class="screen">
+      <div class="section-card">
+        <h3 style="font-size:14px; margin-bottom:12px;">Управление бонусами на кассе</h3>
+        <label style="font-size:11px; color:var(--text-muted);">Telegram ID клиента (из QR):</label>
+        <input type="number" id="adm-uid" class="input-box" placeholder="123456789">
+
+        <label style="font-size:11px; color:var(--text-muted);">Сумма покупки (₽):</label>
+        <input type="number" id="adm-sum" class="input-box" placeholder="4000">
+
+        <label style="font-size:11px; color:var(--text-muted);">Списать бонусов рублями (до 30%):</label>
+        <input type="number" id="adm-disc" class="input-box" placeholder="0">
+
+        <label style="font-size:11px; color:var(--text-muted);">Пароль доступа:</label>
+        <input type="password" id="adm-pwd" class="input-box" placeholder="••••••••">
+
+        <button class="primary-btn" onclick="localCashierOp()">Провести расчет</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Док навигации -->
+  <div class="dock-container">
+    <nav class="dock">
+      <button class="dock-tab active" onclick="switchNav('catalog', this)">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+        <span>Каталог</span>
+      </button>
+      <button class="dock-tab" onclick="switchNav('card', this)">
+        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+        <span>Карта</span>
+      </button>
+      <button class="dock-tab" onclick="switchNav('cart', this)">
+        <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        <span>Корзина (<b id="cart-badge-count">0</b>)</span>
+      </button>
+      <button class="dock-tab" onclick="switchNav('admin', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+        <span>Касса</span>
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    // Укажите логин в Telegram, куда приходят заказы (без знака @)
+    const TELEGRAM_SHOP_USERNAME = "zelflowg_bot"; 
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.expand();
+      tg.ready();
+    }
+
+    const userId = tg?.initDataUnsafe?.user?.id || 100001;
+    const userName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
+    const userHandle = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
+
+    // Локальный каталог (редактируется прямо здесь без внешних таблиц)
+    const catalog = [
+      { id: 1, title: "25 роз Эквадор (Эксплорер)", category: "Роза эквадорская", price: 4500, photo_url: "" },
+      { id: 2, title: "Авторский «Лавандовое небо»", category: "Авторские букеты", price: 5200, photo_url: "" },
+      { id: 3, title: "Пионовидные розы «Пинк О'Хара»", category: "Популярное", price: 6800, photo_url: "" },
+      { id: 4, title: "Монобукет сортовой диантус (19 шт)", category: "Популярное", price: 3800, photo_url: "" }
+    ];
+
+    // Локальное хранилище данных клиента в памяти телефона
+    let userProfile = JSON.parse(localStorage.getItem('flw_profile') || 'null');
+    if (!userProfile) {
+      userProfile = {
+        card_number: "FLW-" + String(userId).slice(-5),
+        bonus_balance: 500,
+        ruble_balance: 100,
+        cashback_rate: 5,
+        total_spent: 0
+      };
+      localStorage.setItem('flw_profile', JSON.stringify(userProfile));
+    }
+
+    let cart = {};
+
+    function notify(text) {
+      const el = document.getElementById('toast-msg');
+      el.innerText = text;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function switchNav(id, btn) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.dock-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('screen-' + id).classList.add('active');
+      btn.classList.add('active');
+      if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    }
+
+    function renderCatalog(items) {
+      const el = document.getElementById('catalog-wrap');
+      el.innerHTML = items.map(p => `
+        <div class="product-card">
+          <div class="product-thumb">
+            ${p.photo_url 
+              ? `<img src="${p.photo_url}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'">` 
+              : `<div class="product-thumb-placeholder">🌸</div>`}
+          </div>
+          <div class="product-info">
+            <div class="product-title">${p.title}</div>
+            <div class="product-bottom">
+              <span class="product-price">${p.price} ₽</span>
+              <button class="btn-buy" onclick="addToCart(${p.id})">+</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function applyFilter(cat, btn) {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      if (cat === 'Все') renderCatalog(catalog);
+      else renderCatalog(catalog.filter(i => i.category === cat));
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function updateUserData(data) {
+      document.getElementById('top-balance').innerText = data.bonus_balance + ' б.';
+      document.getElementById('view-card-num').innerText = data.card_number;
+      document.getElementById('view-bonuses').innerText = data.bonus_balance;
+      document.getElementById('view-rubles').innerText = '= ' + data.ruble_balance + ' ₽ скидки';
+      document.getElementById('view-rate').innerText = data.cashback_rate + '%';
+      document.getElementById('view-spent').innerText = data.total_spent + ' ₽';
+    }
+
+    function addToCart(id) {
+      cart[id] = (cart[id] || 0) + 1;
+      updateCartUI();
+      notify("Добавлено в корзину");
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function changeCartQty(id, delta) {
+      cart[id] = (cart[id] || 0) + delta;
+      if (cart[id] <= 0) delete cart[id];
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const count = Object.values(cart).reduce((a, b) => a + b, 0);
+      document.getElementById('cart-badge-count').innerText = count;
+
+      const container = document.getElementById('cart-box');
+      let subtotal = 0;
+      const entries = Object.entries(cart);
+
+      if (!entries.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
+        document.getElementById('order-subtotal').innerText = '0 ₽';
+        document.getElementById('order-discount').innerText = '-0 ₽';
+        document.getElementById('order-total').innerText = '0 ₽';
+        return;
+      }
+
+      container.innerHTML = entries.map(([id, qty]) => {
+        const item = catalog.find(i => i.id == id);
+        if (!item) return '';
+        subtotal += item.price * qty;
+        return `
+          <div class="cart-row-item">
+            <div>
+              <div style="font-size:13px; font-weight:600;">${item.title}</div>
+              <div style="font-size:11px; color:var(--text-muted);">${item.price} ₽ × ${qty}</div>
+            </div>
+            <div class="qty-ctrls">
+              <button class="qty-btn" onclick="changeCartQty(${id}, -1)">–</button>
+              <span style="font-size:13px; font-weight:600;">${qty}</span>
+              <button class="qty-btn" onclick="changeCartQty(${id}, 1)">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const discount = Math.min(Math.floor(subtotal * 0.30), userProfile.ruble_balance);
+      const total = Math.max(0, subtotal - discount);
+
+      document.getElementById('order-subtotal').innerText = subtotal + ' ₽';
+      document.getElementById('order-discount').innerText = '-' + discount + ' ₽';
+      document.getElementById('order-total').innerText = total + ' ₽';
+    }
+
+    // Отправка готового заказа прямо в Telegram
+    function submitOrder() {
+      const entries = Object.entries(cart);
+      if (!entries.length) {
+        notify("Корзина пуста");
+        return;
+      }
+
+      let subtotal = 0;
+      let orderLines = [];
+
+      entries.forEach(([id, qty]) => {
+        const item = catalog.find(i => i.id == id);
+        if (item) {
+          subtotal += item.price * qty;
+          orderLines.push(`• ${item.title} × ${qty} шт. = ${item.price * qty} ₽`);
+        }
+      });
+
+      const discount = Math.min(Math.floor(subtotal * 0.30), userProfile.ruble_balance);
+      const finalPrice = Math.max(0, subtotal - discount);
+
+      // Списываем использованные бонусы
+      userProfile.bonus_balance -= (discount * 5);
+      userProfile.ruble_balance = Math.floor(userProfile.bonus_balance / 5);
+      userProfile.total_spent += finalPrice;
+      // Кешбэк за покупку
+      const earnedBonus = Math.floor((finalPrice * (userProfile.cashback_rate / 100)) * 5);
+      userProfile.bonus_balance += earnedBonus;
+      userProfile.ruble_balance = Math.floor(userProfile.bonus_balance / 5);
+      localStorage.setItem('flw_profile', JSON.stringify(userProfile));
+      updateUserData(userProfile);
+
+      // Формирование текста заказа
+      const messageText = 
+`🌸 *НОВЫЙ ЗАКАЗ (Магазин «Цветы»)*
+📍 Георгиевский пр-т, 37к2
+
+*Состав заказа:*
+${orderLines.join('\n')}
+
+Сумма букетов: ${subtotal} ₽
+Бонусы к списанию: -${discount} ₽
+*ИТОГО К ОПЛАТЕ: ${finalPrice} ₽*
+
+Клиент: ${userName} ${userHandle}
+ID карты: ${userProfile.card_number}
+(Начислено кешбэка: +${earnedBonus} б.)`;
+
+      cart = {};
+      updateCartUI();
+
+      // Открытие чата в Telegram с готовым текстом
+      const tgUrl = `https://t.me/${TELEGRAM_SHOP_USERNAME}?text=${encodeURIComponent(messageText)}`;
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(tgUrl);
+      } else {
+        window.open(tgUrl, '_blank');
+      }
+    }
+
+    function localCashierOp() {
+      const pwd = document.getElementById('adm-pwd').value;
+      if (pwd !== 'm1rfol159036') {
+        notify("Неверный пароль доступа");
+        return;
+      }
+      const sum = parseFloat(document.getElementById('adm-sum').value) || 0;
+      const red = parseFloat(document.getElementById('adm-disc').value) || 0;
+      const paid = Math.max(0, sum - red);
+      const earned = Math.floor((paid * 0.05) * 5);
+      notify(`Чек закрыт: ${paid} ₽, начислено: ${earned} б.`);
+    }
+
+    // Встроенный QR
+    function drawQr(text) {
+      const canvas = document.getElementById('qr-canvas');
+      const ctx = canvas.getContext('2d');
+      const size = 150;
+      canvas.width = size;
+      canvas.height = size;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.fillStyle = '#090a0d';
+      const drawMarker = (x, y) => {
+        ctx.fillRect(x, y, 35, 35);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x + 5, y + 5, 25, 25);
+        ctx.fillStyle = '#090a0d';
+        ctx.fillRect(x + 10, y + 10, 15, 15);
+      };
+
+      drawMarker(10, 10);
+      drawMarker(105, 10);
+      drawMarker(10, 105);
+
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      for (let r = 0; r < 14; r++) {
+        for (let c = 0; c < 14; c++) {
+          if ((r < 5 && c < 5) || (r < 5 && c > 8) || (r > 8 && c < 5)) continue;
+          if ((hash ^ (r * 19 + c * 23)) % 2 === 0) {
+            ctx.fillRect(15 + c * 8, 15 + r * 8, 6, 6);
+          }
+        }
+      }
+    }
+
+    renderCatalog(catalog);
+    updateUserData(userProfile);
+    drawQr(String(userId));
+  </script>
+</body>
+</html>
