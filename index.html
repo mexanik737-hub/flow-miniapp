@@ -362,9 +362,11 @@
       letter-spacing: 0.4px;
       white-space: nowrap;
     }
-    .st-processing { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .st-building { background: rgba(56, 189, 248, 0.15); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
-    .st-transit { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .st-await-pay { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.35); }
+    .st-check-pay { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.35); }
+    .st-processing { background: rgba(56, 189, 248, 0.15); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .st-building { background: rgba(56, 189, 248, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
+    .st-transit { background: rgba(168, 85, 247, 0.2); color: var(--purple); border: 1px solid var(--purple); }
     .st-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
     .st-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
 
@@ -442,7 +444,7 @@
       border: 1px solid var(--border-accent);
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       padding: 20px;
-      max-height: 88vh;
+      max-height: 90vh;
       overflow-y: auto;
       animation: sheetSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -500,6 +502,53 @@
       background: rgba(56, 189, 248, 0.14);
       border-color: var(--cyan);
       color: var(--cyan);
+    }
+
+    /* Выпадающие подсказки DaData */
+    .suggest-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .suggest-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-sm);
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 120;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      display: none;
+    }
+
+    .suggest-item {
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .suggest-item:hover, .suggest-item:active {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--cyan);
+    }
+
+    .address-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .address-grid input {
+      margin-bottom: 0;
+      padding: 9px 8px;
+      font-size: 12px;
+      text-align: center;
     }
 
     .status-picker-grid {
@@ -584,7 +633,7 @@
       </div>
       <div class="box-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <span style="font-size:14px; font-weight:700;">Сумма заказа:</span>
+          <span style="font-size:14px; font-weight:700;">Сумма букетов:</span>
           <span id="cart-total" style="font-size:18px; font-weight:800; color:var(--text);">0 ₽</span>
         </div>
         <button class="btn-metro" onclick="openOrderModal()">Оформить заказ</button>
@@ -725,14 +774,14 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Номер телефона: *</label>
       <input type="tel" id="reg-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Основной адрес доставки:</label>
-      <input type="text" id="reg-addr" class="metro-input" placeholder="Зеленоград, к315, кв. 12">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Основной адрес (необязательно):</label>
+      <input type="text" id="reg-addr" class="metro-input" placeholder="Зеленоград, к1601">
 
       <button class="btn-metro" onclick="submitRegistration()">Завершить регистрацию</button>
     </div>
   </div>
 
-  <!-- Модалка 3: Оформление заказа -->
+  <!-- Модалка 3: Оформление заказа (с подсказками DaData и расчетом) -->
   <div class="modal-overlay" id="order-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -758,11 +807,26 @@
         <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
       </div>
 
+      <!-- Поля доставки с DaData -->
       <div id="delivery-extra-fields">
-        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Адрес доставки:</label>
-        <input type="text" id="ord-addr" class="metro-input" placeholder="Зеленоград, корпус / улица, дом, кв">
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Улица / Корпус / Дом (выберите из списка): *</label>
+        <div class="suggest-wrap">
+          <input type="text" id="ord-suggest-input" class="metro-input" placeholder="Начните ввод: к1601 или Панфиловский..." autocomplete="off" oninput="onAddressInput(this.value)">
+          <div class="suggest-list" id="ord-suggest-list"></div>
+        </div>
 
-        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время:</label>
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон: *</label>
+        <div class="address-grid">
+          <input type="text" id="ord-entrance" class="metro-input" placeholder="Подъезд">
+          <input type="text" id="ord-floor" class="metro-input" placeholder="Этаж">
+          <input type="text" id="ord-apt" class="metro-input" placeholder="Кв / Офис">
+          <input type="text" id="ord-intercom" class="metro-input" placeholder="Домофон">
+        </div>
+
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
+        <input type="text" id="ord-comment" class="metro-input" placeholder="Шлагбаум открыт, не звонить в дверь...">
+
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время доставки:</label>
         <select id="ord-time" class="metro-input">
           <option value="Как можно скорее (~1.5-2 часа)">Как можно скорее (~1.5–2 часа с учетом сборки)</option>
           <option value="Сегодня 12:00 - 15:00">Сегодня 12:00 – 15:00</option>
@@ -770,25 +834,78 @@
           <option value="Сегодня 18:00 - 21:00">Сегодня 18:00 – 21:00</option>
           <option value="Завтра в течение дня">Завтра в течение дня (согласовать)</option>
         </select>
-        <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:12px;">
-          🚚 <b>Доставка: от 500 ₽</b> (точный расчет через Яндекс Доставку на момент вызова курьера).
+
+        <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.12); border:1px solid var(--border-accent); color:var(--cyan); font-size:12px; line-height:1.4; margin-bottom:12px;">
+          📍 Введите адрес, чтобы рассчитать точную стоимость доставки (от 400 ₽)
         </div>
       </div>
 
       <div id="pickup-extra-fields" style="display:none; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--border-accent); color:var(--cyan); font-size:11px; line-height:1.4; margin-bottom:12px;">
         📍 <b>Адрес магазина:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
-        Букет будет готов к выдаче через 40–60 минут после подтверждения.
+        Букет будет готов к выдаче через 40–60 минут после подтверждения. Доставка: 0 ₽.
       </div>
 
-      <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.08); border:1px solid var(--border-accent); color:var(--text-muted); font-size:11px; line-height:1.4; margin-bottom:14px;">
-        ℹ️ <i>Обратите внимание: для изменения состава или отмены заказа после подтверждения свяжитесь с поддержкой магазина.</i>
+      <!-- Итоговая раскладка -->
+      <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:12px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="color:var(--text-muted);">Букеты:</span>
+          <span id="order-subtotal-val">0 ₽</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="color:var(--text-muted);">Доставка:</span>
+          <span id="order-delivery-val">0 ₽</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-top:1px solid var(--border); padding-top:6px; margin-top:6px; font-weight:800; font-size:14px;">
+          <span>ИТОГО К ОПЛАТЕ:</span>
+          <span id="order-final-val" style="color:var(--green);">0 ₽</span>
+        </div>
       </div>
 
-      <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
+      <button class="btn-metro" onclick="submitFinalOrder()">Перейти к оплате</button>
     </div>
   </div>
 
-  <!-- Модалка 4: Смена статуса заказа -->
+  <!-- Модалка 4: Окно оплаты СБП -->
+  <div class="modal-overlay" id="payment-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title" id="pay-modal-order-id">Оплата заказа</div>
+        <button class="close-btn" onclick="closePaymentModal()">✕</button>
+      </div>
+
+      <div style="text-align:center; padding:10px 0 16px 0;">
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Сумма к оплате:</div>
+        <div style="font-size:32px; font-weight:900; color:var(--green); margin:4px 0 12px 0;" id="pay-modal-amount">0 ₽</div>
+        
+        <button class="btn-metro btn-secondary" style="font-size:12px; padding:8px 14px; max-width:240px; margin:0 auto 16px auto;" onclick="copyPaymentAmount()">
+          📋 Скопировать сумму
+        </button>
+
+        <a class="btn-metro" id="pay-sbp-btn" href="#" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:16px;">
+          💳 Оплатить через СБП
+        </a>
+
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Или отсканируйте QR-код приложением банка:</div>
+        <div style="background:#fff; width:160px; height:160px; border-radius:12px; padding:8px; margin:0 auto 16px auto; display:flex; align-items:center; justify-content:center;">
+          <canvas id="sbp-qr-canvas"></canvas>
+        </div>
+
+        <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:16px; text-align:left;">
+          ⚠️ <b>Внимание:</b> при оплате через СБП в приложении банка введите точную сумму заказа вручную. После перевода нажмите кнопку «Я оплатил» ниже.
+        </div>
+
+        <button class="btn-metro" style="background:var(--green); margin-bottom:10px;" id="pay-btn-i-paid" onclick="confirmPaymentByClient()">
+          ✅ Я оплатил
+        </button>
+
+        <button class="btn-metro btn-secondary" onclick="closePaymentModalAndGoOrders()">
+          Перейти к моим заказам
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка 5: Выбор статуса в Root -->
   <div class="modal-overlay" id="status-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -796,7 +913,8 @@
         <button class="close-btn" onclick="closeStatusModal()">✕</button>
       </div>
       <div class="status-picker-grid">
-        <button class="status-pick-btn" style="color:var(--amber);" onclick="applyStatusChoice('В обработке')">В обработке</button>
+        <button class="status-pick-btn" style="color:var(--amber);" onclick="applyStatusChoice('Ожидает оплаты')">Ожидает оплаты</button>
+        <button class="status-pick-btn" style="color:var(--purple);" onclick="applyStatusChoice('Ожидает подтверждения оплаты')">Ожидает подтверждения</button>
         <button class="status-pick-btn" style="color:var(--cyan);" onclick="applyStatusChoice('Собирается')">Собирается</button>
         <button class="status-pick-btn" style="color:var(--purple);" onclick="applyStatusChoice('В пути')">В пути</button>
         <button class="status-pick-btn" style="color:var(--purple);" onclick="applyStatusChoice('Готов к выдаче')">Готов к выдаче</button>
@@ -806,7 +924,7 @@
     </div>
   </div>
 
-  <!-- Модалка 5: Редактирование состава заказа -->
+  <!-- Модалка 6: Состав заказа в Root -->
   <div class="modal-overlay" id="edit-items-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -829,7 +947,7 @@
     </div>
   </div>
 
-  <!-- Модалка 6: Добавление/Редактирование товара в каталоге -->
+  <!-- Модалка 7: Добавление/Редактирование товара в каталоге -->
   <div class="modal-overlay" id="product-editor-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -847,7 +965,7 @@
       <input type="number" id="prod-edit-price" class="metro-input" placeholder="3500">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ссылка на фото (URL):</label>
-      <input type="text" id="prod-edit-photo" class="metro-input" placeholder="https://i.postimg.cc/.../photo.jpg">
+      <input type="text" id="prod-edit-photo" class="metro-input" placeholder="img/101.jpg или https://...">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
       <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Крупный сортовой бутон, длина 60 см...">
@@ -863,6 +981,13 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
+    const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
+    const SBP_PAYMENT_URL = "https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0";
+    
+    // Координаты магазина: Георгиевский пр-т, 37к2
+    const STORE_LAT = 55.975443;
+    const STORE_LON = 37.151703;
+
     const tg = window.Telegram?.WebApp;
     const userId = tg?.initDataUnsafe?.user?.id || 100001;
     const tgFirstName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
@@ -893,10 +1018,19 @@
     let allRootCatalog = [];
     let currentRootSubTab = 'active';
 
+    // Гео и расчет доставки
+    let selectedGeoAddress = null;
+    let currentDeliveryCost = 0;
+    let currentDistanceKm = 0;
+    let currentFlowersSubtotal = 0;
+    let currentFinalOrderAmount = 0;
+
+    let activePaymentOrderId = null;
     let activeRootOrderForStatus = null;
     let activeRootOrderForEdit = null;
     let tempEditingItems = [];
-    let editingProductId = null; // null = создание нового
+    let editingProductId = null;
+    let suggestDebounceTimer = null;
 
     function bindPhoneMask(input) {
       input.addEventListener('input', () => {
@@ -933,7 +1067,111 @@
       if (screenId === 'root') loadRootOrders();
     }
 
-    // Каталог товаров
+    // Подсказки DaData API
+    function onAddressInput(query) {
+      clearTimeout(suggestDebounceTimer);
+      if (!query || query.trim().length < 2) {
+        document.getElementById('ord-suggest-list').style.display = 'none';
+        return;
+      }
+
+      suggestDebounceTimer = setTimeout(async () => {
+        try {
+          const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "Authorization": "Token " + DADATA_TOKEN
+            },
+            body: JSON.stringify({
+              query: query,
+              locations: [{ region: "Москва" }, { region: "Московская" }],
+              count: 6
+            })
+          });
+          const data = await res.json();
+          renderAddressSuggestions(data.suggestions || []);
+        } catch (e) {
+          console.warn("DaData error", e);
+        }
+      }, 250);
+    }
+
+    function renderAddressSuggestions(suggestions) {
+      const box = document.getElementById('ord-suggest-list');
+      if (!suggestions.length) {
+        box.style.display = 'none';
+        return;
+      }
+
+      box.innerHTML = suggestions.map((s, idx) => `
+        <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
+      `).join('');
+      box.style.display = 'block';
+      window.lastSuggestions = suggestions;
+    }
+
+    function selectSuggestion(index) {
+      const s = window.lastSuggestions[index];
+      if (!s) return;
+
+      document.getElementById('ord-suggest-input').value = s.value;
+      document.getElementById('ord-suggest-list').style.display = 'none';
+      selectedGeoAddress = s;
+
+      const lat = parseFloat(s.data.geo_lat);
+      const lon = parseFloat(s.data.geo_lon);
+
+      if (!lat || !lon) {
+        document.getElementById('delivery-calc-badge').innerHTML = 
+          `⚠️ Уточните номер дома/корпуса, чтобы рассчитать точную доставку`;
+        currentDeliveryCost = 400;
+        recalcOrderFinalTotal();
+        return;
+      }
+
+      // Расчет расстояния (Haversine * 1.25)
+      const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, lat, lon);
+      const roadDist = straightDist * 1.25;
+      currentDistanceKm = roadDist;
+
+      // Тариф: до 2 км = 400 ₽, свыше = 400 + 45 ₽/км
+      if (roadDist <= 2.0) {
+        currentDeliveryCost = 400;
+      } else {
+        const extraKm = roadDist - 2.0;
+        currentDeliveryCost = Math.round(400 + (extraKm * 45));
+      }
+
+      document.getElementById('delivery-calc-badge').innerHTML = 
+        `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b> (Георгиевский ➔ ${s.data.street_with_type || s.data.settlement || ''} ${s.data.house || s.data.block || ''})`;
+
+      recalcOrderFinalTotal();
+    }
+
+    function calcHaversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function recalcOrderFinalTotal() {
+      const delivery = orderDelType === 'delivery' ? currentDeliveryCost : 0;
+      currentFinalOrderAmount = currentFlowersSubtotal + delivery;
+
+      document.getElementById('order-subtotal-val').innerText = `${currentFlowersSubtotal} ₽`;
+      document.getElementById('order-delivery-val').innerText = `${delivery} ₽`;
+      document.getElementById('order-final-val').innerText = `${currentFinalOrderAmount} ₽`;
+    }
+
+    // Каталог
     async function loadCatalog() {
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
@@ -948,7 +1186,7 @@
     function renderCatalog(items) {
       const el = document.getElementById('catalog-wrap');
       el.innerHTML = items.map(p => {
-        const hasPhoto = p.photo_url && p.photo_url.trim().length > 8;
+        const hasPhoto = p.photo_url && p.photo_url.trim().length > 3;
         return `
           <div class="product-card" onclick="openProductModal(${p.id})">
             <div class="product-thumb">
@@ -992,7 +1230,7 @@
 
       const img = document.getElementById('pop-img');
       const placeholder = document.getElementById('pop-placeholder');
-      if (item.photo_url && item.photo_url.trim().length > 8) {
+      if (item.photo_url && item.photo_url.trim().length > 3) {
         img.src = item.photo_url;
         img.style.display = 'block';
         placeholder.style.display = 'none';
@@ -1039,6 +1277,7 @@
       if (!entries.length) {
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
         document.getElementById('cart-total').innerText = '0 ₽';
+        currentFlowersSubtotal = 0;
         return;
       }
 
@@ -1061,6 +1300,7 @@
         `;
       }).join('');
 
+      currentFlowersSubtotal = subtotal;
       document.getElementById('cart-total').innerText = subtotal + ' ₽';
     }
 
@@ -1070,7 +1310,7 @@
       updateCartUI();
     }
 
-    // Проверка базы данных (принудительный сброс, если удалили из таблицы)
+    // Проверка базы данных
     async function checkUserSession() {
       try {
         const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}`);
@@ -1080,7 +1320,6 @@
           localStorage.setItem('flw_user_profile', JSON.stringify(user));
           renderProfileUI();
         } else {
-          // Запись удалена в таблице — сбрасываем профиль и заставляем регистрироваться заново!
           currentUser = null;
           localStorage.removeItem('flw_user_profile');
           document.getElementById('reg-name').value = tgFirstName;
@@ -1132,14 +1371,13 @@
       else window.open(url, '_blank');
     }
 
+    // Оформление заказа
     function openOrderModal() {
       if (!Object.keys(cart).length) {
         toast("Корзина пуста");
         return;
       }
-      if (currentUser && currentUser.address) {
-        document.getElementById('ord-addr').value = currentUser.address;
-      }
+      recalcOrderFinalTotal();
       document.getElementById('order-modal').classList.add('open');
     }
 
@@ -1153,6 +1391,7 @@
       document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
       document.getElementById('delivery-extra-fields').style.display = type === 'delivery' ? 'block' : 'none';
       document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
+      recalcOrderFinalTotal();
     }
 
     function setRecipientType(type) {
@@ -1163,15 +1402,10 @@
     }
 
     async function submitFinalOrder() {
-      let subtotal = 0;
       let orderItems = [];
-
       Object.entries(cart).forEach(([id, qty]) => {
         const item = catalog.find(i => i.id == id);
-        if (item) {
-          subtotal += item.price * qty;
-          orderItems.push({ id: item.id, title: item.title, price: item.price, qty: qty });
-        }
+        if (item) orderItems.push({ id: item.id, title: item.title, price: item.price, qty: qty });
       });
 
       let recipientInfo = "";
@@ -1181,15 +1415,32 @@
         recipientInfo = `${rName} (${rPhone})`;
       }
 
-      let addr = "";
+      let fullAddress = "";
       let dTime = "";
       if (orderDelType === 'delivery') {
-        addr = document.getElementById('ord-addr').value.trim();
-        dTime = document.getElementById('ord-time').value;
-        if (!addr) {
-          toast("Укажите адрес доставки");
+        const streetVal = document.getElementById('ord-suggest-input').value.trim();
+        const entrance = document.getElementById('ord-entrance').value.trim();
+        const floor = document.getElementById('ord-floor').value.trim();
+        const apt = document.getElementById('ord-apt').value.trim();
+        const intercom = document.getElementById('ord-intercom').value.trim();
+        const comment = document.getElementById('ord-comment').value.trim();
+
+        if (!streetVal) {
+          toast("Выберите улицу и дом из подсказок");
           return;
         }
+
+        fullAddress = `${streetVal}` +
+          (entrance ? `, под. ${entrance}` : '') +
+          (floor ? `, эт. ${floor}` : '') +
+          (apt ? `, кв. ${apt}` : '') +
+          (intercom ? ` (домофон: ${intercom})` : '') +
+          (comment ? ` [комм: ${comment}]` : '') +
+          ` | Доставка: ~${currentDistanceKm.toFixed(1)} км (${currentDeliveryCost} ₽)`;
+
+        dTime = document.getElementById('ord-time').value;
+      } else {
+        fullAddress = "Самовывоз: Георгиевский пр-т, 37к2 (доставка 0 ₽)";
       }
 
       toast("Создание заказа...");
@@ -1201,10 +1452,10 @@
           user_phone: currentUser.phone,
           delivery_type: orderDelType,
           recipient_info: recipientInfo,
-          address: addr,
+          address: fullAddress,
           delivery_time: dTime,
           items_json: JSON.stringify(orderItems),
-          total_amount: subtotal
+          total_amount: currentFinalOrderAmount
         };
 
         const res = await fetch(API_URL, {
@@ -1218,8 +1469,7 @@
           cart = {};
           updateCartUI();
           closeOrderModal();
-          toast(`Заказ ${data.order_id} оформлен!`);
-          navigate('profile', document.querySelectorAll('.dock-tab')[2]);
+          openPaymentModal(data.order_id, currentFinalOrderAmount);
         } else {
           toast("Ошибка оформления заказа");
         }
@@ -1228,6 +1478,64 @@
       }
     }
 
+    // Окно оплаты СБП
+    function openPaymentModal(orderId, amount) {
+      activePaymentOrderId = orderId;
+      document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
+      document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
+      
+      const btn = document.getElementById('pay-sbp-btn');
+      btn.onclick = (e) => {
+        e.preventDefault();
+        if (tg && tg.openLink) tg.openLink(SBP_PAYMENT_URL);
+        else window.open(SBP_PAYMENT_URL, '_blank');
+      };
+
+      drawQr('sbp-qr-canvas', SBP_PAYMENT_URL);
+      document.getElementById('payment-modal').classList.add('open');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('payment-modal').classList.remove('open');
+    }
+
+    function closePaymentModalAndGoOrders() {
+      closePaymentModal();
+      navigate('profile', document.querySelectorAll('.dock-tab')[2]);
+    }
+
+    function copyPaymentAmount() {
+      const text = String(currentFinalOrderAmount);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        toast(`Сумма ${text} скопирована`);
+      } else {
+        toast(`Сумма к оплате: ${text} ₽`);
+      }
+    }
+
+    async function confirmPaymentByClient() {
+      if (!activePaymentOrderId) return;
+      toast("Отправка подтверждения флористу...");
+
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "client_paid",
+            order_id: activePaymentOrderId
+          })
+        });
+
+        toast("Оплата отправлена на проверку!");
+        closePaymentModalAndGoOrders();
+      } catch (e) {
+        toast("Сбой связи. Сообщите в поддержку");
+      }
+    }
+
+    // Заказы клиента
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
       try {
@@ -1242,6 +1550,8 @@
         container.innerHTML = orders.map(ord => {
           const badgeClass = getStatusBadgeClass(ord.status);
           const itemsSummary = ord.items.map(i => `• ${i.title} × ${i.qty}`).join('<br>');
+          const isAwaitingPay = (ord.status === 'Ожидает оплаты');
+
           return `
             <div class="box-card" style="margin-bottom:8px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1251,6 +1561,11 @@
               <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
                 ${itemsSummary}
               </div>
+              ${isAwaitingPay ? `
+                <button class="btn-metro" style="font-size:12px; padding:8px; margin-bottom:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount})">
+                  💳 Оплатить ${ord.total_amount} ₽ (СБП)
+                </button>
+              ` : ''}
               <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px; font-size:11px;">
                 <span style="color:var(--text-muted);">Оформлен ${ord.date_time}</span>
                 <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
@@ -1264,6 +1579,8 @@
     }
 
     function getStatusBadgeClass(st) {
+      if (st === 'Ожидает оплаты') return 'st-await-pay';
+      if (st === 'Ожидает подтверждения оплаты') return 'st-check-pay';
       if (st === 'В обработке') return 'st-processing';
       if (st === 'Собирается') return 'st-building';
       if (st === 'В пути' || st === 'Готов к выдаче') return 'st-transit';
@@ -1274,9 +1591,7 @@
 
     // Root-панель
     function checkAdminInit() {
-      if (String(userId) === ADMIN_TELEGRAM_ID) {
-        activateRootMode();
-      }
+      if (String(userId) === ADMIN_TELEGRAM_ID) activateRootMode();
     }
 
     function secretAdminTap() {
@@ -1307,7 +1622,6 @@
       if (sec === 'clients') loadRootClients();
     }
 
-    // Root: Управление заказами
     async function loadRootOrders() {
       if (!isAdmin) return;
       const container = document.getElementById('root-orders-container');
@@ -1341,42 +1655,72 @@
         return;
       }
 
-      container.innerHTML = filtered.map(ord => `
-        <div class="box-card" style="margin-bottom:10px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-size:13px; font-weight:800; color:var(--cyan);">${ord.order_id}</span>
-            <span class="status-badge ${getStatusBadgeClass(ord.status)}">${ord.status}</span>
-          </div>
-
-          <div style="font-size:12px; color:var(--text); font-weight:600;">${ord.user_name} (${ord.user_phone})</div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
-            ${ord.delivery_type === 'delivery' ? `🚚 ${ord.address} (${ord.delivery_time})` : '📍 Самовывоз (Георгиевский, 37к2)'}
-          </div>
-          ${ord.recipient_info ? `<div style="font-size:11px; color:var(--amber); margin-top:2px;">Получатель: ${ord.recipient_info}</div>` : ''}
-
-          <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:8px; margin:8px 0; font-size:12px;">
-            ${ord.items.map(it => `
-              <div style="display:flex; justify-content:space-between; margin-bottom:3px; gap:8px;">
-                <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${it.title}</span>
-                <b style="white-space:nowrap;">${it.qty} шт. (${it.price * it.qty} ₽)</b>
-              </div>
-            `).join('')}
-            <div style="border-top:1px solid var(--border); padding-top:4px; margin-top:4px; display:flex; justify-content:space-between; font-weight:800;">
-              <span>ИТОГО:</span>
-              <span style="color:var(--green);">${ord.total_amount} ₽</span>
+      container.innerHTML = filtered.map(ord => {
+        const isCheckingPay = (ord.status === 'Ожидает подтверждения оплаты' || ord.status === 'Ожидает оплаты');
+        return `
+          <div class="box-card" style="margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:13px; font-weight:800; color:var(--cyan);">${ord.order_id}</span>
+              <span class="status-badge ${getStatusBadgeClass(ord.status)}">${ord.status}</span>
             </div>
-          </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="openStatusModal('${ord.order_id}')">Выбрать статус</button>
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="openEditItemsModal('${ord.order_id}')">Состав заказа</button>
-          </div>
+            <div style="font-size:12px; color:var(--text); font-weight:600;">${ord.user_name} (${ord.user_phone})</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+              ${ord.delivery_type === 'delivery' ? `🚚 ${ord.address} (${ord.delivery_time})` : '📍 Самовывоз (Георгиевский, 37к2)'}
+            </div>
+            ${ord.recipient_info ? `<div style="font-size:11px; color:var(--amber); margin-top:2px;">Получатель: ${ord.recipient_info}</div>` : ''}
 
-          <button class="btn-metro btn-danger" style="font-size:11px; padding:7px; margin-top:6px;" onclick="deleteOrderConfirm('${ord.order_id}')">
-            🗑️ Удалить заказ из базы
-          </button>
-        </div>
-      `).join('');
+            <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:8px; margin:8px 0; font-size:12px;">
+              ${ord.items.map(it => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px; gap:8px;">
+                  <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${it.title}</span>
+                  <b style="white-space:nowrap;">${it.qty} шт. (${it.price * it.qty} ₽)</b>
+                </div>
+              `).join('')}
+              <div style="border-top:1px solid var(--border); padding-top:4px; margin-top:4px; display:flex; justify-content:space-between; font-weight:800;">
+                <span>ИТОГО К ОПЛАТЕ:</span>
+                <span style="color:var(--green);">${ord.total_amount} ₽</span>
+              </div>
+            </div>
+
+            ${isCheckingPay ? `
+              <button class="btn-metro" style="font-size:12px; padding:9px; margin-bottom:8px; background:var(--green);" onclick="quickConfirmPayment('${ord.order_id}')">
+                ✅ Оплата получена ➔ Перевести в «Собирается»
+              </button>
+            ` : ''}
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+              <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="openStatusModal('${ord.order_id}')">Выбрать статус</button>
+              <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="openEditItemsModal('${ord.order_id}')">Состав заказа</button>
+            </div>
+
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:7px; margin-top:6px;" onclick="deleteOrderConfirm('${ord.order_id}')">
+              🗑️ Удалить заказ из базы
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function quickConfirmPayment(orderId) {
+      toast("Подтверждение оплаты...");
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_update_order",
+            admin_id: ADMIN_TELEGRAM_ID,
+            admin_passcode: "m1rfol159036",
+            order_id: orderId,
+            status: "Собирается"
+          })
+        });
+        toast("Оплата подтверждена! Статус: Собирается");
+        loadRootOrders();
+      } catch (e) {
+        toast("Ошибка подтверждения");
+      }
     }
 
     function openStatusModal(orderId) {
@@ -1541,7 +1885,7 @@
       }
     }
 
-    // Root: Управление каталогом товаров
+    // Каталог в Root
     async function loadRootCatalog() {
       const container = document.getElementById('root-catalog-container');
       container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка каталога...</div>';
@@ -1676,7 +2020,7 @@
       }
     }
 
-    // Root: Управление клиентами
+    // Клиенты в Root
     async function loadRootClients() {
       const container = document.getElementById('root-clients-container');
       container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка клиентов...</div>';
@@ -1779,12 +2123,47 @@
       }
     }
 
-    // Инициализация сервиса
+    // QR-генератор
+    function drawQr(canvasId, text) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const size = 144;
+      canvas.width = size;
+      canvas.height = size;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.fillStyle = '#090c12';
+      const drawMarker = (x, y) => {
+        ctx.fillRect(x, y, 32, 32);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x + 4, y + 4, 24, 24);
+        ctx.fillStyle = '#090c12';
+        ctx.fillRect(x + 8, y + 8, 16, 16);
+      };
+
+      drawMarker(8, 8);
+      drawMarker(104, 8);
+      drawMarker(8, 104);
+
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      for (let r = 0; r < 14; r++) {
+        for (let c = 0; c < 14; c++) {
+          if ((r < 5 && c < 5) || (r < 5 && c > 8) || (r > 8 && c < 5)) continue;
+          if ((hash ^ (r * 19 + c * 23)) % 2 === 0) {
+            ctx.fillRect(14 + c * 8, 14 + r * 8, 6, 6);
+          }
+        }
+      }
+    }
+
+    // Инициализация
     loadCatalog();
     checkUserSession();
     checkAdminInit();
 
-    // Фоновый опрос для моментального обновления выкупа и статусов (каждые 10 секунд)
     setInterval(() => {
       const activeScreen = document.querySelector('.screen.active')?.id;
       if (activeScreen === 'screen-profile') {
