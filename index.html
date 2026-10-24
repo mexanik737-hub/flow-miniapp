@@ -25,28 +25,11 @@
       --purple: #a855f7;
       --text: #f1f5f9;
       --text-muted: #94a3b8;
-      --dock-bg: rgba(19, 24, 34, 0.88);
-      --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+      --dock-bg: rgba(19, 24, 34, 0.9);
+      --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
-    }
-
-    [data-theme="light"] {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --card-inner: #f1f5f9;
-      --border: rgba(0, 0, 0, 0.08);
-      --border-accent: rgba(2, 132, 199, 0.4);
-      --cyan: #0284c7;
-      --green: #059669;
-      --amber: #d97706;
-      --red: #dc2626;
-      --purple: #9333ea;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --dock-bg: rgba(255, 255, 255, 0.9);
-      --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
     }
 
     * {
@@ -64,7 +47,6 @@
       background: var(--bg);
       color: var(--text);
       overflow-x: hidden;
-      transition: background 0.25s ease, color 0.25s ease;
     }
 
     body {
@@ -91,7 +73,6 @@
       z-index: 50;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      transition: background 0.25s ease;
     }
 
     .header-content {
@@ -108,7 +89,6 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      white-space: nowrap;
     }
 
     .brand-badge {
@@ -119,10 +99,26 @@
       padding: 2px 7px;
       border-radius: 6px;
       font-weight: 700;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      max-width: 190px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-trigger-btn {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--cyan);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid var(--border-accent);
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .user-tag {
@@ -131,13 +127,10 @@
       color: var(--text-muted);
       background: var(--card-inner);
       border: 1px solid var(--border);
-      padding: 4px 10px;
+      padding: 5px 10px;
       border-radius: 20px;
       cursor: pointer;
-      white-space: nowrap;
-      transition: transform 0.15s ease;
     }
-    .user-tag:active { transform: scale(0.95); }
 
     .screen {
       display: none;
@@ -154,38 +147,16 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .filter-scroll {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 12px;
-      scrollbar-width: none;
-    }
-    .filter-scroll::-webkit-scrollbar { display: none; }
-
-    .filter-btn {
-      padding: 7px 14px;
-      border-radius: 20px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 600;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .filter-btn.active {
-      background: rgba(56, 189, 248, 0.15);
-      border-color: var(--cyan);
-      color: var(--cyan);
+    /* Анимированная переливающаяся неоновая рамка для Хитов */
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
     }
 
-    .catalog-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      width: 100%;
+    @keyframes rotateNeon {
+      0% { --angle: 0deg; }
+      100% { --angle: 360deg; }
     }
 
     .product-card {
@@ -196,17 +167,26 @@
       display: flex;
       flex-direction: column;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       position: relative;
-      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: transform 0.15s ease;
     }
-    .product-card:active {
-      transform: scale(0.97);
-    }
+    .product-card:active { transform: scale(0.97); }
 
     .product-card.popular-hit {
-      border-color: rgba(245, 158, 11, 0.6);
-      box-shadow: 0 0 14px rgba(245, 158, 11, 0.35), inset 0 0 1px rgba(245, 158, 11, 0.6);
+      position: relative;
+      border: 1px solid transparent;
+      background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+                  conic-gradient(from var(--angle), #f59e0b, #ef4444, #38bdf8, #f59e0b) border-box;
+      animation: rotateNeon 3.5s linear infinite;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+    }
+
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
     }
 
     .product-thumb {
@@ -215,29 +195,9 @@
       background: var(--card-inner);
       position: relative;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 12px;
-      text-align: center;
-    }
-
-    /* Бейдж Хита в левом нижнем углу фото */
-    .hit-badge {
-      position: absolute;
-      bottom: 8px;
-      left: 8px;
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: #fff;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      display: flex;
-      align-items: center;
-      gap: 3px;
+      overflow: hidden;
     }
 
     .product-thumb img {
@@ -245,27 +205,23 @@
       height: 100%;
       object-fit: cover;
       display: block;
+    }
+
+    .hit-badge {
       position: absolute;
-      inset: 0;
-    }
-
-    .thumb-placeholder-box {
+      bottom: 8px;
+      left: 8px;
+      background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      z-index: 3;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 6px;
-    }
-
-    .thumb-placeholder-icon {
-      font-size: 28px;
-      opacity: 0.55;
-    }
-
-    .thumb-placeholder-text {
-      font-size: 11px;
-      color: var(--text-muted);
-      line-height: 1.25;
-      font-weight: 500;
+      gap: 3px;
     }
 
     .product-body {
@@ -293,7 +249,6 @@
       font-size: 11px;
       font-weight: 600;
       color: var(--cyan);
-      margin-top: 2px;
       line-height: 1.2;
     }
 
@@ -323,7 +278,6 @@
       font-size: 17px;
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.1s ease;
     }
     .btn-quick-add:active { transform: scale(0.88); }
 
@@ -343,15 +297,15 @@
       font-size: 13px;
       cursor: pointer;
       padding: 2px 4px;
-      line-height: 1;
       color: var(--text);
+      line-height: 1;
     }
 
     .cart-active-qty {
       font-size: 12px;
       font-weight: 800;
       color: var(--cyan);
-      min-width: 18px;
+      min-width: 16px;
       text-align: center;
     }
 
@@ -361,7 +315,11 @@
       border-radius: var(--radius-md);
       padding: 14px;
       margin-bottom: 12px;
-      transition: background 0.25s ease;
+    }
+
+    .box-card.neon-glow {
+      border-color: var(--border-accent);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
     }
 
     .btn-metro {
@@ -379,9 +337,8 @@
       justify-content: center;
       gap: 6px;
       text-decoration: none;
-      transition: transform 0.12s ease, opacity 0.15s ease;
     }
-    .btn-metro:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-metro:active { transform: scale(0.98); }
 
     .btn-secondary {
       background: var(--card-inner);
@@ -395,10 +352,16 @@
       color: var(--red);
     }
 
-    .btn-outline-cyan {
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid var(--border-accent);
-      color: var(--cyan);
+    .btn-emerald {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+
+    .btn-warm-support {
+      background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
     }
 
     .qty-btn {
@@ -414,9 +377,7 @@
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.1s ease;
     }
-    .qty-btn:active { transform: scale(0.9); }
 
     .status-badge {
       font-size: 10px;
@@ -429,12 +390,12 @@
     }
     .st-await-pay { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.35); }
     .st-check-pay { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.35); }
-    .st-processing { background: rgba(56, 189, 248, 0.15); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
     .st-building { background: rgba(56, 189, 248, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
     .st-transit { background: rgba(168, 85, 247, 0.2); color: var(--purple); border: 1px solid var(--purple); }
     .st-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
     .st-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
 
+    /* Док навигации с анимацией прокрутки только иконки */
     .dock-pill-container {
       position: fixed;
       bottom: max(14px, env(safe-area-inset-bottom, 14px));
@@ -455,17 +416,14 @@
       border: 1px solid var(--border-accent);
       border-radius: 40px;
       padding: 6px 8px;
-      backdrop-filter: blur(28px) saturate(190%);
-      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
       box-shadow: var(--dock-shadow);
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 4px;
-      transition: all 0.25s ease;
     }
-    .dock-pill.with-root {
-      grid-template-columns: repeat(4, 1fr);
-    }
+    .dock-pill.with-root { grid-template-columns: repeat(4, 1fr); }
 
     .dock-tab {
       display: flex;
@@ -479,21 +437,29 @@
       cursor: pointer;
       padding: 6px 0;
       border-radius: 20px;
-      transition: all 0.18s ease;
     }
-    .dock-tab svg { width: 19px; height: 19px; fill: currentColor; }
+
+    .dock-tab svg {
+      width: 19px;
+      height: 19px;
+      fill: currentColor;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
     .dock-tab span { font-size: 10px; font-weight: 600; white-space: nowrap; }
 
     .dock-tab.active {
       background: rgba(56, 189, 248, 0.14);
       color: var(--cyan);
     }
+    .dock-tab.spinning svg {
+      transform: rotate(360deg);
+    }
 
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.78);
+      background: rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       z-index: 110;
@@ -527,7 +493,7 @@
     }
 
     .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
-    .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px; }
+    .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; }
 
     .metro-input {
       width: 100%;
@@ -540,9 +506,44 @@
       outline: none;
       margin-top: 4px;
       margin-bottom: 12px;
-      transition: border-color 0.15s ease;
     }
     .metro-input:focus { border-color: var(--cyan); }
+
+    /* Выпадающий список DaData в теме приложения */
+    .suggest-wrap { position: relative; width: 100%; }
+    .suggest-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #0f141f;
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-sm);
+      max-height: 190px;
+      overflow-y: auto;
+      z-index: 120;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
+      display: none;
+    }
+    .suggest-item {
+      padding: 11px 12px;
+      font-size: 12px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .suggest-item:hover, .suggest-item:active {
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--cyan);
+    }
+
+    .address-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .address-grid input { margin-bottom: 0; padding: 9px 8px; font-size: 12px; text-align: center; }
 
     .toggle-grid {
       display: grid;
@@ -550,7 +551,6 @@
       gap: 6px;
       margin-bottom: 14px;
     }
-
     .toggle-btn {
       padding: 10px;
       border-radius: var(--radius-sm);
@@ -561,80 +561,12 @@
       font-weight: 700;
       cursor: pointer;
       text-align: center;
-      transition: all 0.15s ease;
     }
     .toggle-btn.active {
       background: rgba(56, 189, 248, 0.14);
       border-color: var(--cyan);
       color: var(--cyan);
     }
-
-    .suggest-wrap {
-      position: relative;
-      width: 100%;
-    }
-
-    .suggest-list {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: var(--card-bg);
-      border: 1px solid var(--border-accent);
-      border-radius: var(--radius-sm);
-      max-height: 180px;
-      overflow-y: auto;
-      z-index: 120;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      display: none;
-    }
-
-    .suggest-item {
-      padding: 10px 12px;
-      font-size: 12px;
-      color: var(--text);
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-    }
-    .suggest-item:hover, .suggest-item:active {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--cyan);
-    }
-
-    .address-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-
-    .address-grid input {
-      margin-bottom: 0;
-      padding: 9px 8px;
-      font-size: 12px;
-      text-align: center;
-    }
-
-    .status-picker-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .status-pick-btn {
-      padding: 12px 10px;
-      border-radius: var(--radius-sm);
-      background: var(--card-inner);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      text-align: center;
-      transition: transform 0.1s ease, border-color 0.15s ease;
-    }
-    .status-pick-btn:active { transform: scale(0.96); border-color: var(--cyan); }
 
     .quick-addr-pills {
       display: flex;
@@ -643,8 +575,6 @@
       margin-bottom: 12px;
       scrollbar-width: none;
     }
-    .quick-addr-pills::-webkit-scrollbar { display: none; }
-
     .addr-pill {
       padding: 8px 12px;
       border-radius: 20px;
@@ -662,17 +592,17 @@
       color: var(--cyan);
     }
 
+    /* FAQ аккордеон */
     .faq-pill-item {
       background: var(--card-inner);
       border: 1px solid var(--border);
-      border-radius: 24px;
+      border-radius: 20px;
       margin-bottom: 8px;
       overflow: hidden;
-      transition: all 0.2s ease;
     }
     .faq-pill-header {
-      padding: 12px 16px;
-      font-size: 13px;
+      padding: 12px 14px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--text);
       display: flex;
@@ -680,27 +610,32 @@
       align-items: center;
       cursor: pointer;
     }
-    .faq-pill-header span:last-child {
-      color: var(--cyan);
-      font-size: 14px;
-      transition: transform 0.2s ease;
-    }
-    .faq-pill-item.open {
-      border-color: var(--border-accent);
-      border-radius: var(--radius-md);
-    }
-    .faq-pill-item.open .faq-pill-header span:last-child {
-      transform: rotate(180deg);
-    }
     .faq-pill-body {
       display: none;
-      padding: 0 16px 14px 16px;
+      padding: 0 14px 12px 14px;
       font-size: 12px;
       color: var(--text-muted);
       line-height: 1.45;
     }
-    .faq-pill-item.open .faq-pill-body {
-      display: block;
+    .faq-pill-item.open .faq-pill-body { display: block; }
+    .faq-pill-item.open { border-color: var(--border-accent); }
+
+    /* Горизонтальная прокрутка фото товара */
+    .product-gallery-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin-bottom: 12px;
+      border-radius: var(--radius-md);
+    }
+    .gallery-slide-img {
+      width: 100%;
+      max-height: 250px;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      flex-shrink: 0;
+      border-radius: var(--radius-md);
     }
 
     #toast {
@@ -715,47 +650,37 @@
       border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       opacity: 0;
       pointer-events: none;
       z-index: 200;
       transition: all 0.25s ease;
       white-space: nowrap;
     }
-    #toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
 <body>
 
   <div id="toast">Уведомление</div>
-
   <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
   <div class="app-wrapper">
-    <!-- Шапка HUD -->
     <header>
       <div class="header-content">
         <div class="brand-title">
           <span>ЦВЕТЫ</span>
-          <span class="brand-badge">Георгиевский пр-т, 37к2</span>
+          <span class="brand-badge">Георгиевский, 37к2</span>
         </div>
-        <div class="user-tag" id="hud-name" onclick="secretAdminTap()">Клиент</div>
+        <div class="header-actions">
+          <button class="filter-trigger-btn" id="filter-btn-head" onclick="openFilterModal()">⚙️ Фильтры</button>
+          <div class="user-tag" id="hud-name" onclick="secretAdminTap()">Клиент</div>
+        </div>
       </div>
     </header>
 
     <!-- Экран 1: Каталог -->
     <section id="screen-catalog" class="screen active">
-      <div class="filter-scroll">
-        <div class="filter-btn active" onclick="setCategory('Все', this)">Все</div>
-        <div class="filter-btn" onclick="setCategory('Розы Эквадор', this)">Розы Эквадор</div>
-        <div class="filter-btn" onclick="setCategory('Кустовые розы', this)">Кустовые розы</div>
-        <div class="filter-btn" onclick="setCategory('Цветы', this)">Цветы в пачках</div>
-        <div class="filter-btn" onclick="setCategory('Экзотика', this)">Штучно (экзотика)</div>
-        <div class="filter-btn" onclick="setCategory('Букеты и зелень', this)">Зелень и букеты</div>
-      </div>
       <div class="catalog-grid" id="catalog-wrap"></div>
     </section>
 
@@ -764,7 +689,8 @@
       <div class="box-card" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
-      <div class="box-card">
+      <!-- Плашка суммы: скрывается если пусто -->
+      <div class="box-card" id="cart-checkout-card" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <span style="font-size:14px; font-weight:700;">Сумма букетов:</span>
           <span id="cart-total" style="font-size:18px; font-weight:800; color:var(--text);">0 ₽</span>
@@ -775,7 +701,7 @@
 
     <!-- Экран 3: Профиль -->
     <section id="screen-profile" class="screen">
-      <div class="box-card">
+      <div class="box-card neon-glow">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;">Карточка клиента</span>
           <span style="font-size:12px; color:var(--cyan); cursor:pointer; font-weight:700;" onclick="openEditProfileModal()">✏️ Изменить</span>
@@ -794,7 +720,6 @@
           </div>
         </div>
 
-        <!-- Сохраненные адреса -->
         <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;">Мои адреса (до 3 шт.)</span>
@@ -803,154 +728,107 @@
           <div id="saved-addresses-profile-list"></div>
         </div>
 
-        <!-- Кнопки связи -->
+        <!-- Кнопки связи (Изумрудная и Красно-оранжевая) -->
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
-          <a class="btn-metro btn-secondary" href="tel:89162257117" style="color:#ffffff;">
-            📞 Позвонить в магазин
-          </a>
-          <button class="btn-metro btn-secondary" onclick="contactSupport()" style="color:#ffffff;">
-            💬 Техническая поддержка
-          </button>
+          <a class="btn-metro btn-emerald" href="tel:89162257117">📞 Позвонить в магазин</a>
+          <button class="btn-metro btn-warm-support" onclick="contactSupport()">💬 Техническая поддержка</button>
         </div>
       </div>
 
-      <!-- 1. Мои заказы (теперь идут выше FAQ) -->
+      <!-- Мои заказы -->
       <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px; padding-left:2px;">Мои заказы:</div>
       <div id="user-orders-list" style="margin-bottom:18px;">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>
       </div>
 
-      <!-- 2. FAQ (теперь расположен ниже заказов) -->
-      <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px; padding-left:2px;">Часто задаваемые вопросы (FAQ):</div>
-      <div id="profile-faq-container" style="margin-bottom:14px;"></div>
+      <!-- FAQ в общей плашке с неоном -->
+      <div class="box-card neon-glow">
+        <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
+          Часто задаваемые вопросы (FAQ)
+        </div>
+        <div id="profile-faq-container"></div>
+      </div>
     </section>
 
-    <!-- Экран 4: Root (Админка) -->
+    <!-- Экран 4: Root -->
     <section id="screen-root" class="screen">
       <div class="toggle-grid">
         <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
         <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
-        <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
-        <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
       </div>
-
-      <!-- Секция: Заказы -->
       <div id="root-sec-orders">
-        <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
-          <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
-          <div class="toggle-btn" id="tab-root-archive" onclick="switchRootSubTab('archive')">Архив</div>
-        </div>
-        <div id="root-orders-container">
-          <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка данных...</div>
-        </div>
+        <div id="root-orders-container"></div>
       </div>
-
-      <!-- Секция: Товары -->
       <div id="root-sec-catalog" style="display:none;">
-        <button class="btn-metro" style="margin-bottom:12px; font-size:13px; padding:11px;" onclick="openAddProductModal()">
-          + Добавить новый товар в базу
-        </button>
+        <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddProductModal()">+ Добавить новый товар</button>
         <div id="root-catalog-container"></div>
-      </div>
-
-      <!-- Секция: Клиенты -->
-      <div id="root-sec-clients" style="display:none;">
-        <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
-        <div id="root-clients-container"></div>
-      </div>
-
-      <!-- Секция: FAQ в Root -->
-      <div id="root-sec-faq" style="display:none;">
-        <button class="btn-metro" style="margin-bottom:12px; font-size:13px; padding:11px;" onclick="openAddFaqModal()">
-          + Добавить вопрос-ответ в FAQ
-        </button>
-        <div id="root-faq-container"></div>
       </div>
     </section>
   </div>
 
-  <!-- Плавающая пилюля навигации -->
+  <!-- Док навигации -->
   <div class="dock-pill-container">
     <nav class="dock-pill" id="dock-pill-bar">
-      <button class="dock-tab active" onclick="navigate('catalog', this)">
+      <button class="dock-tab active" onclick="navigateTab('catalog', this)">
         <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
         <span>Каталог</span>
       </button>
-      <button class="dock-tab" onclick="navigate('cart', this)">
+      <button class="dock-tab" onclick="navigateTab('cart', this)">
         <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
         <span>Корзина (<b id="cart-counter">0</b>)</span>
       </button>
-      <button class="dock-tab" onclick="navigate('profile', this)">
+      <button class="dock-tab" onclick="navigateTab('profile', this)">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         <span>Профиль</span>
       </button>
-      <button class="dock-tab" id="dock-root-btn" style="display:none;" onclick="navigate('root', this)">
+      <button class="dock-tab" id="dock-root-btn" style="display:none;" onclick="navigateTab('root', this)">
         <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
         <span>Root</span>
       </button>
     </nav>
   </div>
 
-  <!-- Модалка: Редактирование профиля -->
-  <div class="modal-overlay" id="edit-profile-modal">
+  <!-- Модалка фильтров -->
+  <div class="modal-overlay" id="filter-modal">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div class="modal-title">Изменить данные профиля</div>
-        <button class="close-btn" onclick="closeEditProfileModal()">✕</button>
+        <div class="modal-title">Фильтры каталога</div>
+        <button class="close-btn" onclick="closeFilterModal()">✕</button>
       </div>
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ваше имя: *</label>
-      <input type="text" id="edit-prof-name" class="metro-input" placeholder="Иван">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Номер телефона: *</label>
-      <input type="tel" id="edit-prof-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
+      <select id="filter-cat-select" class="metro-input">
+        <option value="Все">Все категории</option>
+        <option value="Розы Эквадор">Розы Эквадор</option>
+        <option value="Кустовые розы">Кустовые розы</option>
+        <option value="Цветы">Цветы в пачках</option>
+        <option value="Экзотика">Штучно (экзотика)</option>
+        <option value="Букеты и зелень">Зелень и букеты</option>
+      </select>
 
-      <button class="btn-metro" onclick="saveUserProfileChanges()">Сохранить изменения</button>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Максимальная цена (₽):</label>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:4px; margin-bottom:8px;">
+        <input type="range" id="filter-price-range" min="500" max="10000" step="100" style="flex:1;" oninput="document.getElementById('filter-price-input').value = this.value">
+        <input type="number" id="filter-price-input" class="metro-input" style="width:90px; margin-bottom:0;" value="10000" oninput="document.getElementById('filter-price-range').value = this.value">
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn-metro btn-secondary" onclick="resetFilters()">Сбросить</button>
+        <button class="btn-metro" onclick="applyFilters()">Применить</button>
+      </div>
     </div>
   </div>
 
-  <!-- Модалка: Добавление сохраненного адреса через DaData -->
-  <div class="modal-overlay" id="add-saved-addr-modal">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <div class="modal-title">Новый сохраненный адрес</div>
-        <button class="close-btn" onclick="closeAddSavedAddressModal()">✕</button>
-      </div>
-
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название адреса: *</label>
-      <input type="text" id="new-addr-label" class="metro-input" placeholder="Например: Дом, Работа, Родители">
-
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Улица / Корпус / Дом (выберите из подсказок): *</label>
-      <div class="suggest-wrap">
-        <input type="text" id="new-addr-suggest" class="metro-input" placeholder="Начните ввод: к1601 или Панфиловский..." autocomplete="off" oninput="onSavedAddrSuggestInput(this.value)">
-        <div class="suggest-list" id="new-addr-suggest-list"></div>
-      </div>
-
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон:</label>
-      <div class="address-grid">
-        <input type="text" id="new-addr-entrance" class="metro-input" placeholder="Подъезд">
-        <input type="text" id="new-addr-floor" class="metro-input" placeholder="Этаж">
-        <input type="text" id="new-addr-apt" class="metro-input" placeholder="Кв/Офис">
-        <input type="text" id="new-addr-intercom" class="metro-input" placeholder="Домофон">
-      </div>
-
-      <button class="btn-metro" style="margin-top:10px;" onclick="saveNewAddressFromModal()">Сохранить адрес</button>
-    </div>
-  </div>
-
-  <!-- Модалка: Карточка букета -->
+  <!-- Модалка карточки букета (с мультифото) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="pop-title">Букет</div>
         <button class="close-btn" onclick="closeProductModal()">✕</button>
       </div>
-      <div style="width:100%; aspect-ratio:1/1; max-height:240px; background:var(--card-inner); border-radius:var(--radius-md); overflow:hidden; margin-bottom:12px; display:flex; align-items:center; justify-content:center; position:relative;">
-        <img id="pop-img" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
-        <div class="thumb-placeholder-box" id="pop-placeholder">
-          <span class="thumb-placeholder-icon">🌸</span>
-          <span class="thumb-placeholder-text">Фото пока не добавили</span>
-        </div>
-      </div>
+
+      <div class="product-gallery-scroll" id="pop-gallery"></div>
+
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
         <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" id="pop-cat">Категория</div>
         <div style="font-size:11px; font-weight:700; color:var(--amber);" id="pop-unit">1 шт.</div>
@@ -968,26 +846,7 @@
     </div>
   </div>
 
-  <!-- Модалка: Регистрация -->
-  <div class="modal-overlay" id="reg-modal">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <div class="modal-title">Регистрация в сервисе</div>
-      </div>
-      <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.4;">
-        Заполните контактные данные для привязки заказов и учета суммы выкупа.
-      </div>
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ваше имя: *</label>
-      <input type="text" id="reg-name" class="metro-input" placeholder="Иван">
-
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Номер телефона: *</label>
-      <input type="tel" id="reg-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
-
-      <button class="btn-metro" onclick="submitRegistration()">Завершить регистрацию</button>
-    </div>
-  </div>
-
-  <!-- Модалка: Оформление заказа -->
+  <!-- Модалка оформления заказа -->
   <div class="modal-overlay" id="order-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1013,7 +872,6 @@
         <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
       </div>
 
-      <!-- Поля доставки -->
       <div id="delivery-extra-fields">
         <div id="order-saved-address-container" style="display:none; margin-bottom:8px;">
           <div style="font-size:11px; color:var(--cyan); font-weight:700; margin-bottom:4px; text-transform:uppercase;">Сохраненные адреса:</div>
@@ -1022,7 +880,7 @@
 
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Улица / Корпус / Дом (выберите из подсказок): *</label>
         <div class="suggest-wrap">
-          <input type="text" id="ord-suggest-input" class="metro-input" placeholder="Начните ввод: к1601 или Панфиловский..." autocomplete="off" oninput="onAddressInput(this.value)">
+          <input type="text" id="ord-suggest-input" class="metro-input" placeholder="Начните ввод: к1601 или Георгиевский..." autocomplete="off" oninput="onAddressInput(this.value)">
           <div class="suggest-list" id="ord-suggest-list"></div>
         </div>
 
@@ -1034,32 +892,30 @@
           <input type="text" id="ord-intercom" class="metro-input" placeholder="Домофон">
         </div>
 
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;" id="save-new-addr-box">
-          <input type="checkbox" id="ord-save-addr-checkbox" style="width:16px; height:16px;">
-          <label for="ord-save-addr-checkbox" style="font-size:12px; color:var(--text-muted);">Сохранить этот адрес в профиль</label>
-        </div>
-
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
-        <input type="text" id="ord-comment" class="metro-input" placeholder="Шлагбаум открыт, не звонить в дверь...">
+        <input type="text" id="ord-comment" class="metro-input" placeholder="Шлагбаум открыт, не звонить...">
 
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время доставки:</label>
         <select id="ord-time" class="metro-input">
-          <option value="Как можно скорее (~1.5-2 часа)">Как можно скорее (~1.5–2 часа с учетом сборки)</option>
-          <option value="Сегодня 12:00 - 15:00">Сегодня 12:00 – 15:00</option>
-          <option value="Сегодня 15:00 - 18:00">Сегодня 15:00 – 18:00</option>
-          <option value="Сегодня 18:00 - 21:00">Сегодня 18:00 – 21:00</option>
-          <option value="Завтра в течение дня">Завтра в течение дня (согласовать)</option>
+          <option value="Как можно скорее (10:00 - 20:00)">Как можно скорее (~1.5–2 часа с учетом сборки)</option>
+          <option value="Сегодня 11:00 - 14:00">Сегодня 11:00 – 14:00</option>
+          <option value="Сегодня 14:00 - 17:00">Сегодня 14:00 – 17:00</option>
+          <option value="Сегодня 17:00 - 20:00">Сегодня 17:00 – 20:00</option>
+          <option value="Завтра в интервале 10:00 - 20:00">Завтра в интервале 10:00 – 20:00</option>
         </select>
 
-        <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.12); border:1px solid var(--border-accent); color:var(--cyan); font-size:12px; line-height:1.4; margin-bottom:12px;">
+        <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.12); border:1px solid var(--border-accent); color:var(--cyan); font-size:12px; margin-bottom:12px;">
           📍 Введите адрес, чтобы рассчитать точную стоимость доставки (от 400 ₽)
         </div>
       </div>
 
-      <div id="pickup-extra-fields" style="display:none; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--border-accent); color:var(--cyan); font-size:11px; line-height:1.4; margin-bottom:12px;">
-        📍 <b>Адрес магазина:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
-        Букет будет готов к выдаче через 40–60 минут после подтверждения. Доставка: 0 ₽.
+      <div id="pickup-extra-fields" style="display:none; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--border-accent); color:var(--cyan); font-size:11px; margin-bottom:12px;">
+        📍 <b>Адрес магазина:</b> Зеленоград, Георгиевский пр-т, 37к2. Самовывоз с 09:00 до 21:00.
       </div>
+
+      <!-- Комментарий магазину -->
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий магазину (необязательно):</label>
+      <input type="text" id="ord-shop-comment" class="metro-input" placeholder="Пожелания по цвету ленты, сборке...">
 
       <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:12px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -1080,7 +936,7 @@
     </div>
   </div>
 
-  <!-- Модалка: Оплата СБП -->
+  <!-- Модалка оплаты (с реальным QR и таймером 15 мин) -->
   <div class="modal-overlay" id="payment-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1089,57 +945,39 @@
       </div>
 
       <div style="text-align:center; padding:10px 0 16px 0;">
+        <!-- Таймер 15 минут -->
+        <div style="padding:6px 12px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:12px; font-weight:800; display:inline-block; margin-bottom:10px;" id="pay-timer-box">
+          ⏳ Оплатите в течение: <span id="pay-timer-val">15:00</span>
+        </div>
+
         <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Сумма к оплате:</div>
-        <div style="font-size:32px; font-weight:900; color:var(--green); margin:4px 0 12px 0;" id="pay-modal-amount">0 ₽</div>
+        <div style="font-size:32px; font-weight:900; color:var(--green); margin:4px 0 10px 0;" id="pay-modal-amount">0 ₽</div>
         
-        <button class="btn-metro btn-secondary" style="font-size:12px; padding:8px 14px; max-width:240px; margin:0 auto 16px auto;" onclick="copyPaymentAmount()">
+        <button class="btn-metro btn-secondary" style="font-size:12px; padding:8px 14px; max-width:240px; margin:0 auto 14px auto;" onclick="copyPaymentAmount()">
           📋 Скопировать сумму
         </button>
 
-        <a class="btn-metro" id="pay-sbp-btn" href="#" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:16px;">
+        <a class="btn-metro" id="pay-sbp-btn" href="https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0" target="_blank" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:14px;">
           💳 Оплатить через СБП
         </a>
 
-        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Или отсканируйте QR-код приложением банка:</div>
-        <div style="background:#fff; width:160px; height:160px; border-radius:12px; padding:8px; margin:0 auto 16px auto; display:flex; align-items:center; justify-content:center;">
-          <canvas id="sbp-qr-canvas"></canvas>
+        <!-- Реальное фото QR-кода -->
+        <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center;">
+          <img src="img/sbp_qr.jpg" alt="QR-код СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
         </div>
 
-        <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:16px; text-align:left;">
-          ⚠️ <b>Внимание:</b> при оплате через СБП в приложении банка введите точную сумму заказа вручную. После перевода нажмите кнопку «Я оплатил» ниже.
+        <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
+          ⚠️ Введите ровно указанную сумму в приложении банка. Неоплаченные заказы автоматически отменяются через 15 минут.
         </div>
 
-        <button class="btn-metro" style="background:var(--green); margin-bottom:10px;" id="pay-btn-i-paid" onclick="confirmPaymentByClient()">
+        <button class="btn-metro" style="background:var(--green); margin-bottom:10px;" onclick="confirmPaymentByClient()">
           ✅ Я оплатил
         </button>
-
-        <button class="btn-metro btn-secondary" onclick="closePaymentModalAndGoOrders()">
-          Перейти к моим заказам
-        </button>
       </div>
     </div>
   </div>
 
-  <!-- Модалка: Смена статуса в Root -->
-  <div class="modal-overlay" id="status-modal">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <div class="modal-title" id="status-modal-title">Сменить статус</div>
-        <button class="close-btn" onclick="closeStatusModal()">✕</button>
-      </div>
-      <div class="status-picker-grid">
-        <button class="status-pick-btn" style="color:var(--amber);" onclick="applyStatusChoice('Ожидает оплаты')">Ожидает оплаты</button>
-        <button class="status-pick-btn" style="color:var(--purple);" onclick="applyStatusChoice('Ожидает подтверждения оплаты')">Ожидает подтверждения</button>
-        <button class="status-pick-btn" style="color:var(--cyan);" onclick="applyStatusChoice('Собирается')">Собирается</button>
-        <button class="status-pick-btn" style="color:var(--purple);" onclick="applyStatusChoice('В пути')">В пути</button>
-        <button class="status-pick-btn" style="color:var(--purple);" onclick="applyStatusChoice('Готов к выдаче')">Готов к выдаче</button>
-        <button class="status-pick-btn" style="color:var(--green);" onclick="applyStatusChoice('Завершен')">Завершен</button>
-        <button class="status-pick-btn" style="color:var(--red);" onclick="applyStatusChoice('Отменен')">Отменен</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модалка: Редактор товара каталога -->
+  <!-- Модалка товара для Root (мультифото) -->
   <div class="modal-overlay" id="product-editor-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1148,66 +986,41 @@
       </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название товара: *</label>
-      <input type="text" id="prod-edit-name" class="metro-input" placeholder="Например: Роза Эквадор 40 см">
+      <input type="text" id="prod-edit-name" class="metro-input" placeholder="Роза Эквадор 40 см">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Формат продажи / количество: *</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Формат продажи: *</label>
       <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. (1 упаковка) или 1 шт.">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
-      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Розы Эквадор, Кустовые розы, Цветы...">
+      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Розы Эквадор, Цветы...">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
-      <input type="number" id="prod-edit-price" class="metro-input" placeholder="3500">
+      <input type="number" id="prod-edit-price" class="metro-input" placeholder="3600">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ссылка на фото (или сделайте снимок):</label>
-      <input type="text" id="prod-edit-photo" class="metro-input" placeholder="https://...">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ссылки на фото (через запятую):</label>
+      <textarea id="prod-edit-photo" class="metro-input" style="height:60px; resize:none;" placeholder="https://... , https://..."></textarea>
 
-      <button class="btn-metro btn-outline-cyan" style="font-size:12px; padding:9px; margin-bottom:14px;" onclick="triggerProductPhotoUpload()">
-        📷 Сделать фото с камеры / выбрать из галереи
+      <button class="btn-metro btn-secondary" style="font-size:12px; padding:9px; margin-bottom:14px;" onclick="triggerProductPhotoUpload()">
+        📷 Добавить новое фото с камеры / галереи
       </button>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
-      <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Крупный сортовой бутон, длина 40 см...">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание:</label>
+      <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Сортовой крупный бутон...">
 
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-        <input type="checkbox" id="prod-edit-active" style="width:18px; height:18px;">
-        <label for="prod-edit-active" style="font-size:13px; font-weight:600; color:var(--text);">Товар в наличии (виден на витрине)</label>
-      </div>
-
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
         <input type="checkbox" id="prod-edit-popular" style="width:18px; height:18px;">
-        <label for="prod-edit-popular" style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Популярный товар (Хит продаж)</label>
+        <label for="prod-edit-popular" style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Хит продаж (с анимированным неоном)</label>
       </div>
 
-      <button class="btn-metro" onclick="saveProductEditor()">Сохранить в базу</button>
-    </div>
-  </div>
-
-  <!-- Модалка: Редактор FAQ в Root -->
-  <div class="modal-overlay" id="faq-editor-modal">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <div class="modal-title" id="faq-edit-title">Вопрос FAQ</div>
-        <button class="close-btn" onclick="closeFaqEditorModal()">✕</button>
-      </div>
-
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Вопрос: *</label>
-      <input type="text" id="faq-edit-q" class="metro-input" placeholder="Например: Как хранить цветы?">
-
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ответ: *</label>
-      <textarea id="faq-edit-a" class="metro-input" style="height:90px; resize:none;" placeholder="Подробный ответ клиенту..."></textarea>
-
-      <button class="btn-metro" onclick="saveFaqEditor()">Сохранить в FAQ</button>
+      <button class="btn-metro" onclick="saveProductEditor()">Сохранить товар</button>
     </div>
   </div>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
     const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
-    const SBP_PAYMENT_URL = "https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0";
-    
-    const STORE_LAT = 55.975443;
-    const STORE_LON = 37.151703;
+    const STORE_LAT = 55.966912;
+    const STORE_LON = 37.150646;
 
     const tg = window.Telegram?.WebApp;
     const userId = tg?.initDataUnsafe?.user?.id || 100001;
@@ -1215,32 +1028,19 @@
     const tgUsername = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
     const ADMIN_TELEGRAM_ID = "8900179932";
 
-    function applyTelegramTheme() {
-      const scheme = tg?.colorScheme || 'dark';
-      document.documentElement.setAttribute('data-theme', scheme);
-      if (tg) {
-        tg.setHeaderColor(scheme === 'light' ? '#ffffff' : '#090c12');
-        tg.setBackgroundColor(scheme === 'light' ? '#f8fafc' : '#090c12');
-      }
-    }
-    applyTelegramTheme();
-    if (tg?.onEvent) tg.onEvent('themeChanged', applyTelegramTheme);
-
     let catalog = [];
+    let filteredCatalog = [];
     let cart = {};
     let currentUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null');
     let savedAddresses = JSON.parse(localStorage.getItem('flw_saved_addresses') || '[]');
-    let faqList = [];
-    let allRootFaq = [];
+    let allRootOrders = [];
+    let allRootCatalog = [];
     let isAdmin = (String(userId) === ADMIN_TELEGRAM_ID);
+
     let activePopItem = null;
     let popQty = 1;
     let orderDelType = 'delivery';
     let orderRecType = 'self';
-    let allRootOrders = [];
-    let allRootClients = [];
-    let allRootCatalog = [];
-    let currentRootSubTab = 'active';
 
     let selectedGeoAddress = null;
     let currentDeliveryCost = 0;
@@ -1249,30 +1049,10 @@
     let currentFinalOrderAmount = 0;
 
     let activePaymentOrderId = null;
-    let activeRootOrderForStatus = null;
+    let paymentTimerInterval = null;
     let uploadTargetContext = null;
     let suggestDebounceTimer = null;
     let editingProductId = null;
-    let editingFaqId = null;
-
-    function bindPhoneMask(input) {
-      input.addEventListener('input', () => {
-        let val = input.value.replace(/\D/g, '');
-        if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
-        val = val.substring(0, 10);
-
-        let res = "+7";
-        if (val.length > 0) res += " (" + val.substring(0, 3);
-        if (val.length >= 4) res += ") " + val.substring(3, 6);
-        if (val.length >= 7) res += "-" + val.substring(6, 8);
-        if (val.length >= 9) res += "-" + val.substring(8, 10);
-
-        input.value = res;
-      });
-    }
-    bindPhoneMask(document.getElementById('reg-phone'));
-    bindPhoneMask(document.getElementById('ord-rec-phone'));
-    bindPhoneMask(document.getElementById('edit-prof-phone'));
 
     function toast(text) {
       const el = document.getElementById('toast');
@@ -1281,425 +1061,70 @@
       setTimeout(() => el.classList.remove('show'), 2400);
     }
 
-    function navigate(screenId, btn) {
+    function navigateTab(screenId, btn) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.dock-tab').forEach(b => b.classList.remove('active'));
       document.getElementById('screen-' + screenId).classList.add('active');
       btn.classList.add('active');
+
+      // Анимация вращения иконки
+      btn.classList.add('spinning');
+      setTimeout(() => btn.classList.remove('spinning'), 450);
+
       if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
       if (screenId === 'profile') {
-        renderSavedAddressesProfileList();
+        renderSavedAddresses();
         loadUserOrders();
         loadFaq();
       }
       if (screenId === 'root') loadRootOrders();
     }
 
-    // Редактирование профиля
-    function openEditProfileModal() {
-      if (!currentUser) return;
-      document.getElementById('edit-prof-name').value = currentUser.name || '';
-      document.getElementById('edit-prof-phone').value = currentUser.phone || '';
-      document.getElementById('edit-profile-modal').classList.add('open');
-    }
+    // Фильтры
+    function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
+    function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
 
-    function closeEditProfileModal() {
-      document.getElementById('edit-profile-modal').classList.remove('open');
-    }
+    function applyFilters() {
+      const cat = document.getElementById('filter-cat-select').value;
+      const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
 
-    async function saveUserProfileChanges() {
-      const name = document.getElementById('edit-prof-name').value.trim();
-      const phone = document.getElementById('edit-prof-phone').value.trim();
-
-      if (!name || phone.length < 18) {
-        toast("Заполните имя и номер полностью");
-        return;
-      }
-
-      toast("Сохранение данных...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "update_user_info",
-            user_id: userId,
-            name: name,
-            phone: phone
-          })
-        });
-
-        currentUser.name = name;
-        currentUser.phone = phone;
-        localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
-        renderProfileUI();
-        closeEditProfileModal();
-        toast("Профиль обновлен");
-      } catch (e) {
-        toast("Ошибка сохранения профиля");
-      }
-    }
-
-    // Загрузка фото с камеры
-    function triggerOrderPhotoUpload(orderId) {
-      uploadTargetContext = { type: 'order', id: orderId };
-      document.getElementById('camera-file-input').click();
-    }
-
-    function triggerProductPhotoUpload() {
-      uploadTargetContext = { type: 'product', id: editingProductId || 'new' };
-      document.getElementById('camera-file-input').click();
-    }
-
-    async function handleNativeFileSelect(input) {
-      const file = input.files && input.files[0];
-      if (!file) return;
-
-      toast("Сжатие и загрузка снимка...");
-      try {
-        const base64Jpg = await compressImageToBlobBase64(file, 1000, 1000, 0.82);
-        
-        const payload = {
-          action: "admin_upload_photo",
-          admin_id: ADMIN_TELEGRAM_ID,
-          admin_passcode: "m1rfol159036",
-          base64: base64Jpg,
-          content_type: "image/jpeg"
-        };
-
-        if (uploadTargetContext.type === 'order') payload.order_id = uploadTargetContext.id;
-        else if (uploadTargetContext.type === 'product') payload.product_id = uploadTargetContext.id;
-
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          toast("Фото успешно прикреплено!");
-          if (uploadTargetContext.type === 'product') {
-            document.getElementById('prod-edit-photo').value = data.photo_url;
-          }
-          if (uploadTargetContext.type === 'order') {
-            loadRootOrders();
-          }
-        } else {
-          toast(data.error || "Ошибка загрузки фото");
-        }
-      } catch (err) {
-        toast("Ошибка сжатия файла");
-      }
-      input.value = "";
-    }
-
-    function compressImageToBlobBase64(file, maxWidth, maxHeight, quality) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (e) => {
-          const img = new Image();
-          img.src = e.target.result;
-          img.onload = () => {
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height) {
-              if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-              }
-            } else {
-              if (height > maxHeight) {
-                width = Math.round((width * maxHeight) / height);
-                height = maxHeight;
-              }
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', quality));
-          };
-          img.onerror = reject;
-        };
-        reader.onerror = reject;
-      });
-    }
-
-    // Сохраненные адреса
-    function renderSavedAddressesProfileList() {
-      const box = document.getElementById('saved-addresses-profile-list');
-      if (!savedAddresses.length) {
-        box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
-        return;
-      }
-
-      box.innerHTML = savedAddresses.map((a, idx) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-          <div>
-            <b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address} (под. ${a.entrance || '-'}, кв. ${a.apt || '-'})</span>
-          </div>
-          <span style="color:var(--red); cursor:pointer; font-size:13px; padding-left:8px;" onclick="deleteSavedAddress(${idx})">✕</span>
-        </div>
-      `).join('');
-    }
-
-    function openAddSavedAddressModal() {
-      if (savedAddresses.length >= 3) {
-        toast("Максимум 3 адреса");
-        return;
-      }
-      document.getElementById('new-addr-label').value = "";
-      document.getElementById('new-addr-suggest').value = "";
-      document.getElementById('new-addr-entrance').value = "";
-      document.getElementById('new-addr-floor').value = "";
-      document.getElementById('new-addr-apt').value = "";
-      document.getElementById('new-addr-intercom').value = "";
-      document.getElementById('add-saved-addr-modal').classList.add('open');
-    }
-
-    function closeAddSavedAddressModal() {
-      document.getElementById('add-saved-addr-modal').classList.remove('open');
-    }
-
-    function onSavedAddrSuggestInput(query) {
-      clearTimeout(suggestDebounceTimer);
-      const box = document.getElementById('new-addr-suggest-list');
-      if (!query || query.trim().length < 2) {
-        box.style.display = 'none';
-        return;
-      }
-
-      suggestDebounceTimer = setTimeout(async () => {
-        try {
-          const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "Authorization": "Token " + DADATA_TOKEN
-            },
-            body: JSON.stringify({
-              query: query,
-              locations: [{ region: "Москва" }, { region: "Московская" }],
-              count: 5
-            })
-          });
-          const data = await res.json();
-          const items = data.suggestions || [];
-          if (!items.length) { box.style.display = 'none'; return; }
-          box.innerHTML = items.map((s) => `
-            <div class="suggest-item" onclick="selectSavedAddressSuggestion('${encodeURIComponent(s.value)}')">${s.value}</div>
-          `).join('');
-          box.style.display = 'block';
-        } catch (e) {}
-      }, 250);
-    }
-
-    function selectSavedAddressSuggestion(valEncoded) {
-      document.getElementById('new-addr-suggest').value = decodeURIComponent(valEncoded);
-      document.getElementById('new-addr-suggest-list').style.display = 'none';
-    }
-
-    function saveNewAddressFromModal() {
-      const label = document.getElementById('new-addr-label').value.trim() || "Дом";
-      const addr = document.getElementById('new-addr-suggest').value.trim();
-      const ent = document.getElementById('new-addr-entrance').value.trim();
-      const flr = document.getElementById('new-addr-floor').value.trim();
-      const apt = document.getElementById('new-addr-apt').value.trim();
-      const intc = document.getElementById('new-addr-intercom').value.trim();
-
-      if (!addr) {
-        toast("Укажите улицу и дом");
-        return;
-      }
-
-      savedAddresses.push({
-        label: label,
-        address: addr,
-        entrance: ent,
-        floor: flr,
-        apt: apt,
-        intercom: intc
+      filteredCatalog = catalog.filter(item => {
+        const catMatch = (cat === 'Все' || item.category === cat);
+        const priceMatch = (item.price <= maxPrice);
+        return catMatch && priceMatch;
       });
 
-      syncSavedAddresses();
-      closeAddSavedAddressModal();
-      renderSavedAddressesProfileList();
-      toast("Адрес сохранен");
+      renderCatalog(filteredCatalog);
+      closeFilterModal();
+      toast(`Найдено: ${filteredCatalog.length} товаров`);
     }
 
-    function deleteSavedAddress(idx) {
-      savedAddresses.splice(idx, 1);
-      syncSavedAddresses();
-      renderSavedAddressesProfileList();
-      toast("Адрес удален");
+    function resetFilters() {
+      document.getElementById('filter-cat-select').value = 'Все';
+      document.getElementById('filter-price-range').value = 10000;
+      document.getElementById('filter-price-input').value = 10000;
+      filteredCatalog = [...catalog];
+      renderCatalog(filteredCatalog);
+      closeFilterModal();
     }
 
-    function syncSavedAddresses() {
-      localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: "save_user_addresses",
-          user_id: userId,
-          addresses_json: JSON.stringify(savedAddresses)
-        })
-      }).catch(() => {});
-    }
-
-    // FAQ аккордеон
-    async function loadFaq() {
-      const container = document.getElementById('profile-faq-container');
-      try {
-        const res = await fetch(`${API_URL}?action=faq`);
-        faqList = await res.json();
-
-        if (!faqList.length) {
-          container.innerHTML = '<div style="color:var(--text-muted); font-size:12px;">Вопросы загружаются...</div>';
-          return;
-        }
-
-        container.innerHTML = faqList.map(item => `
-          <div class="faq-pill-item" onclick="toggleFaqPill(this)">
-            <div class="faq-pill-header">
-              <span>${item.question}</span>
-              <span>▼</span>
-            </div>
-            <div class="faq-pill-body">${item.answer}</div>
-          </div>
-        `).join('');
-      } catch (e) {
-        container.innerHTML = '<div style="color:var(--text-muted); font-size:12px;">Не удалось загрузить FAQ</div>';
-      }
-    }
-
-    function toggleFaqPill(el) {
-      const isOpen = el.classList.contains('open');
-      document.querySelectorAll('.faq-pill-item').forEach(p => p.classList.remove('open'));
-      if (!isOpen) el.classList.add('open');
-      if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-    }
-
-    // Подсказки DaData для оформления заказа
-    function onAddressInput(query) {
-      clearTimeout(suggestDebounceTimer);
-      if (!query || query.trim().length < 2) {
-        document.getElementById('ord-suggest-list').style.display = 'none';
-        return;
-      }
-
-      suggestDebounceTimer = setTimeout(async () => {
-        try {
-          const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "Authorization": "Token " + DADATA_TOKEN
-            },
-            body: JSON.stringify({
-              query: query,
-              locations: [{ region: "Москва" }, { region: "Московская" }],
-              count: 6
-            })
-          });
-          const data = await res.json();
-          renderAddressSuggestions(data.suggestions || []);
-        } catch (e) {}
-      }, 250);
-    }
-
-    function renderAddressSuggestions(suggestions) {
-      const box = document.getElementById('ord-suggest-list');
-      if (!suggestions.length) {
-        box.style.display = 'none';
-        return;
-      }
-
-      box.innerHTML = suggestions.map((s, idx) => `
-        <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
-      `).join('');
-      box.style.display = 'block';
-      window.lastSuggestions = suggestions;
-    }
-
-    function selectSuggestion(index) {
-      const s = window.lastSuggestions[index];
-      if (!s) return;
-
-      document.getElementById('ord-suggest-input').value = s.value;
-      document.getElementById('ord-suggest-list').style.display = 'none';
-      selectedGeoAddress = s;
-
-      const lat = parseFloat(s.data.geo_lat);
-      const lon = parseFloat(s.data.geo_lon);
-
-      if (!lat || !lon) {
-        document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома/корпуса, чтобы рассчитать точную доставку`;
-        currentDeliveryCost = 400;
-        recalcOrderFinalTotal();
-        return;
-      }
-
-      const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, lat, lon);
-      const roadDist = straightDist * 1.25;
-      currentDistanceKm = roadDist;
-
-      if (roadDist <= 2.0) {
-        currentDeliveryCost = 400;
-      } else {
-        const extraKm = roadDist - 2.0;
-        currentDeliveryCost = Math.round(400 + (extraKm * 45));
-      }
-
-      document.getElementById('delivery-calc-badge').innerHTML = 
-        `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b> (Георгиевский ➔ ${s.data.street_with_type || s.data.settlement || ''} ${s.data.house || s.data.block || ''})`;
-
-      recalcOrderFinalTotal();
-    }
-
-    function calcHaversineDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
-
-    function recalcOrderFinalTotal() {
-      const delivery = orderDelType === 'delivery' ? currentDeliveryCost : 0;
-      currentFinalOrderAmount = currentFlowersSubtotal + delivery;
-
-      document.getElementById('order-subtotal-val').innerText = `${currentFlowersSubtotal} ₽`;
-      document.getElementById('order-delivery-val').innerText = `${delivery} ₽`;
-      document.getElementById('order-final-val').innerText = `${currentFinalOrderAmount} ₽`;
-    }
-
-    // Каталог
+    // Загрузка каталога
     async function loadCatalog() {
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
         catalog = await res.json();
-        renderCatalog(catalog);
+        filteredCatalog = [...catalog];
+        renderCatalog(filteredCatalog);
       } catch (e) {
-        toast("Ошибка загрузки каталога");
+        toast("Ошибка загрузки витрины");
       }
     }
 
     function renderCatalog(items) {
       const el = document.getElementById('catalog-wrap');
       el.innerHTML = items.map(p => {
-        const hasPhoto = p.photo_url && p.photo_url.trim().length > 3;
+        const photos = (p.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+        const firstPhoto = photos[0] || "";
         const inCartQty = cart[p.id] || 0;
         const isHit = p.is_popular;
 
@@ -1707,11 +1132,7 @@
           <div class="product-card ${isHit ? 'popular-hit' : ''}" onclick="openProductModal(${p.id})">
             <div class="product-thumb">
               ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
-              ${hasPhoto ? `<img src="${p.photo_url}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
-              <div class="thumb-placeholder-box" style="${hasPhoto ? 'display:none;' : ''}">
-                <span class="thumb-placeholder-icon">🌸</span>
-                <span class="thumb-placeholder-text">Фото пока не добавили</span>
-              </div>
+              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.src=''">` : '<div style="font-size:28px;">🌸</div>'}
             </div>
             <div class="product-body">
               <div>
@@ -1740,22 +1161,6 @@
       }).join('');
     }
 
-    function removeFromCartCompletely(id) {
-      delete cart[id];
-      updateCartUI();
-      renderCatalog(catalog);
-      toast("Удалено из корзины");
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
-    function setCategory(cat, btn) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      if (cat === 'Все') renderCatalog(catalog);
-      else renderCatalog(catalog.filter(i => i.category === cat));
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
     function openProductModal(id) {
       const item = catalog.find(i => i.id == id);
       if (!item) return;
@@ -1769,34 +1174,27 @@
       document.getElementById('pop-price').innerText = item.price + ' ₽';
       document.getElementById('pop-qty').innerText = '1';
 
-      const img = document.getElementById('pop-img');
-      const placeholder = document.getElementById('pop-placeholder');
-      if (item.photo_url && item.photo_url.trim().length > 3) {
-        img.src = item.photo_url;
-        img.style.display = 'block';
-        placeholder.style.display = 'none';
+      const gallery = document.getElementById('pop-gallery');
+      const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+      if (photos.length) {
+        gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
+        gallery.style.display = 'flex';
       } else {
-        img.style.display = 'none';
-        placeholder.style.display = 'flex';
+        gallery.innerHTML = '';
+        gallery.style.display = 'none';
       }
 
       document.getElementById('product-modal').classList.add('open');
     }
 
-    function closeProductModal() {
-      document.getElementById('product-modal').classList.remove('open');
-    }
-
-    function adjustPopQty(delta) {
-      popQty = Math.max(1, popQty + delta);
-      document.getElementById('pop-qty').innerText = popQty;
-    }
+    function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
+    function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
 
     function addPopToCart() {
       if (!activePopItem) return;
       cart[activePopItem.id] = (cart[activePopItem.id] || 0) + popQty;
       updateCartUI();
-      renderCatalog(catalog);
+      renderCatalog(filteredCatalog);
       closeProductModal();
       toast("Добавлено в заказ");
     }
@@ -1804,39 +1202,64 @@
     function quickAdd(id) {
       cart[id] = (cart[id] || 0) + 1;
       updateCartUI();
-      renderCatalog(catalog);
+      renderCatalog(filteredCatalog);
       toast("Добавлено в заказ");
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
+    function modifyCart(id, delta) {
+      cart[id] = (cart[id] || 0) + delta;
+      if (cart[id] <= 0) delete cart[id];
+      updateCartUI();
+      renderCatalog(filteredCatalog);
+    }
+
+    function removeFromCartCompletely(id) {
+      delete cart[id];
+      updateCartUI();
+      renderCatalog(filteredCatalog);
+      toast("Удалено из корзины");
+    }
+
+    // Корзина с мини-фото и автоскрытием плашки
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
 
       const container = document.getElementById('cart-items-container');
+      const checkoutCard = document.getElementById('cart-checkout-card');
       let subtotal = 0;
       const entries = Object.entries(cart);
 
       if (!entries.length) {
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
-        document.getElementById('cart-total').innerText = '0 ₽';
+        checkoutCard.style.display = 'none';
         currentFlowersSubtotal = 0;
         return;
       }
+
+      checkoutCard.style.display = 'block';
 
       container.innerHTML = entries.map(([id, qty]) => {
         const item = catalog.find(i => i.id == id);
         if (!item) return '';
         subtotal += item.price * qty;
+        const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+        const thumb = photos[0] || "";
+
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
-            <div style="max-width:68%;">
-              <div style="font-size:13px; font-weight:600; line-height:1.2;">${item.title}</div>
-              <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit || ''} · ${item.price} ₽ × ${qty}</div>
+            <div style="display:flex; align-items:center; gap:10px; max-width:65%; cursor:pointer;" onclick="openProductModal(${item.id})">
+              <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0;">
+                ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
+              </div>
+              <div>
+                <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}</div>
+                <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.price} ₽ × ${qty}</div>
+              </div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               <button class="qty-btn" onclick="modifyCart(${id}, -1)">–</button>
-              <span style="font-size:14px; font-weight:700; min-width:20px; text-align:center;">${qty}</span>
+              <span style="font-size:14px; font-weight:700; min-width:18px; text-align:center;">${qty}</span>
               <button class="qty-btn" onclick="modifyCart(${id}, 1)">+</button>
             </div>
           </div>
@@ -1847,118 +1270,98 @@
       document.getElementById('cart-total').innerText = subtotal + ' ₽';
     }
 
-    function modifyCart(id, delta) {
-      cart[id] = (cart[id] || 0) + delta;
-      if (cart[id] <= 0) delete cart[id];
-      updateCartUI();
-      renderCatalog(catalog);
+    // Подсказки DaData в теме приложения
+    function onAddressInput(query) {
+      clearTimeout(suggestDebounceTimer);
+      const box = document.getElementById('ord-suggest-list');
+      if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+
+      suggestDebounceTimer = setTimeout(async () => {
+        try {
+          const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "Authorization": "Token " + DADATA_TOKEN
+            },
+            body: JSON.stringify({
+              query: query,
+              locations: [{ region: "Москва" }, { region: "Московская" }],
+              count: 6
+            })
+          });
+          const data = await res.json();
+          const items = data.suggestions || [];
+          if (!items.length) { box.style.display = 'none'; return; }
+          box.innerHTML = items.map((s, idx) => `
+            <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
+          `).join('');
+          box.style.display = 'block';
+          window.lastSuggestions = items;
+        } catch (e) {}
+      }, 250);
     }
 
-    // Сессия клиента
-    async function checkUserSession() {
-      try {
-        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}`);
-        const user = await res.json();
-        if (user && user.exists && user.phone) {
-          currentUser = user;
-          localStorage.setItem('flw_user_profile', JSON.stringify(user));
-          if (user.address && user.address.startsWith('[')) {
-            try {
-              savedAddresses = JSON.parse(user.address);
-              localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
-            } catch (e) {}
-          }
-          renderProfileUI();
-        } else {
-          currentUser = null;
-          localStorage.removeItem('flw_user_profile');
-          document.getElementById('reg-name').value = tgFirstName;
-          document.getElementById('reg-modal').classList.add('open');
-        }
-      } catch (e) {
-        if (!currentUser) {
-          document.getElementById('reg-name').value = tgFirstName;
-          document.getElementById('reg-modal').classList.add('open');
-        }
-      }
-    }
+    function selectSuggestion(idx) {
+      const s = window.lastSuggestions[idx];
+      if (!s) return;
 
-    async function submitRegistration() {
-      const name = document.getElementById('reg-name').value.trim() || tgFirstName;
-      const phone = document.getElementById('reg-phone').value.trim();
+      document.getElementById('ord-suggest-input').value = s.value;
+      document.getElementById('ord-suggest-list').style.display = 'none';
+      selectedGeoAddress = s;
 
-      if (!phone || phone.length < 18) {
-        toast("Введите номер полностью: +7 (***) ***-**-**");
+      const lat = parseFloat(s.data.geo_lat);
+      const lon = parseFloat(s.data.geo_lon);
+
+      if (!lat || !lon) {
+        document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома для расчета доставки`;
+        currentDeliveryCost = 400;
+        recalcOrderFinalTotal();
         return;
       }
 
-      toast("Сохранение профиля...");
-      try {
-        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
-        currentUser = await res.json();
-        localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
-        document.getElementById('reg-modal').classList.remove('open');
-        renderProfileUI();
-        toast("Регистрация завершена");
-      } catch (e) {
-        toast("Ошибка связи с базой");
-      }
-    }
+      const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, lat, lon);
+      const roadDist = straightDist * 1.25;
+      currentDistanceKm = roadDist;
 
-    function renderProfileUI() {
-      if (!currentUser) return;
-      document.getElementById('hud-name').innerText = currentUser.name;
-      document.getElementById('prof-name').innerText = currentUser.name;
-      document.getElementById('prof-phone').innerText = currentUser.phone;
-      document.getElementById('prof-spent').innerText = (currentUser.total_spent || 0) + ' ₽';
-      document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
-    }
-
-    function contactSupport() {
-      const url = "https://t.me/mkgr52";
-      if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
-      else window.open(url, '_blank');
-    }
-
-    // Оформление заказа
-    function openOrderModal() {
-      if (!Object.keys(cart).length) {
-        toast("Корзина пуста");
-        return;
-      }
-
-      const savedBox = document.getElementById('order-saved-address-container');
-      const pillsBox = document.getElementById('order-saved-address-pills');
-      if (savedAddresses && savedAddresses.length > 0) {
-        pillsBox.innerHTML = savedAddresses.map((a, idx) => `
-          <div class="addr-pill" onclick="applySavedAddressToOrder(${idx}, this)">🏠 ${a.label}</div>
-        `).join('');
-        savedBox.style.display = 'block';
+      if (roadDist <= 2.0) {
+        currentDeliveryCost = 400;
       } else {
-        savedBox.style.display = 'none';
+        currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
       }
 
+      // Пункт 4: убраны скобки и маршрут
+      document.getElementById('delivery-calc-badge').innerHTML = 
+        `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
+
+      recalcOrderFinalTotal();
+    }
+
+    function calcHaversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    }
+
+    function recalcOrderFinalTotal() {
+      const delivery = orderDelType === 'delivery' ? currentDeliveryCost : 0;
+      currentFinalOrderAmount = currentFlowersSubtotal + delivery;
+
+      document.getElementById('order-subtotal-val').innerText = `${currentFlowersSubtotal} ₽`;
+      document.getElementById('order-delivery-val').innerText = `${delivery} ₽`;
+      document.getElementById('order-final-val').innerText = `${currentFinalOrderAmount} ₽`;
+    }
+
+    function openOrderModal() {
       recalcOrderFinalTotal();
       document.getElementById('order-modal').classList.add('open');
     }
-
-    function applySavedAddressToOrder(idx, btn) {
-      document.querySelectorAll('.addr-pill').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-
-      const a = savedAddresses[idx];
-      document.getElementById('ord-suggest-input').value = a.address;
-      document.getElementById('ord-entrance').value = a.entrance || '';
-      document.getElementById('ord-floor').value = a.floor || '';
-      document.getElementById('ord-apt').value = a.apt || '';
-      document.getElementById('ord-intercom').value = a.intercom || '';
-
-      onAddressInput(a.address);
-    }
-
-    function closeOrderModal() {
-      document.getElementById('order-modal').classList.remove('open');
-    }
+    function closeOrderModal() { document.getElementById('order-modal').classList.remove('open'); }
 
     function setDeliveryType(type) {
       orderDelType = type;
@@ -1983,143 +1386,120 @@
         if (item) orderItems.push({ id: item.id, title: item.title, price: item.price, qty: qty });
       });
 
-      let recipientInfo = "";
+      let recInfo = "";
       if (orderRecType === 'other') {
-        const rName = document.getElementById('ord-rec-name').value.trim() || "Не указано";
-        const rPhone = document.getElementById('ord-rec-phone').value.trim() || "Не указан";
-        recipientInfo = `${rName} (${rPhone})`;
+        recInfo = `${document.getElementById('ord-rec-name').value.trim() || 'Не указано'} (${document.getElementById('ord-rec-phone').value.trim() || 'Не указан'})`;
       }
 
-      let fullAddress = "";
-      let dTime = "";
+      let fullAddr = "";
       if (orderDelType === 'delivery') {
-        const streetVal = document.getElementById('ord-suggest-input').value.trim();
-        const entrance = document.getElementById('ord-entrance').value.trim();
-        const floor = document.getElementById('ord-floor').value.trim();
+        const street = document.getElementById('ord-suggest-input').value.trim();
+        const ent = document.getElementById('ord-entrance').value.trim();
+        const flr = document.getElementById('ord-floor').value.trim();
         const apt = document.getElementById('ord-apt').value.trim();
-        const intercom = document.getElementById('ord-intercom').value.trim();
-        const comment = document.getElementById('ord-comment').value.trim();
+        const intc = document.getElementById('ord-intercom').value.trim();
+        const comm = document.getElementById('ord-comment').value.trim();
 
-        if (!streetVal) {
-          toast("Выберите улицу и дом из подсказок");
-          return;
-        }
-
-        fullAddress = `${streetVal}` +
-          (entrance ? `, под. ${entrance}` : '') +
-          (floor ? `, эт. ${floor}` : '') +
-          (apt ? `, кв. ${apt}` : '') +
-          (intercom ? ` (домофон: ${intercom})` : '') +
-          (comment ? ` [комм: ${comment}]` : '') +
-          ` | Доставка: ~${currentDistanceKm.toFixed(1)} км (${currentDeliveryCost} ₽)`;
-
-        dTime = document.getElementById('ord-time').value;
-
-        if (document.getElementById('ord-save-addr-checkbox').checked && savedAddresses.length < 3) {
-          savedAddresses.push({
-            label: "Адрес " + (savedAddresses.length + 1),
-            address: streetVal,
-            entrance: entrance,
-            floor: floor,
-            apt: apt,
-            intercom: intercom
-          });
-          syncSavedAddresses();
-        }
+        if (!street) { toast("Укажите улицу и дом"); return; }
+        fullAddr = `${street}${ent ? ', под. '+ent : ''}${flr ? ', эт. '+flr : ''}${apt ? ', кв. '+apt : ''}${intc ? ' (домофон: '+intc+')' : ''}${comm ? ' [курьеру: '+comm+']' : ''}`;
       } else {
-        fullAddress = "Самовывоз: Георгиевский пр-т, 37к2 (доставка 0 ₽)";
+        fullAddr = "Самовывоз: Георгиевский пр-т, 37к2";
       }
+
+      const shopComm = document.getElementById('ord-shop-comment').value.trim();
 
       toast("Создание заказа...");
       try {
-        const payload = {
-          action: "create_order",
-          user_id: userId,
-          user_name: currentUser.name,
-          user_phone: currentUser.phone,
-          delivery_type: orderDelType,
-          recipient_info: recipientInfo,
-          address: fullAddress,
-          delivery_time: dTime,
-          items_json: JSON.stringify(orderItems),
-          total_amount: currentFinalOrderAmount
-        };
-
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            action: "create_order",
+            user_id: userId,
+            user_name: currentUser.name,
+            user_phone: currentUser.phone,
+            delivery_type: orderDelType,
+            recipient_info: recInfo,
+            address: fullAddr,
+            delivery_time: document.getElementById('ord-time').value,
+            shop_comment: shopComm,
+            items_json: JSON.stringify(orderItems),
+            total_amount: currentFinalOrderAmount
+          })
         });
         const data = await res.json();
-
         if (data.success) {
           cart = {};
           updateCartUI();
-          renderCatalog(catalog);
+          renderCatalog(filteredCatalog);
           closeOrderModal();
           openPaymentModal(data.order_id, currentFinalOrderAmount);
-        } else {
-          toast("Ошибка оформления заказа");
         }
       } catch (e) {
-        toast("Сбой соединения с сервером");
+        toast("Ошибка связи");
       }
     }
 
-    // Оплата
+    // Оплата с таймером 15 минут
     function openPaymentModal(orderId, amount) {
       activePaymentOrderId = orderId;
       document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
       document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
-      
-      const btn = document.getElementById('pay-sbp-btn');
-      btn.onclick = (e) => {
-        e.preventDefault();
-        if (tg && tg.openLink) tg.openLink(SBP_PAYMENT_URL);
-        else window.open(SBP_PAYMENT_URL, '_blank');
-      };
 
-      drawQr('sbp-qr-canvas', SBP_PAYMENT_URL);
+      startPaymentTimer(15 * 60, orderId);
       document.getElementById('payment-modal').classList.add('open');
     }
 
     function closePaymentModal() {
+      clearInterval(paymentTimerInterval);
       document.getElementById('payment-modal').classList.remove('open');
     }
 
-    function closePaymentModalAndGoOrders() {
-      closePaymentModal();
-      navigate('profile', document.querySelectorAll('.dock-tab')[2]);
+    function startPaymentTimer(durationSec, orderId) {
+      clearInterval(paymentTimerInterval);
+      let timer = durationSec;
+      const display = document.getElementById('pay-timer-val');
+
+      paymentTimerInterval = setInterval(() => {
+        let m = parseInt(timer / 60, 10);
+        let s = parseInt(timer % 60, 10);
+        m = m < 10 ? "0" + m : m;
+        s = s < 10 ? "0" + s : s;
+        display.textContent = m + ":" + s;
+
+        if (--timer < 0) {
+          clearInterval(paymentTimerInterval);
+          closePaymentModal();
+          toast("Время оплаты истекло. Заказ отменен");
+          fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
+          });
+          navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+        }
+      }, 1000);
     }
 
     function copyPaymentAmount() {
-      const text = String(currentFinalOrderAmount);
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(text);
-        toast(`Сумма ${text} скопирована`);
-      } else {
-        toast(`Сумма к оплате: ${text} ₽`);
-      }
+      const txt = String(currentFinalOrderAmount);
+      if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast(`Сумма ${txt} скопирована`); }
     }
 
     async function confirmPaymentByClient() {
       if (!activePaymentOrderId) return;
-      toast("Отправка подтверждения флористу...");
-
+      toast("Отправка подтверждения...");
       try {
         await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "client_paid",
-            order_id: activePaymentOrderId
-          })
+          body: JSON.stringify({ action: "client_paid", order_id: activePaymentOrderId })
         });
-
         toast("Оплата отправлена на проверку!");
-        closePaymentModalAndGoOrders();
+        closePaymentModal();
+        navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
       } catch (e) {
-        toast("Сбой связи. Сообщите в поддержку");
+        toast("Сбой отправки");
       }
     }
 
@@ -2129,324 +1509,147 @@
       try {
         const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
         const orders = await res.json();
-
         if (!orders || !orders.length) {
           container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>';
           return;
         }
 
-        container.innerHTML = orders.map(ord => {
-          const badgeClass = getStatusBadgeClass(ord.status);
-          const itemsSummary = ord.items.map(i => `• ${i.title} × ${i.qty}`).join('<br>');
-          const isAwaitingPay = (ord.status === 'Ожидает оплаты');
-
-          return `
-            <div class="box-card" style="margin-bottom:8px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-size:13px; font-weight:700; color:var(--text);">${ord.order_id}</span>
-                <span class="status-badge ${badgeClass}">${ord.status}</span>
-              </div>
-              <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
-                ${itemsSummary}
-              </div>
-              ${isAwaitingPay ? `
-                <button class="btn-metro" style="font-size:12px; padding:8px; margin-bottom:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount})">
-                  💳 Оплатить ${ord.total_amount} ₽ (СБП)
-                </button>
-              ` : ''}
-              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px; font-size:11px;">
-                <span style="color:var(--text-muted);">Оформлен ${ord.date_time}</span>
-                <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
-              </div>
+        container.innerHTML = orders.map(ord => `
+          <div class="box-card" style="margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
+              <span class="status-badge st-${ord.status.includes('Собирается') ? 'building' : (ord.status.includes('Отменен') ? 'cancelled' : 'await-pay')}">${ord.status}</span>
             </div>
-          `;
-        }).join('');
-      } catch (e) {
-        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0;">Ошибка обновления</div>';
-      }
+            <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
+              ${ord.items.map(i => `• ${i.title} × ${i.qty}`).join('<br>')}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
+              <span style="color:var(--text-muted);">${ord.date_time}</span>
+              <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {}
     }
 
-    function getStatusBadgeClass(st) {
-      if (st === 'Ожидает оплаты') return 'st-await-pay';
-      if (st === 'Ожидает подтверждения оплаты') return 'st-check-pay';
-      if (st === 'В обработке') return 'st-processing';
-      if (st === 'Собирается') return 'st-building';
-      if (st === 'В пути' || st === 'Готов к выдаче') return 'st-transit';
-      if (st === 'Завершен') return 'st-completed';
-      if (st === 'Отменен') return 'st-cancelled';
-      return 'st-processing';
+    // FAQ
+    async function loadFaq() {
+      const container = document.getElementById('profile-faq-container');
+      try {
+        const res = await fetch(`${API_URL}?action=faq`);
+        const faq = await res.json();
+        container.innerHTML = faq.map(f => `
+          <div class="faq-pill-item" onclick="this.classList.toggle('open')">
+            <div class="faq-pill-header"><span>${f.question}</span><span>▼</span></div>
+            <div class="faq-pill-body">${f.answer}</div>
+          </div>
+        `).join('');
+      } catch (e) {}
     }
 
-    // Root-панель
-    function checkAdminInit() {
-      if (String(userId) === ADMIN_TELEGRAM_ID) activateRootMode();
+    // Root-панель: четкий вывод сведений через \n
+    async function loadRootOrders() {
+      if (!isAdmin) return;
+      const container = document.getElementById('root-orders-container');
+      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:14px 0;">Загрузка...</div>';
+      try {
+        const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+        allRootOrders = await res.json();
+        container.innerHTML = allRootOrders.map(ord => `
+          <div class="box-card" style="margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <b>${ord.order_id}</b>
+              <span class="status-badge st-building">${ord.status}</span>
+            </div>
+            <div style="font-size:12px; line-height:1.5; color:var(--text); background:var(--card-inner); padding:8px; border-radius:8px; margin-bottom:8px;">
+              <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
+              <b>Адрес:</b> ${ord.address}<br>
+              <b>Доставка:</b> ${ord.delivery_type === 'delivery' ? 'Курьер' : 'Самовывоз'}<br>
+              <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
+              ${ord.shop_comment ? `<b>Комментарий магазину:</b> ${ord.shop_comment}<br>` : ''}
+              <b>Сумма:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-metro" style="font-size:11px; padding:7px;" onclick="confirmOrderRoot('${ord.order_id}')">✅ Оплата поступила</button>
+              <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="triggerOrderPhotoUpload('${ord.order_id}')">📸 Фото букета</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {}
     }
 
-    function secretAdminTap() {
-      const phrase = prompt("Код доступа Root:");
-      if (phrase === 'm1rfol159036' || phrase === 'метрополис' || phrase === ADMIN_TELEGRAM_ID) {
-        activateRootMode();
-        navigate('root', document.getElementById('dock-root-btn'));
-      }
+    async function confirmOrderRoot(orderId) {
+      toast("Подтверждение...");
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_update_order", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", order_id: orderId, status: "Собирается" })
+      });
+      loadRootOrders();
     }
 
-    function activateRootMode() {
-      isAdmin = true;
-      document.getElementById('dock-root-btn').style.display = 'flex';
-      document.getElementById('dock-pill-bar').classList.add('with-root');
+    function triggerOrderPhotoUpload(orderId) {
+      uploadTargetContext = { type: 'order', id: orderId };
+      document.getElementById('camera-file-input').click();
+    }
+
+    function triggerProductPhotoUpload() {
+      uploadTargetContext = { type: 'product' };
+      document.getElementById('camera-file-input').click();
+    }
+
+    async function handleNativeFileSelect(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      toast("Загрузка фото...");
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_upload_photo",
+            admin_id: ADMIN_TELEGRAM_ID,
+            admin_passcode: "m1rfol159036",
+            base64: base64,
+            order_id: uploadTargetContext.type === 'order' ? uploadTargetContext.id : ""
+          })
+        });
+        const data = await res.json();
+        if (data.success && uploadTargetContext.type === 'product') {
+          const cur = document.getElementById('prod-edit-photo').value.trim();
+          document.getElementById('prod-edit-photo').value = cur ? `${cur}, ${data.photo_url}` : data.photo_url;
+          toast("Фото добавлено в список!");
+        } else if (data.success) {
+          toast("Фото букета отправлено клиенту!");
+        }
+      };
+      reader.readAsDataURL(file);
+      input.value = "";
     }
 
     function switchRootSection(sec) {
       document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
       document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
-      document.getElementById('tab-root-clients').classList.toggle('active', sec === 'clients');
-      document.getElementById('tab-root-faq').classList.toggle('active', sec === 'faq');
-
       document.getElementById('root-sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
       document.getElementById('root-sec-catalog').style.display = sec === 'catalog' ? 'block' : 'none';
-      document.getElementById('root-sec-clients').style.display = sec === 'clients' ? 'block' : 'none';
-      document.getElementById('root-sec-faq').style.display = sec === 'faq' ? 'block' : 'none';
-
       if (sec === 'orders') loadRootOrders();
       if (sec === 'catalog') loadRootCatalog();
-      if (sec === 'clients') loadRootClients();
-      if (sec === 'faq') loadRootFaq();
     }
 
-    async function loadRootOrders() {
-      if (!isAdmin) return;
-      const container = document.getElementById('root-orders-container');
-      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка заказов...</div>';
-
-      try {
-        const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
-        allRootOrders = await res.json();
-        renderRootOrders();
-      } catch (e) {
-        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки Root</div>';
-      }
-    }
-
-    function switchRootSubTab(tab) {
-      currentRootSubTab = tab;
-      document.getElementById('tab-root-active').classList.toggle('active', tab === 'active');
-      document.getElementById('tab-root-archive').classList.toggle('active', tab === 'archive');
-      renderRootOrders();
-    }
-
-    function renderRootOrders() {
-      const container = document.getElementById('root-orders-container');
-      const filtered = allRootOrders.filter(ord => {
-        const isClosed = ord.status === 'Завершен' || ord.status === 'Отменен';
-        return currentRootSubTab === 'active' ? !isClosed : isClosed;
-      });
-
-      if (!filtered.length) {
-        container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">${currentRootSubTab === 'active' ? 'Нет активных заказов' : 'Архив пуст'}</div>`;
-        return;
-      }
-
-      container.innerHTML = filtered.map(ord => {
-        const isCheckingPay = (ord.status === 'Ожидает подтверждения оплаты' || ord.status === 'Ожидает оплаты');
-        const isBuilding = (ord.status === 'Собирается');
-        const isDelivery = (ord.delivery_type === 'delivery');
-
-        return `
-          <div class="box-card" style="margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <span style="font-size:13px; font-weight:800; color:var(--cyan);">${ord.order_id}</span>
-              <span class="status-badge ${getStatusBadgeClass(ord.status)}">${ord.status}</span>
-            </div>
-
-            <div style="font-size:12px; color:var(--text); font-weight:600;">${ord.user_name} (${ord.user_phone})</div>
-            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
-              ${isDelivery ? `🚚 ${ord.address} (${ord.delivery_time})` : '📍 Самовывоз (Георгиевский, 37к2)'}
-            </div>
-            ${ord.recipient_info ? `<div style="font-size:11px; color:var(--amber); margin-top:2px;">Получатель: ${ord.recipient_info}</div>` : ''}
-
-            <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:8px; margin:8px 0; font-size:12px;">
-              ${ord.items.map(it => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px; gap:8px;">
-                  <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${it.title}</span>
-                  <b style="white-space:nowrap;">${it.qty} шт. (${it.price * it.qty} ₽)</b>
-                </div>
-              `).join('')}
-              <div style="border-top:1px solid var(--border); padding-top:4px; margin-top:4px; display:flex; justify-content:space-between; font-weight:800;">
-                <span>ИТОГО К ОПЛАТЕ:</span>
-                <span style="color:var(--green);">${ord.total_amount} ₽</span>
-              </div>
-            </div>
-
-            ${isCheckingPay ? `
-              <button class="btn-metro" style="font-size:12px; padding:9px; margin-bottom:6px; background:var(--green);" onclick="quickConfirmPayment('${ord.order_id}')">
-                ✅ Оплата получена ➔ В «Собирается»
-              </button>
-            ` : ''}
-
-            ${isBuilding ? `
-              <button class="btn-metro btn-outline-cyan" style="font-size:12px; padding:9px; margin-bottom:6px;" onclick="triggerOrderPhotoUpload('${ord.order_id}')">
-                📸 Фото букета (отправить клиенту в ЛС)
-              </button>
-            ` : ''}
-
-            ${isDelivery ? `
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
-                <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="copyYandexCourierData('${ord.order_id}')">
-                  📋 Для курьера
-                </button>
-                <a class="btn-metro btn-secondary" style="font-size:11px; padding:8px; color:var(--amber);" href="https://dostavka.yandex.ru/account/create" target="_blank">
-                  🚚 Яндекс Доставка
-                </a>
-              </div>
-            ` : ''}
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
-              <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="openStatusModal('${ord.order_id}')">Сменить статус</button>
-              <button class="btn-metro btn-danger" style="font-size:11px; padding:8px;" onclick="deleteOrderConfirm('${ord.order_id}')">Удалить заказ</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function copyYandexCourierData(orderId) {
-      const ord = allRootOrders.find(o => o.order_id === orderId);
-      if (!ord) return;
-      const cleanAddr = ord.address.split(' | ')[0] || ord.address;
-      const rec = ord.recipient_info ? `Получатель: ${ord.recipient_info}` : `Клиент: ${ord.user_name} (${ord.user_phone})`;
-      const textToCopy = `Адрес: ${cleanAddr}\n${rec}\nГруз: ЦВЕТЫ! Везти в тепле и вертикально.`;
-
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy);
-        toast("Данные для курьера скопированы!");
-      } else {
-        prompt("Скопируйте реквизиты доставки:", textToCopy);
-      }
-    }
-
-    async function quickConfirmPayment(orderId) {
-      toast("Подтверждение оплаты...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_update_order",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            order_id: orderId,
-            status: "Собирается"
-          })
-        });
-        toast("Оплата подтверждена! Клиент уведомлен");
-        loadRootOrders();
-      } catch (e) {
-        toast("Ошибка подтверждения");
-      }
-    }
-
-    function openStatusModal(orderId) {
-      activeRootOrderForStatus = orderId;
-      document.getElementById('status-modal-title').innerText = `Статус заказа ${orderId}`;
-      document.getElementById('status-modal').classList.add('open');
-    }
-
-    function closeStatusModal() {
-      document.getElementById('status-modal').classList.remove('open');
-      activeRootOrderForStatus = null;
-    }
-
-    async function applyStatusChoice(status) {
-      if (!activeRootOrderForStatus) return;
-      const orderId = activeRootOrderForStatus;
-      closeStatusModal();
-
-      toast("Обновление статуса...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_update_order",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            order_id: orderId,
-            status: status
-          })
-        });
-        toast(`Статус: ${status} (клиент уведомлен)`);
-        loadRootOrders();
-      } catch (e) {
-        toast("Ошибка сохранения статуса");
-      }
-    }
-
-    async function deleteOrderConfirm(orderId) {
-      if (!confirm(`Удалить заказ ${orderId} безвозвратно?`)) return;
-
-      toast("Удаление заказа...");
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_delete_order",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            order_id: orderId
-          })
-        });
-        const d = await res.json();
-        if (d.success) {
-          toast(`Заказ ${orderId} удален`);
-          loadRootOrders();
-        } else {
-          toast(d.error || "Не удалось удалить");
-        }
-      } catch (e) {
-        toast("Сбой связи при удалении");
-      }
-    }
-
-    // Каталог в Root
     async function loadRootCatalog() {
       const container = document.getElementById('root-catalog-container');
-      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка каталога...</div>';
-
-      try {
-        const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
-        allRootCatalog = await res.json();
-        renderRootCatalogList();
-      } catch (e) {
-        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки каталога</div>';
-      }
-    }
-
-    function renderRootCatalogList() {
-      const container = document.getElementById('root-catalog-container');
-      if (!allRootCatalog.length) {
-        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0;">Каталог пуст</div>';
-        return;
-      }
-
-      container.innerHTML = allRootCatalog.map(item => `
+      const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+      allRootCatalog = await res.json();
+      container.innerHTML = allRootCatalog.map(it => `
         <div class="box-card" style="margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
-            <div style="max-width:70%;">
-              <div style="font-size:13px; font-weight:700; color:var(--text);">
-                ${item.title} ${item.is_popular ? '<span style="color:var(--amber); font-size:11px;">(🔥 Хит)</span>' : ''}
-              </div>
-              <div style="font-size:11px; color:var(--cyan); margin-top:1px;">${item.category} · <b>${item.unit || '1 шт.'}</b></div>
-            </div>
-            <div style="font-size:14px; font-weight:800; color:var(--green);">${item.price} ₽</div>
+          <div style="display:flex; justify-content:space-between;">
+            <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
+            <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
-          <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px; line-height:1.3;">
-            ${item.description || 'Без описания'}
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${item.id}')">Редактировать</button>
-            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:90px;" onclick="deleteProductConfirm('${item.id}')">Удалить</button>
-          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Фото: ${it.photo_url ? it.photo_url.split(',').length + ' шт.' : '0'}</div>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
         </div>
       `).join('');
     }
@@ -2460,7 +1663,6 @@
       document.getElementById('prod-edit-price').value = "";
       document.getElementById('prod-edit-photo').value = "";
       document.getElementById('prod-edit-desc').value = "";
-      document.getElementById('prod-edit-active').checked = true;
       document.getElementById('prod-edit-popular').checked = false;
       document.getElementById('product-editor-modal').classList.add('open');
     }
@@ -2476,347 +1678,62 @@
       document.getElementById('prod-edit-price').value = item.price;
       document.getElementById('prod-edit-photo').value = item.photo_url || "";
       document.getElementById('prod-edit-desc').value = item.description || "";
-      document.getElementById('prod-edit-active').checked = item.is_active;
       document.getElementById('prod-edit-popular').checked = !!item.is_popular;
       document.getElementById('product-editor-modal').classList.add('open');
     }
 
-    function closeProductEditorModal() {
-      document.getElementById('product-editor-modal').classList.remove('open');
-    }
+    function closeProductEditorModal() { document.getElementById('product-editor-modal').classList.remove('open'); }
 
     async function saveProductEditor() {
-      const name = document.getElementById('prod-edit-name').value.trim();
-      const unit = document.getElementById('prod-edit-unit').value.trim() || "1 шт.";
-      const cat = document.getElementById('prod-edit-cat').value.trim() || "Цветы";
-      const price = parseFloat(document.getElementById('prod-edit-price').value);
-      const photo = document.getElementById('prod-edit-photo').value.trim();
-      const desc = document.getElementById('prod-edit-desc').value.trim();
-      const active = document.getElementById('prod-edit-active').checked;
-      const popular = document.getElementById('prod-edit-popular').checked;
-
-      if (!name || isNaN(price)) {
-        toast("Укажите название и цену");
-        return;
-      }
-
-      toast("Сохранение товара...");
-      try {
-        const actionName = editingProductId ? "admin_update_product" : "admin_add_product";
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: actionName,
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            id: editingProductId,
-            title: name,
-            unit: unit,
-            category: cat,
-            price: price,
-            photo_url: photo,
-            description: desc,
-            is_active: active,
-            is_popular: popular
-          })
-        });
-        toast("Каталог обновлен");
-        closeProductEditorModal();
-        loadRootCatalog();
-        loadCatalog();
-      } catch (e) {
-        toast("Ошибка сохранения товара");
-      }
-    }
-
-    async function deleteProductConfirm(id) {
-      if (!confirm(`Удалить товар ID ${id} из базы?`)) return;
-
-      toast("Удаление товара...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_delete_product",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            id: id
-          })
-        });
-        toast("Товар удален");
-        loadRootCatalog();
-        loadCatalog();
-      } catch (e) {
-        toast("Ошибка удаления");
-      }
-    }
-
-    // FAQ в Root
-    async function loadRootFaq() {
-      const container = document.getElementById('root-faq-container');
-      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка FAQ...</div>';
-
-      try {
-        const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
-        allRootFaq = await res.json();
-        renderRootFaqList();
-      } catch (e) {
-        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки FAQ</div>';
-      }
-    }
-
-    function renderRootFaqList() {
-      const container = document.getElementById('root-faq-container');
-      if (!allRootFaq.length) {
-        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0;">Список FAQ пуст</div>';
-        return;
-      }
-
-      container.innerHTML = allRootFaq.map(f => `
-        <div class="box-card" style="margin-bottom:8px;">
-          <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px;">${f.question}</div>
-          <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">${f.answer}</div>
-          <div style="display:flex; gap:6px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditFaqModal('${f.id}')">Редактировать</button>
-            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:90px;" onclick="deleteFaqConfirm('${f.id}')">Удалить</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function openAddFaqModal() {
-      editingFaqId = null;
-      document.getElementById('faq-edit-title').innerText = "Новый вопрос FAQ";
-      document.getElementById('faq-edit-q').value = "";
-      document.getElementById('faq-edit-a').value = "";
-      document.getElementById('faq-editor-modal').classList.add('open');
-    }
-
-    function openEditFaqModal(id) {
-      const item = allRootFaq.find(i => String(i.id) === String(id));
-      if (!item) return;
-      editingFaqId = item.id;
-      document.getElementById('faq-edit-title').innerText = `Вопрос ID: ${item.id}`;
-      document.getElementById('faq-edit-q').value = item.question;
-      document.getElementById('faq-edit-a').value = item.answer;
-      document.getElementById('faq-editor-modal').classList.add('open');
-    }
-
-    function closeFaqEditorModal() {
-      document.getElementById('faq-editor-modal').classList.remove('open');
-    }
-
-    async function saveFaqEditor() {
-      const q = document.getElementById('faq-edit-q').value.trim();
-      const a = document.getElementById('faq-edit-a').value.trim();
-
-      if (!q || !a) {
-        toast("Заполните вопрос и ответ");
-        return;
-      }
-
-      toast("Сохранение FAQ...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_update_faq",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            id: editingFaqId || "new",
-            question: q,
-            answer: a
-          })
-        });
-        toast("FAQ обновлен");
-        closeFaqEditorModal();
-        loadRootFaq();
-        loadFaq();
-      } catch (e) {
-        toast("Ошибка сохранения FAQ");
-      }
-    }
-
-    async function deleteFaqConfirm(id) {
-      if (!confirm("Удалить этот вопрос из FAQ?")) return;
-      toast("Удаление...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_delete_faq",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            id: id
-          })
-        });
-        toast("Вопрос удален");
-        loadRootFaq();
-        loadFaq();
-      } catch (e) {
-        toast("Ошибка удаления");
-      }
-    }
-
-    // Клиенты в Root
-    async function loadRootClients() {
-      const container = document.getElementById('root-clients-container');
-      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка клиентов...</div>';
-
-      try {
-        const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
-        allRootClients = await res.json();
-        renderRootClients(allRootClients);
-      } catch (e) {
-        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки клиентов</div>';
-      }
-    }
-
-    function filterRootClients() {
-      const q = document.getElementById('root-client-search').value.toLowerCase().trim();
-      const filtered = allRootClients.filter(c => 
-        (c.name && c.name.toLowerCase().includes(q)) ||
-        (c.phone && c.phone.includes(q)) ||
-        (c.username && c.username.toLowerCase().includes(q)) ||
-        (c.user_id && c.user_id.includes(q))
-      );
-      renderRootClients(filtered);
-    }
-
-    function renderRootClients(clients) {
-      const container = document.getElementById('root-clients-container');
-      if (!clients.length) {
-        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Клиенты не найдены</div>';
-        return;
-      }
-
-      container.innerHTML = clients.map(c => `
-        <div class="box-card" style="margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
-            <div>
-              <div style="font-size:14px; font-weight:700; color:var(--text);">${c.name}</div>
-              <div style="font-size:12px; color:var(--text-muted);">${c.phone}</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Выкуп</div>
-              <div style="font-size:14px; font-weight:800; color:var(--green);">${c.total_spent} ₽</div>
-            </div>
-          </div>
-          <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
-            Telegram: ${c.username || 'скрыт'} (ID: ${c.user_id}) · Рег.: ${c.reg_date}
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editClientSpentPrompt('${c.user_id}', ${c.total_spent})">Изменить выкуп</button>
-            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteClientConfirm('${c.user_id}', '${c.name}')">Сбросить аккаунт</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function editClientSpentPrompt(uid, currentVal) {
-      const valStr = prompt(`Текущий выкуп: ${currentVal} ₽. Введите новое значение:`, currentVal);
-      if (!valStr) return;
-      const newVal = parseFloat(valStr);
-      if (isNaN(newVal)) return;
-
-      toast("Сохранение суммы...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_update_spent",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            target_user_id: uid,
-            total_spent: newVal
-          })
-        });
-        toast("Сумма выкупа обновлена");
-        loadRootClients();
-      } catch (e) {
-        toast("Ошибка обновления выкупа");
-      }
-    }
-
-    async function deleteClientConfirm(uid, name) {
-      if (!confirm(`Удалить клиента «${name}» (ID: ${uid}) из базы? При следующем запуске ему потребуется повторная регистрация.`)) return;
-
-      toast("Удаление профиля...");
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "admin_delete_user",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
-            target_user_id: uid
-          })
-        });
-        toast("Профиль удален из базы");
-        loadRootClients();
-      } catch (e) {
-        toast("Ошибка удаления профиля");
-      }
-    }
-
-    // QR-код
-    function drawQr(canvasId, text) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const size = 144;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, size, size);
-
-      ctx.fillStyle = '#090c12';
-      const drawMarker = (x, y) => {
-        ctx.fillRect(x, y, 32, 32);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(x + 4, y + 4, 24, 24);
-        ctx.fillStyle = '#090c12';
-        ctx.fillRect(x + 8, y + 8, 16, 16);
+      const payload = {
+        action: editingProductId ? "admin_update_product" : "admin_add_product",
+        admin_id: ADMIN_TELEGRAM_ID,
+        admin_passcode: "m1rfol159036",
+        id: editingProductId,
+        title: document.getElementById('prod-edit-name').value.trim(),
+        unit: document.getElementById('prod-edit-unit').value.trim(),
+        category: document.getElementById('prod-edit-cat').value.trim(),
+        price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
+        photo_url: document.getElementById('prod-edit-photo').value.trim(),
+        description: document.getElementById('prod-edit-desc').value.trim(),
+        is_popular: document.getElementById('prod-edit-popular').checked
       };
 
-      drawMarker(8, 8);
-      drawMarker(104, 8);
-      drawMarker(8, 104);
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
+      toast("Каталог обновлен");
+      closeProductEditorModal();
+      loadRootCatalog();
+      loadCatalog();
+    }
 
-      let hash = 0;
-      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      for (let r = 0; r < 14; r++) {
-        for (let c = 0; c < 14; c++) {
-          if ((r < 5 && c < 5) || (r < 5 && c > 8) || (r > 8 && c < 5)) continue;
-          if ((hash ^ (r * 19 + c * 23)) % 2 === 0) {
-            ctx.fillRect(14 + c * 8, 14 + r * 8, 6, 6);
-          }
-        }
+    function secretAdminTap() {
+      const p = prompt("Код Root:");
+      if (p === 'm1rfol159036' || p === ADMIN_TELEGRAM_ID) {
+        isAdmin = true;
+        document.getElementById('dock-root-btn').style.display = 'flex';
+        document.getElementById('dock-pill-bar').classList.add('with-root');
+        navigateTab('root', document.getElementById('dock-root-btn'));
       }
     }
 
-    // Инициализация
-    loadCatalog();
-    checkUserSession();
-    checkAdminInit();
+    function contactSupport() {
+      const url = "https://t.me/mkgr52";
+      if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
+      else window.open(url, '_blank');
+    }
 
-    setInterval(() => {
-      const activeScreen = document.querySelector('.screen.active')?.id;
-      if (activeScreen === 'screen-profile') {
-        checkUserSession();
-        loadUserOrders();
-      }
-      if (activeScreen === 'screen-root' && isAdmin) {
-        const secOrders = document.getElementById('root-sec-orders').style.display !== 'none';
-        if (secOrders) loadRootOrders();
-      }
-    }, 10000);
+    function renderSavedAddresses() {}
+
+    loadCatalog();
+    if (String(userId) === ADMIN_TELEGRAM_ID) {
+      isAdmin = true;
+      document.getElementById('dock-root-btn').style.display = 'flex';
+      document.getElementById('dock-pill-bar').classList.add('with-root');
+    }
   </script>
 </body>
 </html>
