@@ -204,27 +204,9 @@
       transform: scale(0.97);
     }
 
-    /* Стиль для Хита (неоновая подсветка) */
     .product-card.popular-hit {
       border-color: rgba(245, 158, 11, 0.6);
       box-shadow: 0 0 14px rgba(245, 158, 11, 0.35), inset 0 0 1px rgba(245, 158, 11, 0.6);
-    }
-
-    .hit-badge {
-      position: absolute;
-      bottom: 8px;
-      left: 8px;
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: #fff;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.6);
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      gap: 3px;
     }
 
     .product-thumb {
@@ -238,6 +220,24 @@
       justify-content: center;
       padding: 12px;
       text-align: center;
+    }
+
+    /* Бейдж Хита в левом нижнем углу фото */
+    .hit-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 3px;
     }
 
     .product-thumb img {
@@ -274,12 +274,12 @@
       flex-direction: column;
       flex-grow: 1;
       justify-content: space-between;
-      gap: 6px;
+      gap: 4px;
     }
 
     .product-title {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       line-height: 1.35;
       color: var(--text);
       display: -webkit-box;
@@ -289,11 +289,19 @@
       min-height: 32px;
     }
 
+    .product-unit {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--cyan);
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+
     .product-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
     .product-price {
@@ -319,7 +327,6 @@
     }
     .btn-quick-add:active { transform: scale(0.88); }
 
-    /* Блок в корзине: корзинка + количество */
     .cart-active-stepper {
       display: flex;
       align-items: center;
@@ -337,6 +344,7 @@
       cursor: pointer;
       padding: 2px 4px;
       line-height: 1;
+      color: var(--text);
     }
 
     .cart-active-qty {
@@ -654,7 +662,6 @@
       color: var(--cyan);
     }
 
-    /* Аккордеон FAQ в стиле пилюль */
     .faq-pill-item {
       background: var(--card-inner);
       border: 1px solid var(--border);
@@ -725,7 +732,6 @@
 
   <div id="toast">Уведомление</div>
 
-  <!-- Скрытый инпут для камеры / файлов -->
   <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
   <div class="app-wrapper">
@@ -797,7 +803,7 @@
           <div id="saved-addresses-profile-list"></div>
         </div>
 
-        <!-- Кнопки связи (Телефон первый белым текстом, затем Поддержка) -->
+        <!-- Кнопки связи -->
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
           <a class="btn-metro btn-secondary" href="tel:89162257117" style="color:#ffffff;">
             📞 Позвонить в магазин
@@ -808,14 +814,15 @@
         </div>
       </div>
 
-      <!-- FAQ Аккордеон -->
-      <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px; padding-left:2px;">Часто задаваемые вопросы (FAQ):</div>
-      <div id="profile-faq-container" style="margin-bottom:14px;"></div>
-
+      <!-- 1. Мои заказы (теперь идут выше FAQ) -->
       <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px; padding-left:2px;">Мои заказы:</div>
-      <div id="user-orders-list">
+      <div id="user-orders-list" style="margin-bottom:18px;">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>
       </div>
+
+      <!-- 2. FAQ (теперь расположен ниже заказов) -->
+      <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px; padding-left:2px;">Часто задаваемые вопросы (FAQ):</div>
+      <div id="profile-faq-container" style="margin-bottom:14px;"></div>
     </section>
 
     <!-- Экран 4: Root (Админка) -->
@@ -944,7 +951,10 @@
           <span class="thumb-placeholder-text">Фото пока не добавили</span>
         </div>
       </div>
-      <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" id="pop-cat">Категория</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" id="pop-cat">Категория</div>
+        <div style="font-size:11px; font-weight:700; color:var(--amber);" id="pop-unit">1 шт.</div>
+      </div>
       <div style="font-size:13px; color:var(--text-muted); line-height:1.45; margin-top:6px; margin-bottom:14px;" id="pop-desc">Описание</div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <span style="font-size:20px; font-weight:800; color:var(--text);" id="pop-price">0 ₽</span>
@@ -1005,7 +1015,6 @@
 
       <!-- Поля доставки -->
       <div id="delivery-extra-fields">
-        <!-- Сохраненные адреса -->
         <div id="order-saved-address-container" style="display:none; margin-bottom:8px;">
           <div style="font-size:11px; color:var(--cyan); font-weight:700; margin-bottom:4px; text-transform:uppercase;">Сохраненные адреса:</div>
           <div class="quick-addr-pills" id="order-saved-address-pills"></div>
@@ -1139,7 +1148,10 @@
       </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название товара: *</label>
-      <input type="text" id="prod-edit-name" class="metro-input" placeholder="Например: Роза Эквадор 60 см (пачка 15 шт)">
+      <input type="text" id="prod-edit-name" class="metro-input" placeholder="Например: Роза Эквадор 40 см">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Формат продажи / количество: *</label>
+      <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. (1 упаковка) или 1 шт.">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
       <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Розы Эквадор, Кустовые розы, Цветы...">
@@ -1155,7 +1167,7 @@
       </button>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
-      <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Крупный сортовой бутон, длина 60 см...">
+      <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Крупный сортовой бутон, длина 40 см...">
 
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
         <input type="checkbox" id="prod-edit-active" style="width:18px; height:18px;">
@@ -1277,8 +1289,8 @@
       if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
       if (screenId === 'profile') {
         renderSavedAddressesProfileList();
-        loadFaq();
         loadUserOrders();
+        loadFaq();
       }
       if (screenId === 'root') loadRootOrders();
     }
@@ -1328,7 +1340,7 @@
       }
     }
 
-    // Фото с камеры / галереи
+    // Загрузка фото с камеры
     function triggerOrderPhotoUpload(orderId) {
       uploadTargetContext = { type: 'order', id: orderId };
       document.getElementById('camera-file-input').click();
@@ -1418,7 +1430,7 @@
       });
     }
 
-    // Сохраненные адреса через DaData
+    // Сохраненные адреса
     function renderSavedAddressesProfileList() {
       const box = document.getElementById('saved-addresses-profile-list');
       if (!savedAddresses.length) {
@@ -1480,7 +1492,7 @@
           const data = await res.json();
           const items = data.suggestions || [];
           if (!items.length) { box.style.display = 'none'; return; }
-          box.innerHTML = items.map((s, idx) => `
+          box.innerHTML = items.map((s) => `
             <div class="suggest-item" onclick="selectSavedAddressSuggestion('${encodeURIComponent(s.value)}')">${s.value}</div>
           `).join('');
           box.style.display = 'block';
@@ -1574,7 +1586,7 @@
       if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
     }
 
-    // Подсказки DaData для заказа
+    // Подсказки DaData для оформления заказа
     function onAddressInput(query) {
       clearTimeout(suggestDebounceTimer);
       if (!query || query.trim().length < 2) {
@@ -1693,8 +1705,8 @@
 
         return `
           <div class="product-card ${isHit ? 'popular-hit' : ''}" onclick="openProductModal(${p.id})">
-            ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
             <div class="product-thumb">
+              ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
               ${hasPhoto ? `<img src="${p.photo_url}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
               <div class="thumb-placeholder-box" style="${hasPhoto ? 'display:none;' : ''}">
                 <span class="thumb-placeholder-icon">🌸</span>
@@ -1702,14 +1714,21 @@
               </div>
             </div>
             <div class="product-body">
-              <div class="product-title">${p.title}</div>
+              <div>
+                <div class="product-title">${p.title}</div>
+                <div class="product-unit">${p.unit || '1 шт.'}</div>
+              </div>
               <div class="product-footer">
                 <span class="product-price">${p.price} ₽</span>
                 ${inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
-                    <button class="btn-trash-mini" onclick="removeFromCartCompletely(${p.id})">🗑️</button>
+                    ${inCartQty === 1 ? `
+                      <button class="btn-trash-mini" onclick="removeFromCartCompletely(${p.id})">🗑️</button>
+                    ` : `
+                      <button class="btn-trash-mini" style="font-weight:800; font-size:15px;" onclick="modifyCart(${p.id}, -1)">–</button>
+                    `}
                     <span class="cart-active-qty">${inCartQty}</span>
-                    <button class="btn-trash-mini" style="font-weight:800; color:var(--green);" onclick="quickAdd(${p.id})">+</button>
+                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="quickAdd(${p.id})">+</button>
                   </div>
                 ` : `
                   <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd(${p.id})">+</button>
@@ -1745,6 +1764,7 @@
 
       document.getElementById('pop-title').innerText = item.title;
       document.getElementById('pop-cat').innerText = item.category;
+      document.getElementById('pop-unit').innerText = item.unit || '1 шт.';
       document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
       document.getElementById('pop-price').innerText = item.price + ' ₽';
       document.getElementById('pop-qty').innerText = '1';
@@ -1812,7 +1832,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
             <div style="max-width:68%;">
               <div style="font-size:13px; font-weight:600; line-height:1.2;">${item.title}</div>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${item.price} ₽ × ${qty}</div>
+              <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit || ''} · ${item.price} ₽ × ${qty}</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               <button class="qty-btn" onclick="modifyCart(${id}, -1)">–</button>
@@ -1834,7 +1854,7 @@
       renderCatalog(catalog);
     }
 
-    // Проверка сессии клиента
+    // Сессия клиента
     async function checkUserSession() {
       try {
         const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}`);
@@ -2416,7 +2436,7 @@
               <div style="font-size:13px; font-weight:700; color:var(--text);">
                 ${item.title} ${item.is_popular ? '<span style="color:var(--amber); font-size:11px;">(🔥 Хит)</span>' : ''}
               </div>
-              <div style="font-size:11px; color:var(--cyan); margin-top:1px;">${item.category}</div>
+              <div style="font-size:11px; color:var(--cyan); margin-top:1px;">${item.category} · <b>${item.unit || '1 шт.'}</b></div>
             </div>
             <div style="font-size:14px; font-weight:800; color:var(--green);">${item.price} ₽</div>
           </div>
@@ -2435,6 +2455,7 @@
       editingProductId = null;
       document.getElementById('prod-edit-title').innerText = "Новый товар";
       document.getElementById('prod-edit-name').value = "";
+      document.getElementById('prod-edit-unit').value = "1 шт.";
       document.getElementById('prod-edit-cat').value = "Цветы";
       document.getElementById('prod-edit-price').value = "";
       document.getElementById('prod-edit-photo').value = "";
@@ -2450,6 +2471,7 @@
       editingProductId = item.id;
       document.getElementById('prod-edit-title').innerText = `Товар ID: ${item.id}`;
       document.getElementById('prod-edit-name').value = item.title;
+      document.getElementById('prod-edit-unit').value = item.unit || "1 шт.";
       document.getElementById('prod-edit-cat').value = item.category;
       document.getElementById('prod-edit-price').value = item.price;
       document.getElementById('prod-edit-photo').value = item.photo_url || "";
@@ -2465,6 +2487,7 @@
 
     async function saveProductEditor() {
       const name = document.getElementById('prod-edit-name').value.trim();
+      const unit = document.getElementById('prod-edit-unit').value.trim() || "1 шт.";
       const cat = document.getElementById('prod-edit-cat').value.trim() || "Цветы";
       const price = parseFloat(document.getElementById('prod-edit-price').value);
       const photo = document.getElementById('prod-edit-photo').value.trim();
@@ -2489,6 +2512,7 @@
             admin_passcode: "m1rfol159036",
             id: editingProductId,
             title: name,
+            unit: unit,
             category: cat,
             price: price,
             photo_url: photo,
@@ -2648,7 +2672,7 @@
         allRootClients = await res.json();
         renderRootClients(allRootClients);
       } catch (e) {
-        container.innerHTML = '<div style="text-align:color:var(--red); padding:16px 0;">Ошибка загрузки клиентов</div>';
+        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки клиентов</div>';
       }
     }
 
