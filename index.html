@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ЦВЕТЫ · Metropolis</title>
+  <title>Магазин «Цветы»</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -21,11 +21,10 @@
       --border: rgba(255, 255, 255, 0.08);
       --border-focus: rgba(56, 189, 248, 0.4);
       --cyan: #38bdf8;
-      --cyan-glow: rgba(56, 189, 248, 0.2);
       --green: #10b981;
-      --green-dark: #059669;
-      --green-glow: rgba(16, 185, 129, 0.25);
       --amber: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
       --text: #f0f6fc;
       --text-muted: #8b949e;
       --radius-sm: 8px;
@@ -64,11 +63,11 @@
       flex-direction: column;
     }
 
-    /* Верхний HUD-бар Metropolis */
+    /* Шапка HUD */
     header {
       width: 100%;
       padding: 12px 16px;
-      background: rgba(13, 17, 23, 0.92);
+      background: rgba(13, 17, 23, 0.94);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
       position: sticky;
@@ -80,13 +79,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
     }
 
     .brand-title {
       font-size: 15px;
       font-weight: 800;
-      letter-spacing: 0.5px;
       color: #fff;
       display: flex;
       align-items: center;
@@ -103,39 +100,14 @@
       font-weight: 700;
     }
 
-    .hud-bar {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-
-    .hud-pill {
+    .user-pill {
+      font-size: 11px;
+      color: var(--text-muted);
       background: var(--card-bg);
       border: 1px solid var(--border);
+      padding: 4px 8px;
       border-radius: var(--radius-sm);
-      padding: 6px 8px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
     }
-
-    .hud-label {
-      font-size: 9px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .hud-value {
-      font-size: 13px;
-      font-weight: 700;
-      margin-top: 2px;
-      white-space: nowrap;
-    }
-
-    .val-green { color: var(--green); }
-    .val-cyan { color: var(--cyan); }
-    .val-amber { color: var(--amber); }
 
     /* Экраны */
     .screen {
@@ -173,7 +145,7 @@
       color: var(--cyan);
     }
 
-    /* Сетка товаров */
+    /* Сетка каталога */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -188,7 +160,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      min-width: 0;
+      cursor: pointer;
     }
 
     .product-thumb {
@@ -199,7 +171,6 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      overflow: hidden;
     }
 
     .product-thumb img {
@@ -215,7 +186,6 @@
       flex-grow: 1;
       justify-content: space-between;
       gap: 6px;
-      min-width: 0;
     }
 
     .product-title {
@@ -234,7 +204,6 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 4px;
       margin-top: 4px;
     }
 
@@ -242,97 +211,24 @@
       font-size: 14px;
       font-weight: 800;
       color: #fff;
-      letter-spacing: -0.2px;
     }
 
-    .btn-add {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
+    .btn-quick-add {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
       background: var(--green);
       color: #fff;
       border: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
     }
-    .btn-add:active { transform: scale(0.92); }
 
-    /* Карта лояльности */
-    .metro-card {
-      background: linear-gradient(145deg, #161b22 0%, #0f141c 100%);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: var(--radius-lg);
-      padding: 18px;
-      margin-bottom: 14px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-
-    .metro-card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .card-title-sm {
-      font-size: 11px;
-      color: var(--cyan);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 700;
-    }
-
-    .card-id-text {
-      font-size: 12px;
-      font-family: monospace;
-      color: var(--text-muted);
-    }
-
-    .card-balance-big {
-      font-size: 32px;
-      font-weight: 800;
-      color: #fff;
-      line-height: 1;
-    }
-
-    .card-rubles-text {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--green);
-      margin-top: 4px;
-    }
-
-    .card-meta-row {
-      display: flex;
-      justify-content: space-between;
-      border-top: 1px solid var(--border);
-      padding-top: 12px;
-      margin-top: 16px;
-    }
-
-    .qr-box {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    #qr-canvas {
-      width: 160px;
-      height: 160px;
-      background: #fff;
-      border-radius: 12px;
-      padding: 8px;
-    }
-
-    /* Корзина */
+    /* Карточки блоков */
     .box-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -341,37 +237,9 @@
       margin-bottom: 12px;
     }
 
-    .cart-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .cart-row:last-child { border-bottom: none; }
-
-    .qty-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .qty-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      background: var(--card-inner);
-      border: 1px solid var(--border);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
     .btn-metro {
       width: 100%;
-      padding: 13px;
+      padding: 12px;
       border-radius: var(--radius-md);
       background: var(--green);
       color: #fff;
@@ -386,6 +254,27 @@
     }
     .btn-metro:active { transform: scale(0.98); }
 
+    .btn-secondary {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* Статусы заказов */
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .st-processing { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .st-building { background: rgba(56, 189, 248, 0.15); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .st-transit { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .st-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .st-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+
     /* Док навигации */
     .dock-bar {
       position: fixed;
@@ -394,7 +283,7 @@
       right: 0;
       display: flex;
       justify-content: center;
-      background: rgba(13, 17, 23, 0.95);
+      background: rgba(13, 17, 23, 0.96);
       border-top: 1px solid var(--border);
       backdrop-filter: blur(20px);
       z-index: 60;
@@ -405,8 +294,12 @@
       width: 100%;
       max-width: 480px;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       padding: 6px 0;
+      transition: all 0.2s ease;
+    }
+    .dock-grid.with-root {
+      grid-template-columns: repeat(4, 1fr);
     }
 
     .dock-item {
@@ -421,17 +314,16 @@
       cursor: pointer;
       padding: 4px 0;
     }
-
     .dock-item svg { width: 20px; height: 20px; fill: currentColor; }
     .dock-item span { font-size: 10px; font-weight: 600; }
     .dock-item.active { color: var(--cyan); }
 
-    /* Модальные окна (Онбординг + Заказ) */
+    /* Модальные окна */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(8px);
       z-index: 100;
       align-items: flex-end;
@@ -446,7 +338,7 @@
       border: 1px solid rgba(56, 189, 248, 0.25);
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       padding: 20px;
-      max-height: 85vh;
+      max-height: 88vh;
       overflow-y: auto;
       animation: sheetUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -460,35 +352,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .modal-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    .input-group {
-      margin-bottom: 12px;
-    }
-
-    .input-lbl {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-      display: block;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+    .modal-title { font-size: 16px; font-weight: 700; color: #fff; }
+    .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; }
 
     .metro-input {
       width: 100%;
@@ -499,10 +367,12 @@
       color: #fff;
       font-size: 14px;
       outline: none;
+      margin-top: 4px;
+      margin-bottom: 12px;
     }
     .metro-input:focus { border-color: var(--cyan); }
 
-    .toggle-row {
+    .toggle-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
@@ -520,24 +390,13 @@
       cursor: pointer;
       text-align: center;
     }
-
     .toggle-btn.active {
       background: rgba(56, 189, 248, 0.15);
       border-color: var(--cyan);
       color: var(--cyan);
     }
 
-    .hint-alert {
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fcd34d;
-      font-size: 11px;
-      line-height: 1.4;
-      margin-bottom: 14px;
-    }
-
+    /* Уведомление */
     #toast {
       position: fixed;
       top: 16px;
@@ -568,169 +427,154 @@
   <div id="toast">Уведомление</div>
 
   <div class="app-container">
-    <!-- HUD-Шапка Metropolis -->
     <header>
       <div class="header-top">
         <div class="brand-title">
           <span>ЦВЕТЫ</span>
           <span class="brand-badge">ЗЕЛЕНОГРАД</span>
         </div>
-        <div style="font-size:11px; color:var(--text-muted);" id="user-name-label">Клиент</div>
-      </div>
-      <div class="hud-bar">
-        <div class="hud-pill">
-          <span class="hud-label">Скидка (₽)</span>
-          <span class="hud-value val-green" id="hud-rubles">100 ₽</span>
-        </div>
-        <div class="hud-pill">
-          <span class="hud-label">Кешбэк</span>
-          <span class="hud-value val-cyan" id="hud-cashback">5%</span>
-        </div>
-        <div class="hud-pill">
-          <span class="hud-label">Карта</span>
-          <span class="hud-value val-amber" id="hud-card">FLW-00000</span>
-        </div>
+        <div class="user-pill" id="hud-profile-pill" onclick="triggerSecretAdmin()">Клиент</div>
       </div>
     </header>
 
     <!-- Экран 1: Каталог -->
     <section id="screen-catalog" class="screen active">
       <div class="filter-scroll">
-        <div class="filter-btn active" onclick="setCategory('Все', this)">Все букеты</div>
-        <div class="filter-btn" onclick="setCategory('Роза эквадорская', this)">Эквадор</div>
-        <div class="filter-btn" onclick="setCategory('Авторские букеты', this)">Авторские</div>
-        <div class="filter-btn" onclick="setCategory('Популярное', this)">Популярное</div>
+        <div class="filter-btn active" onclick="setCategory('Все', this)">Все</div>
+        <div class="filter-btn" onclick="setCategory('Розы Эквадор', this)">Розы Эквадор</div>
+        <div class="filter-btn" onclick="setCategory('Кустовые розы', this)">Кустовые розы</div>
+        <div class="filter-btn" onclick="setCategory('Цветы', this)">Цветы в пачках</div>
+        <div class="filter-btn" onclick="setCategory('Экзотика', this)">Штучно (экзотика)</div>
+        <div class="filter-btn" onclick="setCategory('Букеты и зелень', this)">Зелень и букеты</div>
       </div>
       <div class="catalog-grid" id="catalog-wrap"></div>
     </section>
 
-    <!-- Экран 2: Карта -->
-    <section id="screen-card" class="screen">
-      <div class="metro-card">
-        <div class="metro-card-top">
-          <span class="card-title-sm">Бонусная система</span>
-          <span class="card-id-text" id="card-num-view">FLW-00000</span>
-        </div>
-        <div>
-          <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Баланс бонусов</div>
-          <div class="card-balance-big" id="card-bonuses-view">500</div>
-          <div class="card-rubles-text" id="card-rubles-view">= 100 ₽ на покупки</div>
-        </div>
-        <div class="card-meta-row">
-          <div>
-            <div style="font-size:10px; color:var(--text-muted);">СТАВКА КЕШБЭКА</div>
-            <div style="font-size:13px; font-weight:700; color:var(--cyan);" id="card-rate-view">5%</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:10px; color:var(--text-muted);">ВЫКУПЛЕНО ВСЕГО</div>
-            <div style="font-size:13px; font-weight:700; color:#fff;" id="card-spent-view">0 ₽</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="qr-box">
-        <canvas id="qr-canvas"></canvas>
-        <p style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:12px; line-height:1.4;">
-          Покажите QR-код флористу на кассе на Георгиевском для расчета бонусами
-        </p>
-      </div>
-    </section>
-
-    <!-- Экран 3: Корзина -->
+    <!-- Экран 2: Корзина -->
     <section id="screen-cart" class="screen">
-      <div class="box-card" id="cart-box">
+      <div class="box-card" id="cart-list-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
       <div class="box-card">
-        <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
-          <span style="color:var(--text-muted);">Букеты:</span>
-          <span id="order-subtotal">0 ₽</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span style="font-size:14px; font-weight:700;">Сумма заказа:</span>
+          <span id="cart-total-amount" style="font-size:18px; font-weight:800; color:#fff;">0 ₽</span>
         </div>
-        <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px; color:var(--green);">
-          <span>Списание бонусов (до 30%):</span>
-          <span id="order-discount">-0 ₽</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px;">
-          <span style="font-size:14px; font-weight:700;">К оплате за цветы:</span>
-          <span id="order-total" style="font-size:18px; font-weight:800; color:#fff;">0 ₽</span>
-        </div>
-        <button class="btn-metro" style="margin-top:12px;" onclick="openOrderModal()">Оформить заказ</button>
+        <button class="btn-metro" onclick="openOrderModal()">Оформить заказ</button>
       </div>
     </section>
 
-    <!-- Экран 4: Админка кассы -->
-    <section id="screen-admin" class="screen">
+    <!-- Экран 3: Профиль -->
+    <section id="screen-profile" class="screen">
       <div class="box-card">
-        <h3 style="font-size:14px; margin-bottom:12px; color:var(--cyan);">Управление кассой</h3>
-        <div class="input-group">
-          <label class="input-lbl">ID клиента (из QR):</label>
-          <input type="number" id="adm-uid" class="metro-input" placeholder="123456789">
+        <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700; margin-bottom:8px;">Карточка клиента</div>
+        <div style="font-size:18px; font-weight:800; color:#fff;" id="prof-name">Имя</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" id="prof-phone">+7 (000) 000-00-00</div>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+          <div>
+            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Сумма выкупа</div>
+            <div style="font-size:15px; font-weight:800; color:var(--green); margin-top:2px;" id="prof-spent">0 ₽</div>
+          </div>
+          <div>
+            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Дата регистрации</div>
+            <div style="font-size:13px; font-weight:600; color:#fff; margin-top:2px;" id="prof-regdate">-</div>
+          </div>
         </div>
-        <div class="input-group">
-          <label class="input-lbl">Сумма чека (₽):</label>
-          <input type="number" id="adm-sum" class="metro-input" placeholder="4000">
-        </div>
-        <div class="input-group">
-          <label class="input-lbl">Списать бонусов рублями (макс 30%):</label>
-          <input type="number" id="adm-disc" class="metro-input" placeholder="0">
-        </div>
-        <div class="input-group">
-          <label class="input-lbl">Пароль доступа:</label>
-          <input type="password" id="adm-pwd" class="metro-input" placeholder="••••••••">
-        </div>
-        <button class="btn-metro" onclick="submitCashier()">Провести операцию</button>
+
+        <button class="btn-metro btn-secondary" style="margin-top:14px;" onclick="contactSupport()">
+          💬 Поддержка (@mkgr52)
+        </button>
+      </div>
+
+      <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:8px; padding-left:2px;">История заказов:</div>
+      <div id="user-orders-list">
+        <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>
+      </div>
+    </section>
+
+    <!-- Экран 4: Root (Управление для админа) -->
+    <section id="screen-root" class="screen">
+      <div class="toggle-grid">
+        <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные заказы</div>
+        <div class="toggle-btn" id="tab-root-archive" onclick="switchRootSubTab('archive')">Архив</div>
+      </div>
+      <div id="root-orders-container">
+        <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка данных...</div>
       </div>
     </section>
   </div>
 
-  <!-- Док-навигация Metropolis -->
+  <!-- Док навигации -->
   <div class="dock-bar">
-    <nav class="dock-grid">
+    <nav class="dock-grid" id="dock-bar-grid">
       <button class="dock-item active" onclick="navigate('catalog', this)">
         <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
         <span>Каталог</span>
-      </button>
-      <button class="dock-item" onclick="navigate('card', this)">
-        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-        <span>Карта</span>
       </button>
       <button class="dock-item" onclick="navigate('cart', this)">
         <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
         <span>Корзина (<b id="cart-counter">0</b>)</span>
       </button>
-      <button class="dock-item" onclick="navigate('admin', this)">
+      <button class="dock-item" onclick="navigate('profile', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>Профиль</span>
+      </button>
+      <button class="dock-item" id="dock-root-btn" style="display:none;" onclick="navigate('root', this)">
         <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-        <span>Касса</span>
+        <span>Root</span>
       </button>
     </nav>
   </div>
 
-  <!-- Модальное окно 1: Онбординг (Первый вход) -->
-  <div class="modal-overlay" id="onboarding-modal">
+  <!-- Модалка товара (Карточка раскрытия) -->
+  <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div class="modal-title">Карта лояльности «Цветы»</div>
+        <div class="modal-title" id="pop-title">Наименование</div>
+        <button class="close-btn" onclick="closeProductModal()">✕</button>
       </div>
-      <div class="hint-alert" style="background:rgba(16,185,129,0.12); border-color:var(--green); color:#6ee7b7;">
-        🎁 Заполните данные для выпуска персональной карты и получите <b>500 приветственных бонусов (100 ₽)</b> на баланс.
+      <div style="width:100%; aspect-ratio:16/10; background:var(--card-inner); border-radius:var(--radius-md); overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+        <img id="pop-img" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+        <span id="pop-placeholder" style="font-size:42px; opacity:0.3;">🌸</span>
       </div>
-      <div class="input-group">
-        <label class="input-lbl">Ваше имя:</label>
-        <input type="text" id="ob-name" class="metro-input" placeholder="Иван">
+      <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" id="pop-cat">Категория</div>
+      <div style="font-size:13px; color:var(--text-muted); line-height:1.4; margin-top:6px; margin-bottom:14px;" id="pop-desc">Описание</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <span style="font-size:20px; font-weight:800; color:#fff;" id="pop-price">0 ₽</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="qty-btn" onclick="adjustPopQty(-1)">–</button>
+          <span style="font-size:15px; font-weight:700;" id="pop-qty">1</span>
+          <button class="qty-btn" onclick="adjustPopQty(1)">+</button>
+        </div>
       </div>
-      <div class="input-group">
-        <label class="input-lbl">Номер телефона (для карты): *</label>
-        <input type="tel" id="ob-phone" class="metro-input" placeholder="+7 (999) 000-00-00">
-      </div>
-      <div class="input-group">
-        <label class="input-lbl">Адрес доставки (необязательно):</label>
-        <input type="text" id="ob-address" class="metro-input" placeholder="Зеленоград, к315, кв. 12">
-      </div>
-      <button class="btn-metro" onclick="submitOnboarding()">Активировать карту и забрать 500 б.</button>
+      <button class="btn-metro" onclick="addPopToCart()">Добавить в корзину</button>
     </div>
   </div>
 
-  <!-- Модальное окно 2: Оформление заказа -->
+  <!-- Модалка регистрации (Онбординг) -->
+  <div class="modal-overlay" id="reg-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Регистрация в сервисе</div>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.4;">
+        Введите ваши данные для оформления заказов и сохранения истории покупок.
+      </div>
+      <label style="font-size:11px; color:var(--text-muted);">ВАШЕ ИМЯ: *</label>
+      <input type="text" id="reg-name" class="metro-input" placeholder="Иван">
+
+      <label style="font-size:11px; color:var(--text-muted);">НОМЕР ТЕЛЕФОНА: *</label>
+      <input type="tel" id="reg-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
+
+      <label style="font-size:11px; color:var(--text-muted);">АДРЕС ДОСТАВКИ (НЕОБЯЗАТЕЛЬНО):</label>
+      <input type="text" id="reg-addr" class="metro-input" placeholder="Зеленоград, к315, кв. 12">
+
+      <button class="btn-metro" onclick="submitRegistration()">Продолжить</button>
+    </div>
+  </div>
+
+  <!-- Модалка оформления заказа -->
   <div class="modal-overlay" id="order-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -738,88 +582,87 @@
         <button class="close-btn" onclick="closeOrderModal()">✕</button>
       </div>
 
-      <!-- Тип получения -->
-      <div class="toggle-row">
-        <div class="toggle-btn active" id="btn-delivery" onclick="setDeliveryMode('delivery')">🚚 Доставка</div>
-        <div class="toggle-btn" id="btn-pickup" onclick="setDeliveryMode('pickup')">📍 Самовывоз</div>
+      <div class="toggle-grid">
+        <div class="toggle-btn active" id="btn-del" onclick="setDeliveryType('delivery')">🚚 Доставка</div>
+        <div class="toggle-btn" id="btn-pick" onclick="setDeliveryType('pickup')">📍 Самовывоз</div>
       </div>
 
-      <!-- Получатель -->
-      <div class="input-group">
-        <label class="input-lbl">Кто получает букет:</label>
-        <div class="toggle-row" style="margin-bottom:8px;">
-          <div class="toggle-btn active" id="btn-rec-self" onclick="setRecipientMode('self')">Получаю я</div>
-          <div class="toggle-btn" id="btn-rec-other" onclick="setRecipientMode('other')">Другой человек</div>
-        </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">ПОЛУЧАТЕЛЬ:</div>
+      <div class="toggle-grid">
+        <div class="toggle-btn active" id="btn-rec-self" onclick="setRecipientType('self')">Я сам</div>
+        <div class="toggle-btn" id="btn-rec-other" onclick="setRecipientType('other')">Другой человек</div>
       </div>
 
-      <div id="other-recipient-box" style="display:none;">
-        <div class="input-group">
-          <label class="input-lbl">Имя получателя:</label>
-          <input type="text" id="ord-rec-name" class="metro-input" placeholder="Имя адресата">
-        </div>
-        <div class="input-group">
-          <label class="input-lbl">Телефон получателя:</label>
-          <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="+7 (999) 000-00-00">
-        </div>
+      <div id="other-rec-fields" style="display:none;">
+        <label style="font-size:11px; color:var(--text-muted);">ИМЯ ПОЛУЧАТЕЛЯ:</label>
+        <input type="text" id="ord-rec-name" class="metro-input" placeholder="Имя адресата">
+        <label style="font-size:11px; color:var(--text-muted);">ТЕЛЕФОН ПОЛУЧАТЕЛЯ:</label>
+        <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
       </div>
 
-      <!-- Блок доставки -->
-      <div id="delivery-details-box">
-        <div class="input-group">
-          <label class="input-lbl">Адрес доставки:</label>
-          <input type="text" id="ord-address" class="metro-input" placeholder="Зеленоград, корпус / улица, дом, кв">
-        </div>
-        <div class="input-group">
-          <label class="input-lbl">Время доставки:</label>
-          <select id="ord-time" class="metro-input">
-            <option value="Как можно скорее (~1.5-2 часа)">Как можно скорее (~1.5–2 часа с учетом сборки)</option>
-            <option value="Сегодня 12:00 - 15:00">Сегодня 12:00 – 15:00</option>
-            <option value="Сегодня 15:00 - 18:00">Сегодня 15:00 – 18:00</option>
-            <option value="Сегодня 18:00 - 21:00">Сегодня 18:00 – 21:00</option>
-            <option value="Завтра в течение дня">Завтра в течение дня (согласовать)</option>
-          </select>
-        </div>
-        <div class="hint-alert">
+      <div id="delivery-extra-fields">
+        <label style="font-size:11px; color:var(--text-muted);">АДРЕС ДОСТАВКИ:</label>
+        <input type="text" id="ord-addr" class="metro-input" placeholder="Зеленоград, корпус / улица, дом, кв">
+
+        <label style="font-size:11px; color:var(--text-muted);">ВРЕМЯ ДОСТАВКИ:</label>
+        <select id="ord-time" class="metro-input">
+          <option value="Как можно скорее (~1.5-2 часа)">Как можно скорее (~1.5–2 часа с учетом сборки)</option>
+          <option value="Сегодня 12:00 - 15:00">Сегодня 12:00 – 15:00</option>
+          <option value="Сегодня 15:00 - 18:00">Сегодня 15:00 – 18:00</option>
+          <option value="Сегодня 18:00 - 21:00">Сегодня 18:00 – 21:00</option>
+          <option value="Завтра в течение дня">Завтра в течение дня (согласовать)</option>
+        </select>
+        <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#fcd34d; font-size:11px; line-height:1.4; margin-bottom:12px;">
           🚚 <b>Доставка: от 500 ₽</b> (точная стоимость рассчитывается через Яндекс Доставку на момент отправки).
         </div>
       </div>
 
-      <!-- Блок самовывоза -->
-      <div id="pickup-details-box" style="display:none;">
-        <div class="hint-alert" style="background:rgba(56,189,248,0.1); border-color:var(--cyan); color:var(--cyan);">
-          📍 <b>Адрес магазина:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
-          Букет будет собран и готов к выдаче через 40–60 минут.
-        </div>
+      <div id="pickup-extra-fields" style="display:none; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--cyan); color:var(--cyan); font-size:11px; line-height:1.4; margin-bottom:12px;">
+        📍 <b>Адрес магазина:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
+        Букет будет собран и готов к выдаче через 40–60 минут.
       </div>
 
-      <button class="btn-metro" onclick="confirmAndSendOrder()">Подтвердить и отправить заказ</button>
+      <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
     </div>
   </div>
 
   <script>
-    // Конфигурация интеграций
-    const BOT_TOKEN = "8983859317:AAGricCwedd5rwiudl-sTRgdKsYp_IFEcIk";
     const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
-    const TELEGRAM_SHOP_USERNAME = "zelflowg_bot";
-
     const tg = window.Telegram?.WebApp;
     const userId = tg?.initDataUnsafe?.user?.id || 100001;
     const tgFirstName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
     const tgUsername = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
 
-    // Каталог букетов
-    let catalog = [
-      { id: 1, title: "25 роз Эквадор (Эксплорер)", category: "Роза эквадорская", price: 4500, photo_url: "" },
-      { id: 2, title: "Авторский «Лавандовое небо»", category: "Авторские букеты", price: 5200, photo_url: "" },
-      { id: 3, title: "Пионовидные розы «Пинк О'Хара»", category: "Популярное", price: 6800, photo_url: "" },
-      { id: 4, title: "Монобукет сортовой диантус (19 шт)", category: "Популярное", price: 3800, photo_url: "" }
-    ];
-
-    let userProfile = JSON.parse(localStorage.getItem('flw_profile') || 'null');
+    let catalog = [];
     let cart = {};
-    let orderDeliveryType = 'delivery';
-    let orderRecipientType = 'self';
+    let currentUser = null;
+    let isAdmin = false;
+    let activePopItem = null;
+    let popQty = 1;
+    let orderDelType = 'delivery';
+    let orderRecType = 'self';
+    let allRootOrders = [];
+    let currentRootSubTab = 'active';
+
+    // Форматирование телефона строго по маске +7 (***) ***-**-**
+    function bindPhoneMask(input) {
+      input.addEventListener('input', (e) => {
+        let val = input.value.replace(/\D/g, '');
+        if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
+        val = val.substring(0, 10);
+
+        let res = "+7";
+        if (val.length > 0) res += " (" + val.substring(0, 3);
+        if (val.length >= 4) res += ") " + val.substring(3, 6);
+        if (val.length >= 7) res += "-" + val.substring(6, 8);
+        if (val.length >= 9) res += "-" + val.substring(8, 10);
+
+        input.value = res;
+      });
+    }
+
+    bindPhoneMask(document.getElementById('reg-phone'));
+    bindPhoneMask(document.getElementById('ord-rec-phone'));
 
     function toast(text) {
       const el = document.getElementById('toast');
@@ -834,12 +677,25 @@
       document.getElementById('screen-' + screenId).classList.add('active');
       btn.classList.add('active');
       if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      if (screenId === 'profile') loadUserOrders();
+      if (screenId === 'root') loadRootOrders();
+    }
+
+    // Загрузка каталога
+    async function loadCatalog() {
+      try {
+        const res = await fetch(`${API_URL}?action=catalog`);
+        catalog = await res.json();
+        renderCatalog(catalog);
+      } catch (e) {
+        toast("Ошибка загрузки каталога");
+      }
     }
 
     function renderCatalog(items) {
       const el = document.getElementById('catalog-wrap');
       el.innerHTML = items.map(p => `
-        <div class="product-card">
+        <div class="product-card" onclick="openProductModal(${p.id})">
           <div class="product-thumb">
             ${p.photo_url ? `<img src="${p.photo_url}" alt="${p.title}" loading="lazy">` : `<span style="font-size:32px;opacity:0.3;">🌸</span>`}
           </div>
@@ -847,7 +703,7 @@
             <div class="product-title">${p.title}</div>
             <div class="product-footer">
               <span class="product-price">${p.price} ₽</span>
-              <button class="btn-add" onclick="addToCart(${p.id})">+</button>
+              <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd(${p.id})">+</button>
             </div>
           </div>
         </div>
@@ -862,46 +718,69 @@
       if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
-    function syncUserDataUI() {
-      if (!userProfile) return;
-      document.getElementById('user-name-label').innerText = userProfile.name || tgFirstName;
-      document.getElementById('hud-rubles').innerText = `${userProfile.ruble_balance} ₽`;
-      document.getElementById('hud-cashback').innerText = `${userProfile.cashback_rate}%`;
-      document.getElementById('hud-card').innerText = userProfile.card_number;
+    // Раскрытие товара в модалке
+    function openProductModal(id) {
+      const item = catalog.find(i => i.id == id);
+      if (!item) return;
+      activePopItem = item;
+      popQty = 1;
 
-      document.getElementById('card-num-view').innerText = userProfile.card_number;
-      document.getElementById('card-bonuses-view').innerText = userProfile.bonus_balance;
-      document.getElementById('card-rubles-view').innerText = `= ${userProfile.ruble_balance} ₽ на покупки`;
-      document.getElementById('card-rate-view').innerText = `${userProfile.cashback_rate}%`;
-      document.getElementById('card-spent-view').innerText = `${userProfile.total_spent} ₽`;
+      document.getElementById('pop-title').innerText = item.title;
+      document.getElementById('pop-cat').innerText = item.category;
+      document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
+      document.getElementById('pop-price').innerText = item.price + ' ₽';
+      document.getElementById('pop-qty').innerText = '1';
+
+      const img = document.getElementById('pop-img');
+      const placeholder = document.getElementById('pop-placeholder');
+      if (item.photo_url) {
+        img.src = item.photo_url;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        placeholder.style.display = 'block';
+      }
+
+      document.getElementById('product-modal').classList.add('open');
     }
 
-    function addToCart(id) {
+    function closeProductModal() {
+      document.getElementById('product-modal').classList.remove('open');
+    }
+
+    function adjustPopQty(delta) {
+      popQty = Math.max(1, popQty + delta);
+      document.getElementById('pop-qty').innerText = popQty;
+    }
+
+    function addPopToCart() {
+      if (!activePopItem) return;
+      cart[activePopItem.id] = (cart[activePopItem.id] || 0) + popQty;
+      updateCart();
+      closeProductModal();
+      toast("Добавлено в корзину");
+    }
+
+    function quickAdd(id) {
       cart[id] = (cart[id] || 0) + 1;
       updateCart();
       toast("Добавлено в корзину");
       if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
-    function changeQty(id, delta) {
-      cart[id] = (cart[id] || 0) + delta;
-      if (cart[id] <= 0) delete cart[id];
-      updateCart();
-    }
-
+    // Корзина
     function updateCart() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
 
-      const container = document.getElementById('cart-box');
+      const container = document.getElementById('cart-list-container');
       let subtotal = 0;
       const entries = Object.entries(cart);
 
       if (!entries.length) {
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
-        document.getElementById('order-subtotal').innerText = '0 ₽';
-        document.getElementById('order-discount').innerText = '-0 ₽';
-        document.getElementById('order-total').innerText = '0 ₽';
+        document.getElementById('cart-total-amount').innerText = '0 ₽';
         return;
       }
 
@@ -910,94 +789,91 @@
         if (!item) return '';
         subtotal += item.price * qty;
         return `
-          <div class="cart-row">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
             <div>
               <div style="font-size:13px; font-weight:600;">${item.title}</div>
               <div style="font-size:11px; color:var(--text-muted);">${item.price} ₽ × ${qty}</div>
             </div>
-            <div class="qty-wrap">
-              <button class="qty-btn" onclick="changeQty(${id}, -1)">–</button>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="qty-btn" onclick="modifyCart(${id}, -1)">–</button>
               <span style="font-size:13px; font-weight:600;">${qty}</span>
-              <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
+              <button class="qty-btn" onclick="modifyCart(${id}, 1)">+</button>
             </div>
           </div>
         `;
       }).join('');
 
-      const maxBonusRub = userProfile ? userProfile.ruble_balance : 100;
-      const discount = Math.min(Math.floor(subtotal * 0.30), maxBonusRub);
-      const total = Math.max(0, subtotal - discount);
-
-      document.getElementById('order-subtotal').innerText = subtotal + ' ₽';
-      document.getElementById('order-discount').innerText = '-' + discount + ' ₽';
-      document.getElementById('order-total').innerText = total + ' ₽';
+      document.getElementById('cart-total-amount').innerText = subtotal + ' ₽';
     }
 
-    // Онбординг: регистрация при первом входе
-    function checkOnboarding() {
-      if (!userProfile || !userProfile.phone) {
-        document.getElementById('ob-name').value = tgFirstName;
-        document.getElementById('onboarding-modal').classList.add('open');
-      } else {
-        syncUserDataUI();
+    function modifyCart(id, delta) {
+      cart[id] = (cart[id] || 0) + delta;
+      if (cart[id] <= 0) delete cart[id];
+      updateCart();
+    }
+
+    // Регистрация (Онбординг)
+    async function initUser() {
+      try {
+        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}`);
+        const user = await res.json();
+        if (user && user.phone) {
+          currentUser = user;
+          renderProfile();
+        } else {
+          document.getElementById('reg-name').value = tgFirstName;
+          document.getElementById('reg-modal').classList.add('open');
+        }
+      } catch (e) {
+        console.warn("Сбой проверки профиля");
       }
     }
 
-    async function submitOnboarding() {
-      const name = document.getElementById('ob-name').value.trim() || tgFirstName;
-      const phone = document.getElementById('ob-phone').value.trim();
-      const address = document.getElementById('ob-address').value.trim();
+    async function submitRegistration() {
+      const name = document.getElementById('reg-name').value.trim() || tgFirstName;
+      const phone = document.getElementById('reg-phone').value.trim();
+      const addr = document.getElementById('reg-addr').value.trim();
 
-      if (!phone || phone.length < 7) {
-        toast("Укажите контактный телефон");
+      if (!phone || phone.length < 18) {
+        toast("Введите номер полностью: +7 (***) ***-**-**");
         return;
       }
 
-      userProfile = {
-        user_id: userId,
-        card_number: "FLW-" + String(userId).slice(-5),
-        name: name,
-        phone: phone,
-        address: address,
-        bonus_balance: 500,
-        ruble_balance: 100,
-        cashback_rate: 5,
-        total_spent: 0
-      };
-
-      localStorage.setItem('flw_profile', JSON.stringify(userProfile));
-      document.getElementById('onboarding-modal').classList.remove('open');
-      syncUserDataUI();
-      toast("Карта выпущена! +500 бонусов");
-
-      // Фоновая выгрузка в Google Таблицу (лист «Клиенты»)
+      toast("Сохранение профиля...");
       try {
-        fetch(API_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            action: "register",
-            user_id: userId,
-            name: name,
-            phone: phone,
-            address: address,
-            username: tgUsername
-          })
-        });
+        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&address=${encodeURIComponent(addr)}&username=${encodeURIComponent(tgUsername)}`);
+        currentUser = await res.json();
+        document.getElementById('reg-modal').classList.remove('open');
+        renderProfile();
+        toast("Регистрация завершена");
       } catch (e) {
-        console.warn("Синхронизация с таблицей запланирована позже", e);
+        toast("Ошибка связи с базой");
       }
     }
 
-    // Модальное окно заказа
+    function renderProfile() {
+      if (!currentUser) return;
+      document.getElementById('hud-profile-pill').innerText = currentUser.name;
+      document.getElementById('prof-name').innerText = currentUser.name;
+      document.getElementById('prof-phone').innerText = currentUser.phone;
+      document.getElementById('prof-spent').innerText = currentUser.total_spent + ' ₽';
+      document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
+    }
+
+    function contactSupport() {
+      const url = "https://t.me/mkgr52";
+      if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
+      else window.open(url, '_blank');
+    }
+
+    // Оформление заказа
     function openOrderModal() {
       if (!Object.keys(cart).length) {
         toast("Корзина пуста");
         return;
       }
-      if (userProfile && userProfile.address) {
-        document.getElementById('ord-address').value = userProfile.address;
+      if (currentUser && currentUser.address) {
+        document.getElementById('ord-addr').value = currentUser.address;
       }
       document.getElementById('order-modal').classList.add('open');
     }
@@ -1006,176 +882,287 @@
       document.getElementById('order-modal').classList.remove('open');
     }
 
-    function setDeliveryMode(mode) {
-      orderDeliveryType = mode;
-      document.getElementById('btn-delivery').classList.toggle('active', mode === 'delivery');
-      document.getElementById('btn-pickup').classList.toggle('active', mode === 'pickup');
-      document.getElementById('delivery-details-box').style.display = mode === 'delivery' ? 'block' : 'none';
-      document.getElementById('pickup-details-box').style.display = mode === 'pickup' ? 'block' : 'none';
+    function setDeliveryType(type) {
+      orderDelType = type;
+      document.getElementById('btn-del').classList.toggle('active', type === 'delivery');
+      document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
+      document.getElementById('delivery-extra-fields').style.display = type === 'delivery' ? 'block' : 'none';
+      document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
     }
 
-    function setRecipientMode(mode) {
-      orderRecipientType = mode;
-      document.getElementById('btn-rec-self').classList.toggle('active', mode === 'self');
-      document.getElementById('btn-rec-other').classList.toggle('active', mode === 'other');
-      document.getElementById('other-recipient-box').style.display = mode === 'other' ? 'block' : 'none';
+    function setRecipientType(type) {
+      orderRecType = type;
+      document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
+      document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
+      document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
     }
 
-    async function confirmAndSendOrder() {
-      const entries = Object.entries(cart);
+    async function submitFinalOrder() {
       let subtotal = 0;
-      let orderLines = [];
+      let orderItems = [];
 
-      entries.forEach(([id, qty]) => {
+      Object.entries(cart).forEach(([id, qty]) => {
         const item = catalog.find(i => i.id == id);
         if (item) {
           subtotal += item.price * qty;
-          orderLines.push(`• ${item.title} × ${qty} шт. = ${item.price * qty} ₽`);
+          orderItems.push({ id: item.id, title: item.title, price: item.price, qty: qty });
         }
       });
 
-      const discount = Math.min(Math.floor(subtotal * 0.30), userProfile.ruble_balance);
-      const finalPrice = Math.max(0, subtotal - discount);
-
       let recipientInfo = "";
-      if (orderRecipientType === 'self') {
-        recipientInfo = `Заказчик сам: ${userProfile.name} (${userProfile.phone})`;
-      } else {
-        const recName = document.getElementById('ord-rec-name').value.trim() || "Не указано";
-        const recPhone = document.getElementById('ord-rec-phone').value.trim() || "Не указан";
-        recipientInfo = `Получатель (сюрприз): ${recName} (${recPhone})\nЗаказчик: ${userProfile.name} (${userProfile.phone})`;
+      if (orderRecType === 'other') {
+        const rName = document.getElementById('ord-rec-name').value.trim() || "Не указано";
+        const rPhone = document.getElementById('ord-rec-phone').value.trim() || "Не указан";
+        recipientInfo = `${rName} (${rPhone})`;
       }
 
-      let deliveryInfo = "";
-      if (orderDeliveryType === 'delivery') {
-        const addr = document.getElementById('ord-address').value.trim();
-        const time = document.getElementById('ord-time').value;
+      let addr = "";
+      let dTime = "";
+      if (orderDelType === 'delivery') {
+        addr = document.getElementById('ord-addr').value.trim();
+        dTime = document.getElementById('ord-time').value;
         if (!addr) {
           toast("Укажите адрес доставки");
           return;
         }
-        deliveryInfo = `🚚 Доставка курьером\nАдрес: ${addr}\nВремя: ${time}\nТариф доставки: от 500 ₽ (расчет Яндекс)`;
-      } else {
-        deliveryInfo = `📍 Самовывоз (Георгиевский пр-т, 37к2)\nГотовность: через 40–60 минут`;
       }
 
-      const orderNumber = Math.floor(1000 + Math.random() * 9000);
-      const messageText = 
-`🌸 НОВЫЙ ЗАКАЗ #${orderNumber}
-
-${orderLines.join('\n')}
-
-Сумма за цветы: ${subtotal} ₽
-Списано бонусов: -${discount} ₽
-ИТОГО К ОПЛАТЕ: ${finalPrice} ₽ (+ доставка)
-
-${recipientInfo}
-Telegram: ${tgUsername || 'скрыт'} (ID: ${userId})
-Карта: ${userProfile.card_number}
-
-${deliveryInfo}`;
-
-      // Списание бонусов в локальном профиле
-      userProfile.bonus_balance -= (discount * 5);
-      userProfile.ruble_balance = Math.floor(userProfile.bonus_balance / 5);
-      userProfile.total_spent += finalPrice;
-      const earned = Math.floor((finalPrice * (userProfile.cashback_rate / 100)) * 5);
-      userProfile.bonus_balance += earned;
-      userProfile.ruble_balance = Math.floor(userProfile.bonus_balance / 5);
-      localStorage.setItem('flw_profile', JSON.stringify(userProfile));
-
-      // Прямая отправка уведомления администратору в Telegram
+      toast("Создание заказа...");
       try {
-        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const payload = {
+          action: "create_order",
+          user_id: userId,
+          user_name: currentUser.name,
+          user_phone: currentUser.phone,
+          delivery_type: orderDelType,
+          recipient_info: recipientInfo,
+          address: addr,
+          delivery_time: dTime,
+          items_json: JSON.stringify(orderItems),
+          total_amount: subtotal
+        };
+
+        const res = await fetch(API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: userId, // Отправка в диалог клиента/админа с ботом
-            text: messageText
-          })
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
         });
-      } catch (err) {
-        console.warn("Сбой сетевой отправки бота");
+        const data = await res.json();
+
+        if (data.success) {
+          cart = {};
+          updateCart();
+          closeOrderModal();
+          toast(`Заказ ${data.order_id} принят!`);
+          navigate('profile', document.querySelectorAll('.dock-item')[2]);
+        } else {
+          toast("Ошибка оформления заказа");
+        }
+      } catch (e) {
+        toast("Сбой соединения с сервером");
       }
-
-      closeOrderModal();
-      cart = {};
-      updateCart();
-      syncUserDataUI();
-
-      toast("Заказ принят! Детали отправлены в бот");
-
-      // Дублирующий переход в диалог для подтверждения
-      setTimeout(() => {
-        const tgUrl = `https://t.me/${TELEGRAM_SHOP_USERNAME}?text=${encodeURIComponent(messageText)}`;
-        if (tg && tg.openTelegramLink) tg.openTelegramLink(tgUrl);
-      }, 1000);
     }
 
-    async function submitCashier() {
-      const u = document.getElementById('adm-uid').value;
-      const s = document.getElementById('adm-sum').value;
-      const d = document.getElementById('adm-disc').value || 0;
-      const p = document.getElementById('adm-pwd').value;
+    // История заказов клиента
+    async function loadUserOrders() {
+      const container = document.getElementById('user-orders-list');
+      try {
+        const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
+        const orders = await res.json();
 
-      if (!u || !s || !p) {
-        toast("Заполните ID, сумму и пароль");
+        if (!orders || !orders.length) {
+          container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>';
+          return;
+        }
+
+        container.innerHTML = orders.map(ord => {
+          const badgeClass = getStatusBadgeClass(ord.status);
+          const itemsSummary = ord.items.map(i => `• ${i.title} × ${i.qty}`).join('<br>');
+          return `
+            <div class="box-card" style="margin-bottom:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:13px; font-weight:700; color:#fff;">${ord.order_id}</span>
+                <span class="status-badge ${badgeClass}">${ord.status}</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
+                ${itemsSummary}
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:12px;">
+                <span style="color:var(--text-muted);">${ord.date_time}</span>
+                <span style="font-weight:800; color:#fff;">${ord.total_amount} ₽</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0;">Ошибка обновления</div>';
+      }
+    }
+
+    function getStatusBadgeClass(st) {
+      if (st === 'В обработке') return 'st-processing';
+      if (st === 'Собирается') return 'st-building';
+      if (st === 'В пути' || st === 'Готов к выдаче') return 'st-transit';
+      if (st === 'Завершен') return 'st-completed';
+      if (st === 'Отменен') return 'st-cancelled';
+      return 'st-processing';
+    }
+
+    // Проверка прав Root и скрытый вход
+    function checkAdminInit() {
+      const cleanUser = (tgUsername || "").replace("@", "").toLowerCase();
+      if (cleanUser === 'mkgr52') {
+        activateRootMode();
+      }
+    }
+
+    function triggerSecretAdmin() {
+      const phrase = prompt("Код доступа к панели управления:");
+      if (phrase === 'm1rfol159036' || phrase === 'метрополис' || phrase === 'mkgr52') {
+        activateRootMode();
+        navigate('root', document.getElementById('dock-root-btn'));
+      }
+    }
+
+    function activateRootMode() {
+      isAdmin = true;
+      document.getElementById('dock-root-btn').style.display = 'flex';
+      document.getElementById('dock-bar-grid').classList.add('with-root');
+      toast("Режим Root активирован");
+    }
+
+    // Панель управления Root
+    async function loadRootOrders() {
+      if (!isAdmin) return;
+      const container = document.getElementById('root-orders-container');
+      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка...</div>';
+
+      try {
+        const res = await fetch(`${API_URL}?action=admin_orders&admin_username=${encodeURIComponent(tgUsername)}&admin_passcode=m1rfol159036`);
+        allRootOrders = await res.json();
+        renderRootOrders();
+      } catch (e) {
+        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки Root</div>';
+      }
+    }
+
+    function switchRootSubTab(tab) {
+      currentRootSubTab = tab;
+      document.getElementById('tab-root-active').classList.toggle('active', tab === 'active');
+      document.getElementById('tab-root-archive').classList.toggle('active', tab === 'archive');
+      renderRootOrders();
+    }
+
+    function renderRootOrders() {
+      const container = document.getElementById('root-orders-container');
+      const filtered = allRootOrders.filter(ord => {
+        const isClosed = ord.status === 'Завершен' || ord.status === 'Отменен';
+        return currentRootSubTab === 'active' ? !isClosed : isClosed;
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">${currentRootSubTab === 'active' ? 'Нет активных заказов' : 'Архив пуст'}</div>`;
         return;
       }
 
-      toast("Проводка чека...");
+      container.innerHTML = filtered.map(ord => `
+        <div class="box-card" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:13px; font-weight:800; color:var(--cyan);">${ord.order_id}</span>
+            <span class="status-badge ${getStatusBadgeClass(ord.status)}">${ord.status}</span>
+          </div>
+
+          <div style="font-size:12px; color:#fff; font-weight:600;">${ord.user_name} (${ord.user_phone})</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+            ${ord.delivery_type === 'delivery' ? `🚚 ${ord.address} (${ord.delivery_time})` : '📍 Самовывоз (Георгиевский, 37к2)'}
+          </div>
+          ${ord.recipient_info ? `<div style="font-size:11px; color:var(--amber); margin-top:2px;">Получатель: ${ord.recipient_info}</div>` : ''}
+
+          <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:8px; margin:8px 0; font-size:12px;">
+            ${ord.items.map((it, idx) => `
+              <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                <span>${it.title}</span>
+                <b>${it.qty} шт. (${it.price * it.qty} ₽)</b>
+              </div>
+            `).join('')}
+            <div style="border-top:1px solid var(--border); padding-top:4px; margin-top:4px; display:flex; justify-content:space-between; font-weight:800;">
+              <span>ИТОГО:</span>
+              <span style="color:var(--green);">${ord.total_amount} ₽</span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="changeOrderStatusPrompt('${ord.order_id}')">Сменить статус</button>
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="editOrderItemsPrompt('${ord.order_id}')">Изменить состав</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function changeOrderStatusPrompt(orderId) {
+      const statuses = ["В обработке", "Собирается", "В пути", "Готов к выдаче", "Завершен", "Отменен"];
+      const next = prompt(`Укажите новый статус заказа ${orderId}:\n${statuses.join(', ')}`);
+      if (!next || !statuses.includes(next)) return;
+
+      toast("Обновление статуса...");
       try {
-        const res = await fetch(`${API_URL}?action=cashier&user_id=${u}&amount=${s}&redeem=${d}&admin_code=${encodeURIComponent(p)}`);
-        const json = await res.json();
-        if (json.success) {
-          toast(`Чек закрыт: ${json.paid_money} ₽, +${json.accrued_bonuses} б.`);
-        } else {
-          toast(json.error || "Ошибка доступа");
-        }
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_update_order",
+            admin_username: tgUsername,
+            admin_passcode: "m1rfol159036",
+            order_id: orderId,
+            status: next
+          })
+        });
+        toast("Статус обновлен");
+        loadRootOrders();
       } catch (e) {
-        toast("Сбой соединения с базой");
+        toast("Ошибка сохранения статуса");
       }
     }
 
-    // Встроенный QR
-    function drawQr(text) {
-      const canvas = document.getElementById('qr-canvas');
-      const ctx = canvas.getContext('2d');
-      const size = 150;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, size, size);
+    async function editOrderItemsPrompt(orderId) {
+      const ord = allRootOrders.find(o => o.order_id === orderId);
+      if (!ord) return;
+      const newSumStr = prompt(`Текущая сумма: ${ord.total_amount} ₽. Введите скорректированную сумму:`, ord.total_amount);
+      if (!newSumStr) return;
+      const newSum = parseFloat(newSumStr);
+      if (isNaN(newSum)) return;
 
-      ctx.fillStyle = '#0d1117';
-      const drawMarker = (x, y) => {
-        ctx.fillRect(x, y, 35, 35);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(x + 5, y + 5, 25, 25);
-        ctx.fillStyle = '#0d1117';
-        ctx.fillRect(x + 10, y + 10, 15, 15);
-      };
-
-      drawMarker(10, 10);
-      drawMarker(105, 10);
-      drawMarker(10, 105);
-
-      let hash = 0;
-      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      for (let r = 0; r < 14; r++) {
-        for (let c = 0; c < 14; c++) {
-          if ((r < 5 && c < 5) || (r < 5 && c > 8) || (r > 8 && c < 5)) continue;
-          if ((hash ^ (r * 19 + c * 23)) % 2 === 0) {
-            ctx.fillRect(15 + c * 8, 15 + r * 8, 6, 6);
-          }
-        }
+      toast("Сохранение суммы...");
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_update_order",
+            admin_username: tgUsername,
+            admin_passcode: "m1rfol159036",
+            order_id: orderId,
+            total_amount: newSum
+          })
+        });
+        toast("Сумма заказа изменена");
+        loadRootOrders();
+      } catch (e) {
+        toast("Ошибка обновления суммы");
       }
     }
 
     // Инициализация
-    renderCatalog(catalog);
-    drawQr(String(userId));
-    checkOnboarding();
+    loadCatalog();
+    initUser();
+    checkAdminInit();
+
+    // Автоматическое фоновое обновление заказов каждые 12 секунд
+    setInterval(() => {
+      const activeScreen = document.querySelector('.screen.active')?.id;
+      if (activeScreen === 'screen-profile') loadUserOrders();
+      if (activeScreen === 'screen-root' && isAdmin) loadRootOrders();
+    }, 12000);
   </script>
 </body>
 </html>
