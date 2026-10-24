@@ -154,7 +154,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Верхняя панель каталога с кнопкой «Фильтры» справа */
     .catalog-top-bar {
       display: flex;
       justify-content: space-between;
@@ -184,7 +183,6 @@
     }
     .filter-btn-pill:active { transform: scale(0.95); }
 
-    /* Кроссплатформенный вращающийся неон для Хитов */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -350,6 +348,17 @@
     }
     .btn-quick-add:active { transform: scale(0.88); }
 
+    .btn-select-variant {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--cyan);
+      border: 1px solid var(--border-accent);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     .cart-active-stepper {
       display: flex;
       align-items: center;
@@ -478,7 +487,6 @@
     .st-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
     .st-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
 
-    /* Док навигации с анимацией вращения только иконки */
     .dock-pill-container {
       position: fixed;
       bottom: max(14px, env(safe-area-inset-bottom, 14px));
@@ -592,7 +600,6 @@
     }
     .metro-input:focus { border-color: var(--cyan); }
 
-    /* Кастомный селект в теме приложения */
     .custom-select-box {
       position: relative;
       margin-top: 4px;
@@ -644,7 +651,6 @@
       color: var(--cyan);
     }
 
-    /* Подсказки DaData */
     .suggest-wrap { position: relative; width: 100%; }
     .suggest-list {
       position: absolute;
@@ -703,6 +709,43 @@
       color: var(--cyan);
     }
 
+    .variant-selector-block {
+      margin-bottom: 12px;
+    }
+    .variant-selector-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .variant-chips-wrap {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .variant-chip {
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .variant-chip.active {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    .variant-chip.disabled {
+      opacity: 0.45;
+      text-decoration: line-through;
+      cursor: not-allowed;
+    }
+
     .quick-addr-pills {
       display: flex;
       gap: 6px;
@@ -727,7 +770,6 @@
       color: var(--cyan);
     }
 
-    /* FAQ аккордеон */
     .faq-pill-item {
       background: var(--card-inner);
       border: 1px solid var(--border);
@@ -767,7 +809,6 @@
       display: block !important;
     }
 
-    /* Горизонтальный скролл фото товара */
     .product-gallery-scroll {
       display: flex;
       gap: 8px;
@@ -785,7 +826,6 @@
       border-radius: var(--radius-md);
     }
 
-    /* Сетка медиатеки Google Диска в Root */
     .drive-media-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -807,7 +847,6 @@
       object-fit: cover;
     }
 
-    /* Лента миниатюр мультифото в Root */
     .prod-photo-strip {
       display: flex;
       gap: 8px;
@@ -846,7 +885,6 @@
       justify-content: center;
     }
 
-    /* Всплывающее сверху кастомное окно подтверждения */
     .top-confirm-popup {
       position: fixed;
       top: -120px;
@@ -938,7 +976,7 @@
       <div class="box-card" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
-      <!-- Плашка расчета и оформления скрыта, если корзина пуста -->
+      <!-- Плашка скрыта, если в корзине 0 товаров -->
       <div class="box-card" id="cart-checkout-card" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <span style="font-size:14px; font-weight:700;">Сумма букетов:</span>
@@ -950,7 +988,6 @@
 
     <!-- Экран 3: Профиль -->
     <section id="screen-profile" class="screen">
-      <!-- Информация о клиенте в единой неоновой плашке -->
       <div class="box-card neon-glow">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;">Карточка клиента</span>
@@ -1072,21 +1109,14 @@
       </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория цветов:</label>
-      <select id="filter-cat-select" class="metro-input">
-        <option value="Все">Все категории</option>
-        <option value="Розы Эквадор">Розы Эквадор</option>
-        <option value="Кустовые розы">Кустовые розы</option>
-        <option value="Цветы">Цветы в пачках</option>
-        <option value="Экзотика">Штучно (экзотика)</option>
-        <option value="Букеты и зелень">Зелень и букеты</option>
-      </select>
+      <select id="filter-cat-select" class="metro-input"></select>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (до):</label>
         <span style="font-size:11px; color:var(--cyan); font-weight:700;"><span id="filter-min-label">0 ₽</span> — <span id="filter-max-label">10000 ₽</span></span>
       </div>
       <div style="display:flex; gap:10px; align-items:center; margin-top:6px; margin-bottom:8px;">
-        <input type="range" id="filter-price-range" min="500" max="10000" step="100" style="flex:1;" oninput="document.getElementById('filter-price-input').value = this.value">
+        <input type="range" id="filter-price-range" min="100" max="10000" step="100" style="flex:1;" oninput="document.getElementById('filter-price-input').value = this.value">
         <input type="number" id="filter-price-input" class="metro-input" style="width:95px; margin-bottom:0;" value="10000" oninput="document.getElementById('filter-price-range').value = this.value">
       </div>
 
@@ -1116,7 +1146,7 @@
     </div>
   </div>
 
-  <!-- Модалка карточки букета (мультифото) -->
+  <!-- Модалка карточки букета (с селектором ростовок и мультифото) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1128,6 +1158,18 @@
       <div class="thumb-placeholder-box" id="pop-placeholder" style="display:none; padding:30px 0;">
         <span class="thumb-placeholder-icon">🌸</span>
         <span class="thumb-placeholder-text">Фото пока не добавили</span>
+      </div>
+
+      <!-- Селекторы вариантов (если товар объединен) -->
+      <div id="pop-variant-box" style="display:none;">
+        <div class="variant-selector-block" id="pop-pack-block">
+          <div class="variant-selector-label">Количество в пачке:</div>
+          <div class="variant-chips-wrap" id="pop-pack-chips"></div>
+        </div>
+        <div class="variant-selector-block" id="pop-height-block">
+          <div class="variant-selector-label">Высота стебля:</div>
+          <div class="variant-chips-wrap" id="pop-height-chips"></div>
+        </div>
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -1201,7 +1243,6 @@
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
         <input type="text" id="ord-comment" class="metro-input" placeholder="Шлагбаум открыт, не звонить...">
 
-        <!-- Кастомный выбор времени -->
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время доставки:</label>
         <div class="custom-select-box" id="time-select-box">
           <div class="custom-select-trigger" onclick="toggleTimeDropdown()">
@@ -1272,7 +1313,6 @@
           💳 Оплатить через СБП
         </a>
 
-        <!-- QR-код: прямое фото img/sbp_qr.jpg + резервный холст -->
         <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center;">
           <img id="sbp-qr-img" src="img/sbp_qr.jpg" alt="QR-код СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;" onerror="this.style.display='none'; document.getElementById('sbp-qr-canvas').style.display='block';">
           <canvas id="sbp-qr-canvas" style="display:none;"></canvas>
@@ -1335,7 +1375,7 @@
     </div>
   </div>
 
-  <!-- Модалка товара для Root (полная мультифото лента + обе галочки) -->
+  <!-- Модалка товара для Root -->
   <div class="modal-overlay" id="product-editor-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1347,10 +1387,10 @@
       <input type="text" id="prod-edit-name" class="metro-input" placeholder="Роза Эквадор 40 см">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Формат продажи: *</label>
-      <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. (1 упаковка) или 1 шт.">
+      <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. или 1 шт.">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
-      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Розы Эквадор, Цветы...">
+      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы, Экзотика...">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
       <input type="number" id="prod-edit-price" class="metro-input" placeholder="3600">
@@ -1371,7 +1411,6 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
       <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Сортовой крупный бутон...">
 
-      <!-- Обе сохраненные галочки -->
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <input type="checkbox" id="prod-edit-active" style="width:18px; height:18px;">
         <label for="prod-edit-active" style="font-size:13px; font-weight:600; color:var(--text);">Товар в наличии (виден на витрине)</label>
@@ -1458,7 +1497,6 @@
     const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
     const SBP_PAYMENT_URL = "https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0";
     
-    // Строгая точка магазина (Георгиевский пр-т, 37к2)
     const STORE_LAT = 55.966912;
     const STORE_LON = 37.150646;
 
@@ -1480,6 +1518,7 @@
     if (tg?.onEvent) tg.onEvent('themeChanged', applyTelegramTheme);
 
     let catalog = [];
+    let displayCatalog = [];
     let filteredCatalog = [];
     let cart = {};
     let currentUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null');
@@ -1494,6 +1533,9 @@
 
     let activePopItem = null;
     let popQty = 1;
+    let selectedGroupPack = "15 шт.";
+    let selectedGroupHeight = "60 см";
+
     let orderDelType = 'delivery';
     let orderRecType = 'self';
 
@@ -1556,7 +1598,6 @@
     bindPhoneMask(document.getElementById('edit-prof-phone'));
     bindPhoneMask(document.getElementById('ord-rec-phone'));
 
-    // Кастомный селект времени доставки
     function toggleTimeDropdown() {
       document.getElementById('time-select-box').classList.toggle('open');
     }
@@ -1566,29 +1607,80 @@
       document.getElementById('time-select-box').classList.remove('open');
     }
 
-    // Фильтры витрины (динамические цены)
-    function openFilterModal() {
+    // Программное объединение каталога
+    function buildDisplayCatalog() {
+      const groups = {};
+      const standalone = [];
+
+      catalog.forEach(item => {
+        if (/^Роза Эквадор/i.test(item.title)) {
+          if (!groups['Роза Эквадор']) {
+            groups['Роза Эквадор'] = {
+              is_group: true,
+              id: 'group_ecuador_rose',
+              title: 'Роза Эквадор',
+              category: 'Роза Эквадор',
+              variants: [],
+              is_popular: false,
+              is_active: false,
+              photo_url: item.photo_url || "",
+              description: 'Премиальные сортовые розы Эквадор с крупным бутоном. Доступны разные ростовки и фасовки.'
+            };
+          }
+          groups['Роза Эквадор'].variants.push(item);
+          if (item.is_popular) groups['Роза Эквадор'].is_popular = true;
+          if (item.is_active) groups['Роза Эквадор'].is_active = true;
+          if (!groups['Роза Эквадор'].photo_url && item.photo_url) {
+            groups['Роза Эквадор'].photo_url = item.photo_url;
+          }
+        } else {
+          standalone.push(item);
+        }
+      });
+
+      if (groups['Роза Эквадор']) {
+        const prices = groups['Роза Эквадор'].variants.filter(v => v.is_active).map(v => v.price);
+        groups['Роза Эквадор'].price = prices.length ? Math.min(...prices) : Math.min(...groups['Роза Эквадор'].variants.map(v => v.price));
+        groups['Роза Эквадор'].unit = "от 5 до 25 шт.";
+        displayCatalog = [groups['Роза Эквадор'], ...standalone];
+      } else {
+        displayCatalog = [...standalone];
+      }
+    }
+
+    // Фильтры витрины (динамические)
+    function setupFilterDropdown() {
+      const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
+      const sel = document.getElementById('filter-cat-select');
+      sel.innerHTML = `<option value="Все">Все категории</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+
       const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
-      const minP = prices.length ? Math.min(...prices) : 500;
+      const minP = prices.length ? Math.min(...prices) : 100;
       const maxP = prices.length ? Math.max(...prices) : 10000;
 
       const rangeEl = document.getElementById('filter-price-range');
       const numEl = document.getElementById('filter-price-input');
       rangeEl.min = minP;
       rangeEl.max = maxP;
+      rangeEl.value = maxP;
+      numEl.value = maxP;
       document.getElementById('filter-min-label').innerText = `${minP} ₽`;
       document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
+    }
 
+    function openFilterModal() {
       document.getElementById('filter-modal').classList.add('open');
     }
 
-    function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
+    function closeFilterModal() {
+      document.getElementById('filter-modal').classList.remove('open');
+    }
 
     function applyFilters() {
       const cat = document.getElementById('filter-cat-select').value;
       const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
 
-      filteredCatalog = catalog.filter(item => {
+      filteredCatalog = displayCatalog.filter(item => {
         const catMatch = (cat === 'Все' || item.category === cat);
         const priceMatch = (item.price <= maxPrice);
         return catMatch && priceMatch;
@@ -1597,7 +1689,7 @@
       renderCatalog(filteredCatalog);
       document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
       closeFilterModal();
-      toast(`Найдено товаров: ${filteredCatalog.length}`);
+      toast(`Найдено позиций: ${filteredCatalog.length}`);
     }
 
     function resetFilters() {
@@ -1606,7 +1698,7 @@
       const maxP = prices.length ? Math.max(...prices) : 10000;
       document.getElementById('filter-price-range').value = maxP;
       document.getElementById('filter-price-input').value = maxP;
-      filteredCatalog = [...catalog];
+      filteredCatalog = [...displayCatalog];
       renderCatalog(filteredCatalog);
       document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
       closeFilterModal();
@@ -1617,7 +1709,9 @@
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
         catalog = await res.json();
-        filteredCatalog = [...catalog];
+        buildDisplayCatalog();
+        filteredCatalog = [...displayCatalog];
+        setupFilterDropdown();
         renderCatalog(filteredCatalog);
         populateCatalogDropdown();
       } catch (e) {
@@ -1633,9 +1727,10 @@
         const inCartQty = cart[p.id] || 0;
         const isHit = p.is_popular;
         const isAvailable = p.is_active;
+        const isGroup = p.is_group;
 
         return `
-          <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="openProductModal(${p.id})">
+          <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="openProductModal('${p.id}')">
             <div class="product-thumb">
               ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
               ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
@@ -1651,9 +1746,11 @@
               </div>
               <div class="product-footer">
                 ${isAvailable ? `
-                  <span class="product-price">${p.price} ₽</span>
+                  <span class="product-price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
                   <div id="product-action-${p.id}">
-                    ${inCartQty > 0 ? `
+                    ${isGroup ? `
+                      <button class="btn-select-variant" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
+                    ` : (inCartQty > 0 ? `
                       <div class="cart-active-stepper" onclick="event.stopPropagation();">
                         ${inCartQty === 1 ? `
                           <button class="btn-trash-mini" onclick="removeFromCartCompletely(${p.id})">🗑️</button>
@@ -1665,7 +1762,7 @@
                       </div>
                     ` : `
                       <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd(${p.id})">+</button>
-                    `}
+                    `)}
                   </div>
                 ` : `
                   <div class="out-of-stock-badge">Нет в наличии</div>
@@ -1677,7 +1774,6 @@
       }).join('');
     }
 
-    // Точечное обновление кнопок в карточке (анимация неона не сбрасывается)
     function updateProductCardAction(id) {
       const actionEl = document.getElementById(`product-action-${id}`);
       if (!actionEl) return;
@@ -1700,12 +1796,31 @@
       }
     }
 
+    // Модальное окно букета с поддержкой вариантов
     function openProductModal(id) {
-      const item = catalog.find(i => i.id == id);
+      const isGroup = (id === 'group_ecuador_rose');
+      let item = isGroup 
+        ? displayCatalog.find(i => i.id === 'group_ecuador_rose')
+        : catalog.find(i => String(i.id) === String(id));
+
       if (!item) return;
       activePopItem = item;
       popQty = 1;
 
+      const variantBox = document.getElementById('pop-variant-box');
+      if (isGroup) {
+        variantBox.style.display = 'block';
+        setupRoseVariantChips();
+        updateSelectedRoseVariantUI();
+      } else {
+        variantBox.style.display = 'none';
+        setupSingleItemPopUI(item);
+      }
+
+      document.getElementById('product-modal').classList.add('open');
+    }
+
+    function setupSingleItemPopUI(item) {
       document.getElementById('pop-title').innerText = item.title;
       document.getElementById('pop-cat').innerText = item.category;
       document.getElementById('pop-unit').innerText = item.unit || '1 шт.';
@@ -1713,21 +1828,8 @@
       document.getElementById('pop-price').innerText = item.price + ' ₽';
       document.getElementById('pop-qty').innerText = '1';
 
-      const gallery = document.getElementById('pop-gallery');
-      const placeholder = document.getElementById('pop-placeholder');
-      const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+      renderPopGallery(item.photo_url);
 
-      if (photos.length) {
-        gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
-        gallery.style.display = 'flex';
-        placeholder.style.display = 'none';
-      } else {
-        gallery.innerHTML = '';
-        gallery.style.display = 'none';
-        placeholder.style.display = 'flex';
-      }
-
-      // Если товара нет в наличии — блокируем заказ
       const addBtn = document.getElementById('pop-add-cart-btn');
       const qtyBox = document.getElementById('pop-qty-controls');
       if (!item.is_active) {
@@ -1743,18 +1845,110 @@
         addBtn.disabled = false;
         qtyBox.style.display = 'flex';
       }
+    }
 
-      document.getElementById('product-modal').classList.add('open');
+    function setupRoseVariantChips() {
+      const packWrap = document.getElementById('pop-pack-chips');
+      const heightWrap = document.getElementById('pop-height-chips');
+
+      packWrap.innerHTML = ['5 шт.', '15 шт.', '25 шт.'].map(p => `
+        <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectRosePack('${p}')">${p}</div>
+      `).join('');
+
+      heightWrap.innerHTML = ['40 см', '50 см', '60 см', '70 см', '80 см'].map(h => `
+        <div class="variant-chip ${h === selectedGroupHeight ? 'active' : ''}" onclick="selectRoseHeight('${h}')">${h}</div>
+      `).join('');
+    }
+
+    function selectRosePack(pack) {
+      selectedGroupPack = pack;
+      setupRoseVariantChips();
+      updateSelectedRoseVariantUI();
+    }
+
+    function selectRoseHeight(height) {
+      selectedGroupHeight = height;
+      setupRoseVariantChips();
+      updateSelectedRoseVariantUI();
+    }
+
+    function updateSelectedRoseVariantUI() {
+      if (!activePopItem || !activePopItem.is_group) return;
+
+      const variant = activePopItem.variants.find(v => 
+        v.unit.trim() === selectedGroupPack && v.title.includes(selectedGroupHeight)
+      );
+
+      document.getElementById('pop-title').innerText = `Роза Эквадор ${selectedGroupHeight} (${selectedGroupPack})`;
+      document.getElementById('pop-cat').innerText = "Роза Эквадор";
+      document.getElementById('pop-unit').innerText = selectedGroupPack;
+
+      const addBtn = document.getElementById('pop-add-cart-btn');
+      const qtyBox = document.getElementById('pop-qty-controls');
+
+      if (!variant || !variant.is_active) {
+        document.getElementById('pop-price').innerText = variant ? `${variant.price} ₽` : "— ₽";
+        document.getElementById('pop-desc').innerText = "Данная ростовка в выбранной фасовке сейчас отсутствует в наличии.";
+        addBtn.innerText = "Нет в наличии";
+        addBtn.style.background = "var(--card-inner)";
+        addBtn.style.color = "var(--text-muted)";
+        addBtn.disabled = true;
+        qtyBox.style.display = 'none';
+        renderPopGallery(activePopItem.photo_url);
+      } else {
+        document.getElementById('pop-price').innerText = `${variant.price} ₽`;
+        document.getElementById('pop-desc').innerText = variant.description || `Роза Эквадор ${selectedGroupHeight}. Пачка ${selectedGroupPack}.`;
+        addBtn.innerText = "Добавить в заказ";
+        addBtn.style.background = "var(--green)";
+        addBtn.style.color = "#fff";
+        addBtn.disabled = false;
+        qtyBox.style.display = 'flex';
+        renderPopGallery(variant.photo_url || activePopItem.photo_url);
+      }
+    }
+
+    function renderPopGallery(photosStr) {
+      const gallery = document.getElementById('pop-gallery');
+      const placeholder = document.getElementById('pop-placeholder');
+      const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
+
+      if (photos.length) {
+        gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
+        gallery.style.display = 'flex';
+        placeholder.style.display = 'none';
+      } else {
+        gallery.innerHTML = '';
+        gallery.style.display = 'none';
+        placeholder.style.display = 'flex';
+      }
     }
 
     function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
     function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
 
     function addPopToCart() {
-      if (!activePopItem || !activePopItem.is_active) return;
-      cart[activePopItem.id] = (cart[activePopItem.id] || 0) + popQty;
+      if (!activePopItem) return;
+
+      let targetId = activePopItem.id;
+      if (activePopItem.is_group) {
+        const variant = activePopItem.variants.find(v => 
+          v.unit.trim() === selectedGroupPack && v.title.includes(selectedGroupHeight)
+        );
+        if (!variant || !variant.is_active) {
+          toast("Товар отсутствует в наличии");
+          return;
+        }
+        targetId = variant.id;
+      } else {
+        if (!activePopItem.is_active) {
+          toast("Товар отсутствует в наличии");
+          return;
+        }
+      }
+
+      cart[targetId] = (cart[targetId] || 0) + popQty;
       updateCartUI();
-      updateProductCardAction(activePopItem.id);
+      updateProductCardAction(targetId);
       closeProductModal();
       toast("Добавлено в заказ");
     }
@@ -1782,7 +1976,7 @@
       toast("Удалено из корзины");
     }
 
-    // Корзина с мини-фото и скрытием плашки
+    // Корзина
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
@@ -1816,7 +2010,7 @@
               </div>
               <div>
                 <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}</div>
-                <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.price} ₽ × ${qty}</div>
+                <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit || ''} · ${item.price} ₽ × ${qty}</div>
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
@@ -1967,7 +2161,7 @@
       let orderItems = [];
       Object.entries(cart).forEach(([id, qty]) => {
         const item = catalog.find(i => i.id == id);
-        if (item) orderItems.push({ id: item.id, title: item.title, price: item.price, qty: qty });
+        if (item) orderItems.push({ id: item.id, title: item.title, price: item.price, qty: qty, unit: item.unit });
       });
 
       let recInfo = "";
@@ -2037,7 +2231,6 @@
       document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
       document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
 
-      // Проверка фото QR
       const qrImg = document.getElementById('sbp-qr-img');
       const qrCanvas = document.getElementById('sbp-qr-canvas');
       qrImg.style.display = 'block';
@@ -2275,7 +2468,7 @@
       document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
     }
 
-    // Заказы клиента (включая завершенные)
+    // Заказы клиента (с таймером 15 мин и кнопкой оплаты)
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
       try {
@@ -2408,7 +2601,6 @@
               <b>${ord.order_id}</b>
               <span class="status-badge st-building">${ord.status}</span>
             </div>
-            <!-- Сведения о заказе упорядочены через переносы строк -->
             <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
               <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
               <b>Адрес:</b> ${ord.address}<br>
@@ -2537,7 +2729,6 @@
       loadRootOrders(true);
     }
 
-    // Кастомное всплывающее подтверждение удаления заказа
     function openTopConfirm(orderId) {
       document.getElementById('top-confirm-text').innerText = `Удалить заказ ${orderId} безвозвратно?`;
       document.getElementById('top-confirm-yes-btn').onclick = () => confirmDeleteOrderExecute(orderId);
@@ -2559,7 +2750,6 @@
       loadRootOrders(true);
     }
 
-    // Фото и медиатека Google Диска
     function triggerOrderPhotoUpload(orderId) {
       uploadTargetContext = { type: 'order', id: orderId };
       document.getElementById('camera-file-input').click();
@@ -2871,7 +3061,6 @@
       else window.open(url, '_blank');
     }
 
-    // Резервная отрисовка QR-кода на холсте
     function drawQr(canvasId, text) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
@@ -2916,7 +3105,6 @@
       document.getElementById('dock-pill-bar').classList.add('with-root');
     }
 
-    // Фоновое обновление без мерцания экранов
     setInterval(() => {
       const activeScreen = document.querySelector('.screen.active')?.id;
       if (activeScreen === 'screen-profile') {
