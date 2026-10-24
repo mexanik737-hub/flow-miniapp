@@ -12,7 +12,6 @@
     }
   </script>
   <style>
-    /* Переменные тем оформления: темная Metropolis по умолчанию, светлая iOS при теме Telegram */
     :root {
       --bg: #090c12;
       --card-bg: #131822;
@@ -82,7 +81,6 @@
       flex-direction: column;
     }
 
-    /* Шапка HUD */
     header {
       width: 100%;
       padding: 12px 16px;
@@ -141,7 +139,6 @@
     }
     .user-tag:active { transform: scale(0.95); }
 
-    /* Экраны */
     .screen {
       display: none;
       padding: 14px 16px;
@@ -157,7 +154,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Категории */
     .filter-scroll {
       display: flex;
       gap: 6px;
@@ -185,7 +181,6 @@
       color: var(--cyan);
     }
 
-    /* Каталог */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -301,7 +296,6 @@
     }
     .btn-quick-add:active { transform: scale(0.88); }
 
-    /* Блоки */
     .box-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -359,7 +353,6 @@
     }
     .qty-btn:active { transform: scale(0.9); }
 
-    /* Статусы */
     .status-badge {
       font-size: 10px;
       padding: 3px 8px;
@@ -375,7 +368,6 @@
     .st-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
     .st-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
 
-    /* ПАРИРУЮЩАЯ ПИЛЮЛЯ НАВИГАЦИИ */
     .dock-pill-container {
       position: fixed;
       bottom: max(14px, env(safe-area-inset-bottom, 14px));
@@ -430,7 +422,6 @@
       color: var(--cyan);
     }
 
-    /* Модальные окна */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -488,8 +479,8 @@
 
     .toggle-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 6px;
       margin-bottom: 14px;
     }
 
@@ -499,7 +490,7 @@
       background: var(--card-inner);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       cursor: pointer;
       text-align: center;
@@ -511,7 +502,6 @@
       color: var(--cyan);
     }
 
-    /* Сетка кнопок выбора статуса */
     .status-picker-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -533,7 +523,6 @@
     }
     .status-pick-btn:active { transform: scale(0.96); border-color: var(--cyan); }
 
-    /* Уведомление Toast */
     #toast {
       position: fixed;
       top: 16px;
@@ -639,11 +628,34 @@
     <!-- Экран 4: Root (Админка) -->
     <section id="screen-root" class="screen">
       <div class="toggle-grid">
-        <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные заказы</div>
-        <div class="toggle-btn" id="tab-root-archive" onclick="switchRootSubTab('archive')">Архив</div>
+        <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
+        <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
+        <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
       </div>
-      <div id="root-orders-container">
-        <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка данных...</div>
+
+      <!-- Секция 1: Заказы -->
+      <div id="root-sec-orders">
+        <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
+          <div class="toggle-btn" id="tab-root-archive" onclick="switchRootSubTab('archive')">Архив</div>
+        </div>
+        <div id="root-orders-container">
+          <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка данных...</div>
+        </div>
+      </div>
+
+      <!-- Секция 2: Каталог товаров -->
+      <div id="root-sec-catalog" style="display:none;">
+        <button class="btn-metro" style="margin-bottom:12px; font-size:13px; padding:11px;" onclick="openAddProductModal()">
+          + Добавить новый товар в базу
+        </button>
+        <div id="root-catalog-container"></div>
+      </div>
+
+      <!-- Секция 3: Клиенты -->
+      <div id="root-sec-clients" style="display:none;">
+        <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
+        <div id="root-clients-container"></div>
       </div>
     </section>
   </div>
@@ -670,7 +682,7 @@
     </nav>
   </div>
 
-  <!-- Модалка 1: Карточка раскрытия товара -->
+  <!-- Модалка 1: Карточка букета -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -728,13 +740,13 @@
         <button class="close-btn" onclick="closeOrderModal()">✕</button>
       </div>
 
-      <div class="toggle-grid">
+      <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
         <div class="toggle-btn active" id="btn-del" onclick="setDeliveryType('delivery')">🚚 Доставка</div>
         <div class="toggle-btn" id="btn-pick" onclick="setDeliveryType('pickup')">📍 Самовывоз</div>
       </div>
 
       <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Получатель:</div>
-      <div class="toggle-grid">
+      <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
         <div class="toggle-btn active" id="btn-rec-self" onclick="setRecipientType('self')">Я сам</div>
         <div class="toggle-btn" id="btn-rec-other" onclick="setRecipientType('other')">Другой человек</div>
       </div>
@@ -776,7 +788,7 @@
     </div>
   </div>
 
-  <!-- Модалка 4: Выбор статуса в Root -->
+  <!-- Модалка 4: Смена статуса заказа -->
   <div class="modal-overlay" id="status-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -794,7 +806,7 @@
     </div>
   </div>
 
-  <!-- Модалка 5: Редактирование состава заказа в Root -->
+  <!-- Модалка 5: Редактирование состава заказа -->
   <div class="modal-overlay" id="edit-items-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -804,7 +816,7 @@
 
       <div id="edit-items-list" style="margin-bottom:14px;"></div>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Добавить товар из каталога:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Добавить позицию:</label>
       <select id="add-item-catalog-select" class="metro-input"></select>
       <button class="btn-metro btn-secondary" style="margin-bottom:14px; font-size:12px; padding:10px;" onclick="addItemToCurrentOrder()">+ Добавить в заказ</button>
 
@@ -817,14 +829,46 @@
     </div>
   </div>
 
+  <!-- Модалка 6: Добавление/Редактирование товара в каталоге -->
+  <div class="modal-overlay" id="product-editor-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title" id="prod-edit-title">Товар</div>
+        <button class="close-btn" onclick="closeProductEditorModal()">✕</button>
+      </div>
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название товара: *</label>
+      <input type="text" id="prod-edit-name" class="metro-input" placeholder="Например: Роза Эквадор 60 см (пачка 15 шт)">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
+      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Розы Эквадор, Кустовые розы, Цветы...">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
+      <input type="number" id="prod-edit-price" class="metro-input" placeholder="3500">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ссылка на фото (URL):</label>
+      <input type="text" id="prod-edit-photo" class="metro-input" placeholder="https://i.postimg.cc/.../photo.jpg">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
+      <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Крупный сортовой бутон, длина 60 см...">
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <input type="checkbox" id="prod-edit-active" style="width:18px; height:18px;">
+        <label for="prod-edit-active" style="font-size:13px; font-weight:600; color:var(--text);">Товар в наличии (виден на витрине)</label>
+      </div>
+
+      <button class="btn-metro" onclick="saveProductEditor()">Сохранить в базу</button>
+    </div>
+  </div>
+
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
     const tg = window.Telegram?.WebApp;
     const userId = tg?.initDataUnsafe?.user?.id || 100001;
     const tgFirstName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
     const tgUsername = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
+    const ADMIN_TELEGRAM_ID = "8900179932";
 
-    // АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ТЕМЫ (Dark/Light) с клиентом Telegram
     function applyTelegramTheme() {
       const scheme = tg?.colorScheme || 'dark';
       document.documentElement.setAttribute('data-theme', scheme);
@@ -834,26 +878,26 @@
       }
     }
     applyTelegramTheme();
-    if (tg?.onEvent) {
-      tg.onEvent('themeChanged', applyTelegramTheme);
-    }
+    if (tg?.onEvent) tg.onEvent('themeChanged', applyTelegramTheme);
 
     let catalog = [];
     let cart = {};
     let currentUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null');
-    let isAdmin = false;
+    let isAdmin = (String(userId) === ADMIN_TELEGRAM_ID);
     let activePopItem = null;
     let popQty = 1;
     let orderDelType = 'delivery';
     let orderRecType = 'self';
     let allRootOrders = [];
+    let allRootClients = [];
+    let allRootCatalog = [];
     let currentRootSubTab = 'active';
 
     let activeRootOrderForStatus = null;
     let activeRootOrderForEdit = null;
     let tempEditingItems = [];
+    let editingProductId = null; // null = создание нового
 
-    // Форматирование телефона строго +7 (***) ***-**-**
     function bindPhoneMask(input) {
       input.addEventListener('input', () => {
         let val = input.value.replace(/\D/g, '');
@@ -869,7 +913,6 @@
         input.value = res;
       });
     }
-
     bindPhoneMask(document.getElementById('reg-phone'));
     bindPhoneMask(document.getElementById('ord-rec-phone'));
 
@@ -890,7 +933,7 @@
       if (screenId === 'root') loadRootOrders();
     }
 
-    // Загрузка каталога
+    // Каталог товаров
     async function loadCatalog() {
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
@@ -909,9 +952,7 @@
         return `
           <div class="product-card" onclick="openProductModal(${p.id})">
             <div class="product-thumb">
-              ${hasPhoto 
-                ? `<img src="${p.photo_url}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
-                : ''}
+              ${hasPhoto ? `<img src="${p.photo_url}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
               <div class="thumb-placeholder-box" style="${hasPhoto ? 'display:none;' : ''}">
                 <span class="thumb-placeholder-icon">🌸</span>
                 <span class="thumb-placeholder-text">Фото пока не добавили</span>
@@ -937,7 +978,6 @@
       if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
-    // Полноэкранная карточка букета
     function openProductModal(id) {
       const item = catalog.find(i => i.id == id);
       if (!item) return;
@@ -988,7 +1028,6 @@
       if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
-    // Корзина
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
@@ -1031,20 +1070,19 @@
       updateCartUI();
     }
 
-    // Пользователь
-    async function initUser() {
-      if (currentUser && currentUser.phone) {
-        renderProfileUI();
-      }
-
+    // Проверка базы данных (принудительный сброс, если удалили из таблицы)
+    async function checkUserSession() {
       try {
-        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&username=${encodeURIComponent(tgUsername)}`);
+        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}`);
         const user = await res.json();
-        if (user && user.phone) {
+        if (user && user.exists && user.phone) {
           currentUser = user;
           localStorage.setItem('flw_user_profile', JSON.stringify(user));
           renderProfileUI();
-        } else if (!currentUser || !currentUser.phone) {
+        } else {
+          // Запись удалена в таблице — сбрасываем профиль и заставляем регистрироваться заново!
+          currentUser = null;
+          localStorage.removeItem('flw_user_profile');
           document.getElementById('reg-name').value = tgFirstName;
           document.getElementById('reg-modal').classList.add('open');
         }
@@ -1094,7 +1132,6 @@
       else window.open(url, '_blank');
     }
 
-    // Оформление заказа
     function openOrderModal() {
       if (!Object.keys(cart).length) {
         toast("Корзина пуста");
@@ -1191,7 +1228,6 @@
       }
     }
 
-    // Заказы клиента (Стандарт: Оформлен ЧЧ:ММ ДД.ММ.ГГГГ)
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
       try {
@@ -1236,17 +1272,16 @@
       return 'st-processing';
     }
 
-    // Root-права
+    // Root-панель
     function checkAdminInit() {
-      const cleanUser = (tgUsername || "").replace("@", "").toLowerCase();
-      if (cleanUser === 'mkgr52') {
+      if (String(userId) === ADMIN_TELEGRAM_ID) {
         activateRootMode();
       }
     }
 
     function secretAdminTap() {
       const phrase = prompt("Код доступа Root:");
-      if (phrase === 'm1rfol159036' || phrase === 'метрополис' || phrase === 'mkgr52') {
+      if (phrase === 'm1rfol159036' || phrase === 'метрополис' || phrase === ADMIN_TELEGRAM_ID) {
         activateRootMode();
         navigate('root', document.getElementById('dock-root-btn'));
       }
@@ -1258,14 +1293,28 @@
       document.getElementById('dock-pill-bar').classList.add('with-root');
     }
 
-    // Загрузка Root-заказов
+    function switchRootSection(sec) {
+      document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
+      document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
+      document.getElementById('tab-root-clients').classList.toggle('active', sec === 'clients');
+
+      document.getElementById('root-sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
+      document.getElementById('root-sec-catalog').style.display = sec === 'catalog' ? 'block' : 'none';
+      document.getElementById('root-sec-clients').style.display = sec === 'clients' ? 'block' : 'none';
+
+      if (sec === 'orders') loadRootOrders();
+      if (sec === 'catalog') loadRootCatalog();
+      if (sec === 'clients') loadRootClients();
+    }
+
+    // Root: Управление заказами
     async function loadRootOrders() {
       if (!isAdmin) return;
       const container = document.getElementById('root-orders-container');
-      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка...</div>';
+      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка заказов...</div>';
 
       try {
-        const res = await fetch(`${API_URL}?action=admin_orders&admin_username=${encodeURIComponent(tgUsername)}&admin_passcode=m1rfol159036`);
+        const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
         allRootOrders = await res.json();
         renderRootOrders();
       } catch (e) {
@@ -1330,7 +1379,6 @@
       `).join('');
     }
 
-    // 1. Выбор статуса через модалку
     function openStatusModal(orderId) {
       activeRootOrderForStatus = orderId;
       document.getElementById('status-modal-title').innerText = `Статус заказа ${orderId}`;
@@ -1354,7 +1402,7 @@
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: "admin_update_order",
-            admin_username: tgUsername,
+            admin_id: ADMIN_TELEGRAM_ID,
             admin_passcode: "m1rfol159036",
             order_id: orderId,
             status: status
@@ -1367,7 +1415,6 @@
       }
     }
 
-    // 2. Редактирование состава заказа через модалку
     function populateCatalogDropdown() {
       const sel = document.getElementById('add-item-catalog-select');
       sel.innerHTML = catalog.map(c => `<option value="${c.id}">${c.title} (${c.price} ₽)</option>`).join('');
@@ -1394,7 +1441,7 @@
       let autoTotal = 0;
 
       if (!tempEditingItems.length) {
-        box.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:8px 0;">Все товары удалены из заказа</div>';
+        box.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:8px 0;">Все позиции удалены</div>';
       } else {
         box.innerHTML = tempEditingItems.map((it, idx) => {
           autoTotal += (it.price * it.qty);
@@ -1420,9 +1467,7 @@
 
     function adjustTempItemQty(idx, delta) {
       tempEditingItems[idx].qty += delta;
-      if (tempEditingItems[idx].qty <= 0) {
-        tempEditingItems.splice(idx, 1);
-      }
+      if (tempEditingItems[idx].qty <= 0) tempEditingItems.splice(idx, 1);
       renderEditItemsList();
     }
 
@@ -1437,11 +1482,8 @@
       if (!item) return;
 
       const existing = tempEditingItems.find(i => i.id == item.id);
-      if (existing) {
-        existing.qty += 1;
-      } else {
-        tempEditingItems.push({ id: item.id, title: item.title, price: item.price, qty: 1 });
-      }
+      if (existing) existing.qty += 1;
+      else tempEditingItems.push({ id: item.id, title: item.title, price: item.price, qty: 1 });
       renderEditItemsList();
     }
 
@@ -1457,7 +1499,7 @@
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: "admin_update_order",
-            admin_username: tgUsername,
+            admin_id: ADMIN_TELEGRAM_ID,
             admin_passcode: "m1rfol159036",
             order_id: orderId,
             items: tempEditingItems,
@@ -1472,9 +1514,8 @@
       }
     }
 
-    // 3. Удаление заказа из базы
     async function deleteOrderConfirm(orderId) {
-      if (!confirm(`Вы действительно хотите безвозвратно удалить заказ ${orderId} из таблицы?`)) return;
+      if (!confirm(`Удалить заказ ${orderId} безвозвратно?`)) return;
 
       toast("Удаление заказа...");
       try {
@@ -1483,7 +1524,7 @@
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: "admin_delete_order",
-            admin_username: tgUsername,
+            admin_id: ADMIN_TELEGRAM_ID,
             admin_passcode: "m1rfol159036",
             order_id: orderId
           })
@@ -1500,17 +1541,261 @@
       }
     }
 
-    // Запуск приложения
+    // Root: Управление каталогом товаров
+    async function loadRootCatalog() {
+      const container = document.getElementById('root-catalog-container');
+      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка каталога...</div>';
+
+      try {
+        const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+        allRootCatalog = await res.json();
+        renderRootCatalogList();
+      } catch (e) {
+        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки каталога</div>';
+      }
+    }
+
+    function renderRootCatalogList() {
+      const container = document.getElementById('root-catalog-container');
+      if (!allRootCatalog.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0;">Каталог пуст</div>';
+        return;
+      }
+
+      container.innerHTML = allRootCatalog.map(item => `
+        <div class="box-card" style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+            <div style="max-width:70%;">
+              <div style="font-size:13px; font-weight:700; color:var(--text);">${item.title}</div>
+              <div style="font-size:11px; color:var(--cyan); margin-top:1px;">${item.category}</div>
+            </div>
+            <div style="font-size:14px; font-weight:800; color:var(--green);">${item.price} ₽</div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px; line-height:1.3;">
+            ${item.description || 'Без описания'}
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${item.id}')">Редактировать</button>
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:90px;" onclick="deleteProductConfirm('${item.id}')">Удалить</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddProductModal() {
+      editingProductId = null;
+      document.getElementById('prod-edit-title').innerText = "Новый товар";
+      document.getElementById('prod-edit-name').value = "";
+      document.getElementById('prod-edit-cat').value = "Цветы";
+      document.getElementById('prod-edit-price').value = "";
+      document.getElementById('prod-edit-photo').value = "";
+      document.getElementById('prod-edit-desc').value = "";
+      document.getElementById('prod-edit-active').checked = true;
+      document.getElementById('product-editor-modal').classList.add('open');
+    }
+
+    function openEditProductModal(id) {
+      const item = allRootCatalog.find(i => String(i.id) === String(id));
+      if (!item) return;
+      editingProductId = item.id;
+      document.getElementById('prod-edit-title').innerText = `Товар ID: ${item.id}`;
+      document.getElementById('prod-edit-name').value = item.title;
+      document.getElementById('prod-edit-cat').value = item.category;
+      document.getElementById('prod-edit-price').value = item.price;
+      document.getElementById('prod-edit-photo').value = item.photo_url || "";
+      document.getElementById('prod-edit-desc').value = item.description || "";
+      document.getElementById('prod-edit-active').checked = item.is_active;
+      document.getElementById('product-editor-modal').classList.add('open');
+    }
+
+    function closeProductEditorModal() {
+      document.getElementById('product-editor-modal').classList.remove('open');
+    }
+
+    async function saveProductEditor() {
+      const name = document.getElementById('prod-edit-name').value.trim();
+      const cat = document.getElementById('prod-edit-cat').value.trim() || "Цветы";
+      const price = parseFloat(document.getElementById('prod-edit-price').value);
+      const photo = document.getElementById('prod-edit-photo').value.trim();
+      const desc = document.getElementById('prod-edit-desc').value.trim();
+      const active = document.getElementById('prod-edit-active').checked;
+
+      if (!name || isNaN(price)) {
+        toast("Укажите название и цену");
+        return;
+      }
+
+      toast("Сохранение товара...");
+      try {
+        const actionName = editingProductId ? "admin_update_product" : "admin_add_product";
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: actionName,
+            admin_id: ADMIN_TELEGRAM_ID,
+            admin_passcode: "m1rfol159036",
+            id: editingProductId,
+            title: name,
+            category: cat,
+            price: price,
+            photo_url: photo,
+            description: desc,
+            is_active: active
+          })
+        });
+        toast("Каталог обновлен");
+        closeProductEditorModal();
+        loadRootCatalog();
+        loadCatalog();
+      } catch (e) {
+        toast("Ошибка сохранения товара");
+      }
+    }
+
+    async function deleteProductConfirm(id) {
+      if (!confirm(`Удалить товар ID ${id} из базы?`)) return;
+
+      toast("Удаление товара...");
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_delete_product",
+            admin_id: ADMIN_TELEGRAM_ID,
+            admin_passcode: "m1rfol159036",
+            id: id
+          })
+        });
+        toast("Товар удален");
+        loadRootCatalog();
+        loadCatalog();
+      } catch (e) {
+        toast("Ошибка удаления");
+      }
+    }
+
+    // Root: Управление клиентами
+    async function loadRootClients() {
+      const container = document.getElementById('root-clients-container');
+      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Загрузка клиентов...</div>';
+
+      try {
+        const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+        allRootClients = await res.json();
+        renderRootClients(allRootClients);
+      } catch (e) {
+        container.innerHTML = '<div style="text-align:center; color:var(--red); padding:16px 0;">Ошибка загрузки клиентов</div>';
+      }
+    }
+
+    function filterRootClients() {
+      const q = document.getElementById('root-client-search').value.toLowerCase().trim();
+      const filtered = allRootClients.filter(c => 
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q)) ||
+        (c.username && c.username.toLowerCase().includes(q)) ||
+        (c.user_id && c.user_id.includes(q))
+      );
+      renderRootClients(filtered);
+    }
+
+    function renderRootClients(clients) {
+      const container = document.getElementById('root-clients-container');
+      if (!clients.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Клиенты не найдены</div>';
+        return;
+      }
+
+      container.innerHTML = clients.map(c => `
+        <div class="box-card" style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+            <div>
+              <div style="font-size:14px; font-weight:700; color:var(--text);">${c.name}</div>
+              <div style="font-size:12px; color:var(--text-muted);">${c.phone}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Выкуп</div>
+              <div style="font-size:14px; font-weight:800; color:var(--green);">${c.total_spent} ₽</div>
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+            Telegram: ${c.username || 'скрыт'} (ID: ${c.user_id}) · Рег.: ${c.reg_date}
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editClientSpentPrompt('${c.user_id}', ${c.total_spent})">Изменить выкуп</button>
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteClientConfirm('${c.user_id}', '${c.name}')">Сбросить аккаунт</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function editClientSpentPrompt(uid, currentVal) {
+      const valStr = prompt(`Текущий выкуп: ${currentVal} ₽. Введите новое значение:`, currentVal);
+      if (!valStr) return;
+      const newVal = parseFloat(valStr);
+      if (isNaN(newVal)) return;
+
+      toast("Сохранение суммы...");
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_update_spent",
+            admin_id: ADMIN_TELEGRAM_ID,
+            admin_passcode: "m1rfol159036",
+            target_user_id: uid,
+            total_spent: newVal
+          })
+        });
+        toast("Сумма выкупа обновлена");
+        loadRootClients();
+      } catch (e) {
+        toast("Ошибка обновления выкупа");
+      }
+    }
+
+    async function deleteClientConfirm(uid, name) {
+      if (!confirm(`Удалить клиента «${name}» (ID: ${uid}) из базы? При следующем запуске ему потребуется повторная регистрация.`)) return;
+
+      toast("Удаление профиля...");
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_delete_user",
+            admin_id: ADMIN_TELEGRAM_ID,
+            admin_passcode: "m1rfol159036",
+            target_user_id: uid
+          })
+        });
+        toast("Профиль удален из базы");
+        loadRootClients();
+      } catch (e) {
+        toast("Ошибка удаления профиля");
+      }
+    }
+
+    // Инициализация сервиса
     loadCatalog();
-    initUser();
+    checkUserSession();
     checkAdminInit();
 
-    // Авто-опрос каждые 12 секунд
+    // Фоновый опрос для моментального обновления выкупа и статусов (каждые 10 секунд)
     setInterval(() => {
       const activeScreen = document.querySelector('.screen.active')?.id;
-      if (activeScreen === 'screen-profile') loadUserOrders();
-      if (activeScreen === 'screen-root' && isAdmin) loadRootOrders();
-    }, 12000);
+      if (activeScreen === 'screen-profile') {
+        checkUserSession();
+        loadUserOrders();
+      }
+      if (activeScreen === 'screen-root' && isAdmin) {
+        const secOrders = document.getElementById('root-sec-orders').style.display !== 'none';
+        if (secOrders) loadRootOrders();
+      }
+    }, 10000);
   </script>
 </body>
 </html>
