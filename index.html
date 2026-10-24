@@ -116,9 +116,6 @@
       padding: 5px 12px;
       border-radius: 20px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
 
     .user-tag {
@@ -147,7 +144,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Анимированная переливающаяся неоновая рамка для Хитов */
+    /* Анимированная неоновая обводка для хитов */
     @property --angle {
       syntax: '<angle>';
       initial-value: 0deg;
@@ -638,6 +635,28 @@
       border-radius: var(--radius-md);
     }
 
+    /* Сетка медиатеки Google Диска в Root */
+    .drive-media-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      margin: 10px 0;
+    }
+    .drive-media-item {
+      aspect-ratio: 1/1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .drive-media-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
     #toast {
       position: fixed;
       top: 16px;
@@ -689,7 +708,6 @@
       <div class="box-card" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
-      <!-- Плашка суммы: скрывается если пусто -->
       <div class="box-card" id="cart-checkout-card" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <span style="font-size:14px; font-weight:700;">Сумма букетов:</span>
@@ -728,7 +746,6 @@
           <div id="saved-addresses-profile-list"></div>
         </div>
 
-        <!-- Кнопки связи (Изумрудная и Красно-оранжевая) -->
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
           <a class="btn-metro btn-emerald" href="tel:89162257117">📞 Позвонить в магазин</a>
           <button class="btn-metro btn-warm-support" onclick="contactSupport()">💬 Техническая поддержка</button>
@@ -741,7 +758,7 @@
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>
       </div>
 
-      <!-- FAQ в общей плашке с неоном -->
+      <!-- FAQ -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Часто задаваемые вопросы (FAQ)
@@ -755,18 +772,40 @@
       <div class="toggle-grid">
         <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
         <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
+        <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
+        <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
       </div>
+
+      <!-- Заказы в Root -->
       <div id="root-sec-orders">
+        <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
+          <div class="toggle-btn" id="tab-root-archive" onclick="switchRootSubTab('archive')">Архив</div>
+        </div>
         <div id="root-orders-container"></div>
       </div>
+
+      <!-- Каталог в Root -->
       <div id="root-sec-catalog" style="display:none;">
-        <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddProductModal()">+ Добавить новый товар</button>
+        <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddProductModal()">+ Добавить новый товар в базу</button>
         <div id="root-catalog-container"></div>
+      </div>
+
+      <!-- Клиенты в Root -->
+      <div id="root-sec-clients" style="display:none;">
+        <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
+        <div id="root-clients-container"></div>
+      </div>
+
+      <!-- FAQ в Root -->
+      <div id="root-sec-faq" style="display:none;">
+        <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
+        <div id="root-faq-container"></div>
       </div>
     </section>
   </div>
 
-  <!-- Док навигации -->
+  <!-- Нижний док навигации -->
   <div class="dock-pill-container">
     <nav class="dock-pill" id="dock-pill-bar">
       <button class="dock-tab active" onclick="navigateTab('catalog', this)">
@@ -819,7 +858,7 @@
     </div>
   </div>
 
-  <!-- Модалка карточки букета (с мультифото) -->
+  <!-- Модалка букета (мультифото) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -892,6 +931,11 @@
           <input type="text" id="ord-intercom" class="metro-input" placeholder="Домофон">
         </div>
 
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <input type="checkbox" id="ord-save-addr-checkbox" style="width:16px; height:16px;">
+          <label for="ord-save-addr-checkbox" style="font-size:12px; color:var(--text-muted);">Сохранить этот адрес в профиль</label>
+        </div>
+
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
         <input type="text" id="ord-comment" class="metro-input" placeholder="Шлагбаум открыт, не звонить...">
 
@@ -913,9 +957,8 @@
         📍 <b>Адрес магазина:</b> Зеленоград, Георгиевский пр-т, 37к2. Самовывоз с 09:00 до 21:00.
       </div>
 
-      <!-- Комментарий магазину -->
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий магазину (необязательно):</label>
-      <input type="text" id="ord-shop-comment" class="metro-input" placeholder="Пожелания по цвету ленты, сборке...">
+      <input type="text" id="ord-shop-comment" class="metro-input" placeholder="Пожелания по сборке, цвету ленты...">
 
       <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:12px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -936,7 +979,7 @@
     </div>
   </div>
 
-  <!-- Модалка оплаты (с реальным QR и таймером 15 мин) -->
+  <!-- Модалка оплаты (СБП QR + таймер 15 минут) -->
   <div class="modal-overlay" id="payment-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -945,7 +988,6 @@
       </div>
 
       <div style="text-align:center; padding:10px 0 16px 0;">
-        <!-- Таймер 15 минут -->
         <div style="padding:6px 12px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:12px; font-weight:800; display:inline-block; margin-bottom:10px;" id="pay-timer-box">
           ⏳ Оплатите в течение: <span id="pay-timer-val">15:00</span>
         </div>
@@ -961,7 +1003,6 @@
           💳 Оплатить через СБП
         </a>
 
-        <!-- Реальное фото QR-кода -->
         <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center;">
           <img src="img/sbp_qr.jpg" alt="QR-код СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
         </div>
@@ -974,6 +1015,52 @@
           ✅ Я оплатил
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Модалка редактирования профиля -->
+  <div class="modal-overlay" id="edit-profile-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Изменить данные профиля</div>
+        <button class="close-btn" onclick="closeEditProfileModal()">✕</button>
+      </div>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ваше имя: *</label>
+      <input type="text" id="edit-prof-name" class="metro-input" placeholder="Иван">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Номер телефона: *</label>
+      <input type="tel" id="edit-prof-phone" class="metro-input" placeholder="+7 (___) ___-__-__">
+
+      <button class="btn-metro" onclick="saveUserProfileChanges()">Сохранить изменения</button>
+    </div>
+  </div>
+
+  <!-- Модалка добавления адреса -->
+  <div class="modal-overlay" id="add-saved-addr-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Новый сохраненный адрес</div>
+        <button class="close-btn" onclick="closeAddSavedAddressModal()">✕</button>
+      </div>
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название адреса: *</label>
+      <input type="text" id="new-addr-label" class="metro-input" placeholder="Например: Дом, Работа, Родители">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Улица / Корпус / Дом (выберите из подсказок): *</label>
+      <div class="suggest-wrap">
+        <input type="text" id="new-addr-suggest" class="metro-input" placeholder="Начните ввод: к1601 или Георгиевский..." autocomplete="off" oninput="onSavedAddrSuggestInput(this.value)">
+        <div class="suggest-list" id="new-addr-suggest-list"></div>
+      </div>
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон:</label>
+      <div class="address-grid">
+        <input type="text" id="new-addr-entrance" class="metro-input" placeholder="Подъезд">
+        <input type="text" id="new-addr-floor" class="metro-input" placeholder="Этаж">
+        <input type="text" id="new-addr-apt" class="metro-input" placeholder="Кв/Офис">
+        <input type="text" id="new-addr-intercom" class="metro-input" placeholder="Домофон">
+      </div>
+
+      <button class="btn-metro" style="margin-top:10px;" onclick="saveNewAddressFromModal()">Сохранить адрес</button>
     </div>
   </div>
 
@@ -1000,9 +1087,14 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ссылки на фото (через запятую):</label>
       <textarea id="prod-edit-photo" class="metro-input" style="height:60px; resize:none;" placeholder="https://... , https://..."></textarea>
 
-      <button class="btn-metro btn-secondary" style="font-size:12px; padding:9px; margin-bottom:14px;" onclick="triggerProductPhotoUpload()">
-        📷 Добавить новое фото с камеры / галереи
-      </button>
+      <div style="display:flex; gap:6px; margin-bottom:14px;">
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px;" onclick="triggerProductPhotoUpload()">
+          📷 С камеры / галереи
+        </button>
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--cyan);" onclick="openDriveMediaModal()">
+          📂 Из Google Диска
+        </button>
+      </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание:</label>
       <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Сортовой крупный бутон...">
@@ -1016,11 +1108,78 @@
     </div>
   </div>
 
+  <!-- Модалка выбора фото из архива Google Диска -->
+  <div class="modal-overlay" id="drive-media-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Архив фото Google Диска</div>
+        <button class="close-btn" onclick="closeDriveMediaModal()">✕</button>
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Нажмите на фото, чтобы добавить его к товару:</div>
+      <div class="drive-media-grid" id="drive-media-container">
+        <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка смены статуса (Root) -->
+  <div class="modal-overlay" id="status-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title" id="status-modal-title">Сменить статус</div>
+        <button class="close-btn" onclick="closeStatusModal()">✕</button>
+      </div>
+      <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
+        <button class="toggle-btn" style="color:var(--amber);" onclick="applyStatusChoice('Ожидает оплаты')">Ожидает оплаты</button>
+        <button class="toggle-btn" style="color:var(--purple);" onclick="applyStatusChoice('Ожидает подтверждения оплаты')">Ожидает подтверждения</button>
+        <button class="toggle-btn" style="color:var(--cyan);" onclick="applyStatusChoice('Собирается')">Собирается</button>
+        <button class="toggle-btn" style="color:var(--purple);" onclick="applyStatusChoice('В пути')">В пути</button>
+        <button class="toggle-btn" style="color:var(--purple);" onclick="applyStatusChoice('Готов к выдаче')">Готов к выдаче</button>
+        <button class="toggle-btn" style="color:var(--green);" onclick="applyStatusChoice('Завершен')">Завершен</button>
+        <button class="toggle-btn" style="color:var(--red);" onclick="applyStatusChoice('Отменен')">Отменен</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка редактирования состава заказа (Root) -->
+  <div class="modal-overlay" id="edit-items-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title" id="edit-items-modal-title">Состав заказа</div>
+        <button class="close-btn" onclick="closeEditItemsModal()">✕</button>
+      </div>
+      <div id="edit-items-list" style="margin-bottom:14px;"></div>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Добавить позицию:</label>
+      <select id="add-item-catalog-select" class="metro-input"></select>
+      <button class="btn-metro btn-secondary" style="margin-bottom:14px; font-size:12px; padding:10px;" onclick="addItemToCurrentOrder()">+ Добавить в заказ</button>
+      <div style="border-top:1px solid var(--border); padding-top:12px; margin-top:8px;">
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Итоговая сумма (₽):</label>
+        <input type="number" id="edit-order-total-input" class="metro-input">
+      </div>
+      <button class="btn-metro" onclick="saveEditedOrderItems()">Сохранить изменения</button>
+    </div>
+  </div>
+
+  <!-- Модалка FAQ в Root -->
+  <div class="modal-overlay" id="faq-editor-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title" id="faq-edit-title">Вопрос FAQ</div>
+        <button class="close-btn" onclick="closeFaqEditorModal()">✕</button>
+      </div>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Вопрос: *</label>
+      <input type="text" id="faq-edit-q" class="metro-input" placeholder="Например: Как хранить цветы?">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ответ: *</label>
+      <textarea id="faq-edit-a" class="metro-input" style="height:90px; resize:none;" placeholder="Ответ..."></textarea>
+      <button class="btn-metro" onclick="saveFaqEditor()">Сохранить в FAQ</button>
+    </div>
+  </div>
+
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
     const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
-    const STORE_LAT = 55.966912;
-    const STORE_LON = 37.150646;
+    const STORE_LAT = 55.975443;
+    const STORE_LON = 37.151703;
 
     const tg = window.Telegram?.WebApp;
     const userId = tg?.initDataUnsafe?.user?.id || 100001;
@@ -1035,6 +1194,9 @@
     let savedAddresses = JSON.parse(localStorage.getItem('flw_saved_addresses') || '[]');
     let allRootOrders = [];
     let allRootCatalog = [];
+    let allRootClients = [];
+    let allRootFaq = [];
+    let currentRootSubTab = 'active';
     let isAdmin = (String(userId) === ADMIN_TELEGRAM_ID);
 
     let activePopItem = null;
@@ -1050,9 +1212,13 @@
 
     let activePaymentOrderId = null;
     let paymentTimerInterval = null;
+    let activeRootOrderForStatus = null;
+    let activeRootOrderForEdit = null;
+    let tempEditingItems = [];
     let uploadTargetContext = null;
     let suggestDebounceTimer = null;
     let editingProductId = null;
+    let editingFaqId = null;
 
     function toast(text) {
       const el = document.getElementById('toast');
@@ -1067,7 +1233,6 @@
       document.getElementById('screen-' + screenId).classList.add('active');
       btn.classList.add('active');
 
-      // Анимация вращения иконки
       btn.classList.add('spinning');
       setTimeout(() => btn.classList.remove('spinning'), 450);
 
@@ -1079,6 +1244,22 @@
       }
       if (screenId === 'root') loadRootOrders();
     }
+
+    function bindPhoneMask(input) {
+      input.addEventListener('input', () => {
+        let val = input.value.replace(/\D/g, '');
+        if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
+        val = val.substring(0, 10);
+        let res = "+7";
+        if (val.length > 0) res += " (" + val.substring(0, 3);
+        if (val.length >= 4) res += ") " + val.substring(3, 6);
+        if (val.length >= 7) res += "-" + val.substring(6, 8);
+        if (val.length >= 9) res += "-" + val.substring(8, 10);
+        input.value = res;
+      });
+    }
+    bindPhoneMask(document.getElementById('edit-prof-phone'));
+    bindPhoneMask(document.getElementById('ord-rec-phone'));
 
     // Фильтры
     function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
@@ -1096,7 +1277,7 @@
 
       renderCatalog(filteredCatalog);
       closeFilterModal();
-      toast(`Найдено: ${filteredCatalog.length} товаров`);
+      toast(`Найдено: ${filteredCatalog.length}`);
     }
 
     function resetFilters() {
@@ -1108,15 +1289,16 @@
       closeFilterModal();
     }
 
-    // Загрузка каталога
+    // Каталог
     async function loadCatalog() {
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
         catalog = await res.json();
         filteredCatalog = [...catalog];
         renderCatalog(filteredCatalog);
+        populateCatalogDropdown();
       } catch (e) {
-        toast("Ошибка загрузки витрины");
+        toast("Ошибка загрузки каталога");
       }
     }
 
@@ -1132,7 +1314,7 @@
           <div class="product-card ${isHit ? 'popular-hit' : ''}" onclick="openProductModal(${p.id})">
             <div class="product-thumb">
               ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
-              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.src=''">` : '<div style="font-size:28px;">🌸</div>'}
+              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy">` : '<div style="font-size:28px;">🌸</div>'}
             </div>
             <div class="product-body">
               <div>
@@ -1220,7 +1402,7 @@
       toast("Удалено из корзины");
     }
 
-    // Корзина с мини-фото и автоскрытием плашки
+    // Корзина с фото и автоскрытием плашки
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
@@ -1270,7 +1452,7 @@
       document.getElementById('cart-total').innerText = subtotal + ' ₽';
     }
 
-    // Подсказки DaData в теме приложения
+    // Подсказки DaData
     function onAddressInput(query) {
       clearTimeout(suggestDebounceTimer);
       const box = document.getElementById('ord-suggest-list');
@@ -1331,7 +1513,6 @@
         currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
       }
 
-      // Пункт 4: убраны скобки и маршрут
       document.getElementById('delivery-calc-badge').innerHTML = 
         `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
 
@@ -1358,10 +1539,33 @@
     }
 
     function openOrderModal() {
+      const savedBox = document.getElementById('order-saved-address-container');
+      const pillsBox = document.getElementById('order-saved-address-pills');
+      if (savedAddresses && savedAddresses.length > 0) {
+        pillsBox.innerHTML = savedAddresses.map((a, idx) => `
+          <div class="addr-pill" onclick="applySavedAddressToOrder(${idx}, this)">🏠 ${a.label}</div>
+        `).join('');
+        savedBox.style.display = 'block';
+      } else {
+        savedBox.style.display = 'none';
+      }
       recalcOrderFinalTotal();
       document.getElementById('order-modal').classList.add('open');
     }
     function closeOrderModal() { document.getElementById('order-modal').classList.remove('open'); }
+
+    function applySavedAddressToOrder(idx, btn) {
+      document.querySelectorAll('.addr-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+
+      const a = savedAddresses[idx];
+      document.getElementById('ord-suggest-input').value = a.address;
+      document.getElementById('ord-entrance').value = a.entrance || '';
+      document.getElementById('ord-floor').value = a.floor || '';
+      document.getElementById('ord-apt').value = a.apt || '';
+      document.getElementById('ord-intercom').value = a.intercom || '';
+      onAddressInput(a.address);
+    }
 
     function setDeliveryType(type) {
       orderDelType = type;
@@ -1402,6 +1606,11 @@
 
         if (!street) { toast("Укажите улицу и дом"); return; }
         fullAddr = `${street}${ent ? ', под. '+ent : ''}${flr ? ', эт. '+flr : ''}${apt ? ', кв. '+apt : ''}${intc ? ' (домофон: '+intc+')' : ''}${comm ? ' [курьеру: '+comm+']' : ''}`;
+
+        if (document.getElementById('ord-save-addr-checkbox').checked && savedAddresses.length < 3) {
+          savedAddresses.push({ label: "Адрес " + (savedAddresses.length + 1), address: street, entrance: ent, floor: flr, apt: apt, intercom: intc });
+          syncSavedAddresses();
+        }
       } else {
         fullAddr = "Самовывоз: Георгиевский пр-т, 37к2";
       }
@@ -1503,6 +1712,152 @@
       }
     }
 
+    // Сохраненные адреса
+    function renderSavedAddresses() {
+      const box = document.getElementById('saved-addresses-profile-list');
+      if (!savedAddresses.length) {
+        box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
+        return;
+      }
+      box.innerHTML = savedAddresses.map((a, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+          <div><b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span></div>
+          <span style="color:var(--red); cursor:pointer; font-size:13px;" onclick="deleteSavedAddress(${idx})">✕</span>
+        </div>
+      `).join('');
+    }
+
+    function openAddSavedAddressModal() {
+      if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
+      document.getElementById('new-addr-label').value = "";
+      document.getElementById('new-addr-suggest').value = "";
+      document.getElementById('new-addr-entrance').value = "";
+      document.getElementById('new-addr-floor').value = "";
+      document.getElementById('new-addr-apt').value = "";
+      document.getElementById('new-addr-intercom').value = "";
+      document.getElementById('add-saved-addr-modal').classList.add('open');
+    }
+    function closeAddSavedAddressModal() { document.getElementById('add-saved-addr-modal').classList.remove('open'); }
+
+    function onSavedAddrSuggestInput(query) {
+      clearTimeout(suggestDebounceTimer);
+      const box = document.getElementById('new-addr-suggest-list');
+      if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+
+      suggestDebounceTimer = setTimeout(async () => {
+        try {
+          const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "Authorization": "Token " + DADATA_TOKEN
+            },
+            body: JSON.stringify({ query: query, locations: [{ region: "Москва" }, { region: "Московская" }], count: 5 })
+          });
+          const data = await res.json();
+          const items = data.suggestions || [];
+          if (!items.length) { box.style.display = 'none'; return; }
+          box.innerHTML = items.map(s => `<div class="suggest-item" onclick="selectSavedAddrItem('${encodeURIComponent(s.value)}')">${s.value}</div>`).join('');
+          box.style.display = 'block';
+        } catch (e) {}
+      }, 250);
+    }
+
+    function selectSavedAddrItem(val) {
+      document.getElementById('new-addr-suggest').value = decodeURIComponent(val);
+      document.getElementById('new-addr-suggest-list').style.display = 'none';
+    }
+
+    function saveNewAddressFromModal() {
+      const label = document.getElementById('new-addr-label').value.trim() || "Дом";
+      const addr = document.getElementById('new-addr-suggest').value.trim();
+      if (!addr) { toast("Укажите адрес"); return; }
+      savedAddresses.push({
+        label: label, address: addr,
+        entrance: document.getElementById('new-addr-entrance').value.trim(),
+        floor: document.getElementById('new-addr-floor').value.trim(),
+        apt: document.getElementById('new-addr-apt').value.trim(),
+        intercom: document.getElementById('new-addr-intercom').value.trim()
+      });
+      syncSavedAddresses();
+      closeAddSavedAddressModal();
+      renderSavedAddresses();
+      toast("Адрес сохранен");
+    }
+
+    function deleteSavedAddress(idx) {
+      savedAddresses.splice(idx, 1);
+      syncSavedAddresses();
+      renderSavedAddresses();
+      toast("Адрес удален");
+    }
+
+    function syncSavedAddresses() {
+      localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "save_user_addresses", user_id: userId, addresses_json: JSON.stringify(savedAddresses) })
+      }).catch(() => {});
+    }
+
+    // Профиль клиента
+    function openEditProfileModal() {
+      if (!currentUser) return;
+      document.getElementById('edit-prof-name').value = currentUser.name || '';
+      document.getElementById('edit-prof-phone').value = currentUser.phone || '';
+      document.getElementById('edit-profile-modal').classList.add('open');
+    }
+    function closeEditProfileModal() { document.getElementById('edit-profile-modal').classList.remove('open'); }
+
+    async function saveUserProfileChanges() {
+      const name = document.getElementById('edit-prof-name').value.trim();
+      const phone = document.getElementById('edit-prof-phone').value.trim();
+      if (!name || phone.length < 18) { toast("Заполните имя и номер полностью"); return; }
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "update_user_info", user_id: userId, name: name, phone: phone })
+      });
+      currentUser.name = name;
+      currentUser.phone = phone;
+      localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
+      renderProfileUI();
+      closeEditProfileModal();
+      toast("Профиль обновлен");
+    }
+
+    async function checkUserSession() {
+      try {
+        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}`);
+        const user = await res.json();
+        if (user && user.exists && user.phone) {
+          currentUser = user;
+          localStorage.setItem('flw_user_profile', JSON.stringify(user));
+          if (user.address && user.address.startsWith('[')) {
+            try {
+              savedAddresses = JSON.parse(user.address);
+              localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
+            } catch (e) {}
+          }
+          renderProfileUI();
+        } else {
+          openEditProfileModal();
+        }
+      } catch (e) {}
+    }
+
+    function renderProfileUI() {
+      if (!currentUser) return;
+      document.getElementById('hud-name').innerText = currentUser.name;
+      document.getElementById('prof-name').innerText = currentUser.name;
+      document.getElementById('prof-phone').innerText = currentUser.phone;
+      document.getElementById('prof-spent').innerText = (currentUser.total_spent || 0) + ' ₽';
+      document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
+    }
+
     // Заказы клиента
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
@@ -1547,7 +1902,31 @@
       } catch (e) {}
     }
 
-    // Root-панель: четкий вывод сведений через \n
+    // Root: Упорядоченный вывод сведений через \n
+    function switchRootSection(sec) {
+      document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
+      document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
+      document.getElementById('tab-root-clients').classList.toggle('active', sec === 'clients');
+      document.getElementById('tab-root-faq').classList.toggle('active', sec === 'faq');
+
+      document.getElementById('root-sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
+      document.getElementById('root-sec-catalog').style.display = sec === 'catalog' ? 'block' : 'none';
+      document.getElementById('root-sec-clients').style.display = sec === 'clients' ? 'block' : 'none';
+      document.getElementById('root-sec-faq').style.display = sec === 'faq' ? 'block' : 'none';
+
+      if (sec === 'orders') loadRootOrders();
+      if (sec === 'catalog') loadRootCatalog();
+      if (sec === 'clients') loadRootClients();
+      if (sec === 'faq') loadRootFaq();
+    }
+
+    function switchRootSubTab(tab) {
+      currentRootSubTab = tab;
+      document.getElementById('tab-root-active').classList.toggle('active', tab === 'active');
+      document.getElementById('tab-root-archive').classList.toggle('active', tab === 'archive');
+      renderRootOrders();
+    }
+
     async function loadRootOrders() {
       if (!isAdmin) return;
       const container = document.getElementById('root-orders-container');
@@ -1555,27 +1934,67 @@
       try {
         const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
         allRootOrders = await res.json();
-        container.innerHTML = allRootOrders.map(ord => `
+        renderRootOrders();
+      } catch (e) {}
+    }
+
+    function renderRootOrders() {
+      const container = document.getElementById('root-orders-container');
+      const filtered = allRootOrders.filter(ord => {
+        const isClosed = ord.status === 'Завершен' || ord.status.startsWith('Отменен');
+        return currentRootSubTab === 'active' ? !isClosed : isClosed;
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:16px 0;">${currentRootSubTab === 'active' ? 'Нет активных заказов' : 'Архив пуст'}</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(ord => {
+        const isAwaiting = (ord.status === 'Ожидает оплаты' || ord.status === 'Ожидает подтверждения оплаты');
+        return `
           <div class="box-card" style="margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
               <b>${ord.order_id}</b>
               <span class="status-badge st-building">${ord.status}</span>
             </div>
-            <div style="font-size:12px; line-height:1.5; color:var(--text); background:var(--card-inner); padding:8px; border-radius:8px; margin-bottom:8px;">
+            <!-- Упорядоченный вывод сведений через \n -->
+            <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
               <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
               <b>Адрес:</b> ${ord.address}<br>
-              <b>Доставка:</b> ${ord.delivery_type === 'delivery' ? 'Курьер' : 'Самовывоз'}<br>
+              <b>Стоимость доставки:</b> ${ord.delivery_type === 'delivery' ? 'Включена в чек' : '0 ₽ (Самовывоз)'}<br>
               <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
               ${ord.shop_comment ? `<b>Комментарий магазину:</b> ${ord.shop_comment}<br>` : ''}
-              <b>Сумма:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
+              <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
             </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn-metro" style="font-size:11px; padding:7px;" onclick="confirmOrderRoot('${ord.order_id}')">✅ Оплата поступила</button>
+            ${isAwaiting ? `
+              <button class="btn-metro" style="font-size:11px; padding:7px; margin-bottom:6px;" onclick="confirmOrderRoot('${ord.order_id}')">
+                ✅ Оплата поступила ➔ В «Собирается»
+              </button>
+            ` : ''}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+              <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="copyCourierData('${ord.order_id}')">📋 Для курьера</button>
+              <a class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber);" href="https://dostavka.yandex.ru/account/create" target="_blank">🚚 Яндекс Доставка</a>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+              <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openStatusModal('${ord.order_id}')">Сменить статус</button>
+              <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openEditItemsModal('${ord.order_id}')">Состав заказа</button>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
               <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="triggerOrderPhotoUpload('${ord.order_id}')">📸 Фото букета</button>
+              <button class="btn-metro btn-danger" style="font-size:11px; padding:7px;" onclick="deleteOrderRoot('${ord.order_id}')">Удалить заказ</button>
             </div>
           </div>
-        `).join('');
-      } catch (e) {}
+        `;
+      }).join('');
+    }
+
+    function copyCourierData(orderId) {
+      const ord = allRootOrders.find(o => o.order_id === orderId);
+      if (!ord) return;
+      const rec = ord.recipient_info ? `Получатель: ${ord.recipient_info}` : `Клиент: ${ord.user_name} (${ord.user_phone})`;
+      const textToCopy = `Адрес: ${ord.address}\n${rec}\nГруз: ЦВЕТЫ! Везти вертикально и в тепле.`;
+      if (navigator.clipboard) { navigator.clipboard.writeText(textToCopy); toast("Данные для курьера скопированы!"); }
     }
 
     async function confirmOrderRoot(orderId) {
@@ -1588,6 +2007,98 @@
       loadRootOrders();
     }
 
+    function openStatusModal(orderId) {
+      activeRootOrderForStatus = orderId;
+      document.getElementById('status-modal-title').innerText = `Статус ${orderId}`;
+      document.getElementById('status-modal').classList.add('open');
+    }
+    function closeStatusModal() { document.getElementById('status-modal').classList.remove('open'); }
+
+    async function applyStatusChoice(st) {
+      if (!activeRootOrderForStatus) return;
+      const oid = activeRootOrderForStatus;
+      closeStatusModal();
+      toast("Обновление...");
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_update_order", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", order_id: oid, status: st })
+      });
+      loadRootOrders();
+    }
+
+    function populateCatalogDropdown() {
+      const sel = document.getElementById('add-item-catalog-select');
+      if (sel) sel.innerHTML = catalog.map(c => `<option value="${c.id}">${c.title} (${c.price} ₽)</option>`).join('');
+    }
+
+    function openEditItemsModal(orderId) {
+      const ord = allRootOrders.find(o => o.order_id === orderId);
+      if (!ord) return;
+      activeRootOrderForEdit = ord;
+      tempEditingItems = JSON.parse(JSON.stringify(ord.items || []));
+      document.getElementById('edit-items-modal-title').innerText = `Состав ${orderId}`;
+      renderEditItemsList();
+      document.getElementById('edit-items-modal').classList.add('open');
+    }
+    function closeEditItemsModal() { document.getElementById('edit-items-modal').classList.remove('open'); }
+
+    function renderEditItemsList() {
+      const box = document.getElementById('edit-items-list');
+      let autoTotal = 0;
+      box.innerHTML = tempEditingItems.map((it, idx) => {
+        autoTotal += (it.price * it.qty);
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+            <div>${it.title} (${it.price} ₽ × ${it.qty})</div>
+            <div style="display:flex; gap:4px;">
+              <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList();">+</button>
+              <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList();">–</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('edit-order-total-input').value = autoTotal;
+    }
+
+    function addItemToCurrentOrder() {
+      const cid = document.getElementById('add-item-catalog-select').value;
+      const c = catalog.find(i => i.id == cid);
+      if (!c) return;
+      const ex = tempEditingItems.find(i => i.id == c.id);
+      if (ex) ex.qty++; else tempEditingItems.push({ id: c.id, title: c.title, price: c.price, qty: 1 });
+      renderEditItemsList();
+    }
+
+    async function saveEditedOrderItems() {
+      if (!activeRootOrderForEdit) return;
+      toast("Сохранение...");
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: "admin_update_order", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036",
+          order_id: activeRootOrderForEdit.order_id,
+          items: tempEditingItems,
+          total_amount: parseFloat(document.getElementById('edit-order-total-input').value) || 0
+        })
+      });
+      closeEditItemsModal();
+      loadRootOrders();
+    }
+
+    async function deleteOrderRoot(orderId) {
+      if (!confirm(`Удалить заказ ${orderId} безвозвратно?`)) return;
+      toast("Удаление...");
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_delete_order", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", order_id: orderId })
+      });
+      loadRootOrders();
+    }
+
+    // Фото и медиатека Google Диска
     function triggerOrderPhotoUpload(orderId) {
       uploadTargetContext = { type: 'order', id: orderId };
       document.getElementById('camera-file-input').click();
@@ -1601,7 +2112,7 @@
     async function handleNativeFileSelect(input) {
       const file = input.files && input.files[0];
       if (!file) return;
-      toast("Загрузка фото...");
+      toast("Загрузка...");
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64 = e.target.result;
@@ -1609,19 +2120,17 @@
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
-            action: "admin_upload_photo",
-            admin_id: ADMIN_TELEGRAM_ID,
-            admin_passcode: "m1rfol159036",
+            action: "admin_upload_photo", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036",
             base64: base64,
             order_id: uploadTargetContext.type === 'order' ? uploadTargetContext.id : ""
           })
         });
-        const data = await res.json();
-        if (data.success && uploadTargetContext.type === 'product') {
+        const d = await res.json();
+        if (d.success && uploadTargetContext.type === 'product') {
           const cur = document.getElementById('prod-edit-photo').value.trim();
-          document.getElementById('prod-edit-photo').value = cur ? `${cur}, ${data.photo_url}` : data.photo_url;
-          toast("Фото добавлено в список!");
-        } else if (data.success) {
+          document.getElementById('prod-edit-photo').value = cur ? `${cur}, ${d.photo_url}` : d.photo_url;
+          toast("Фото добавлено!");
+        } else if (d.success) {
           toast("Фото букета отправлено клиенту!");
         }
       };
@@ -1629,15 +2138,31 @@
       input.value = "";
     }
 
-    function switchRootSection(sec) {
-      document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
-      document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
-      document.getElementById('root-sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
-      document.getElementById('root-sec-catalog').style.display = sec === 'catalog' ? 'block' : 'none';
-      if (sec === 'orders') loadRootOrders();
-      if (sec === 'catalog') loadRootCatalog();
+    async function openDriveMediaModal() {
+      document.getElementById('drive-media-modal').classList.add('open');
+      const box = document.getElementById('drive-media-container');
+      box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
+      try {
+        const res = await fetch(`${API_URL}?action=admin_drive_media&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+        const media = await res.json();
+        if (!media.length) { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Папка пуста</div>'; return; }
+        box.innerHTML = media.map(m => `
+          <div class="drive-media-item" onclick="selectDrivePhoto('${m.url}')">
+            <img src="${m.url}" loading="lazy">
+          </div>
+        `).join('');
+      } catch (e) { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Ошибка загрузки</div>'; }
+    }
+    function closeDriveMediaModal() { document.getElementById('drive-media-modal').classList.remove('open'); }
+
+    function selectDrivePhoto(url) {
+      const cur = document.getElementById('prod-edit-photo').value.trim();
+      document.getElementById('prod-edit-photo').value = cur ? `${cur}, ${url}` : url;
+      closeDriveMediaModal();
+      toast("Фото прикреплено к товару");
     }
 
+    // Каталог в Root
     async function loadRootCatalog() {
       const container = document.getElementById('root-catalog-container');
       const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
@@ -1648,8 +2173,11 @@
             <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
             <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
-          <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Фото: ${it.photo_url ? it.photo_url.split(',').length + ' шт.' : '0'}</div>
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
+          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Фото: ${it.photo_url ? it.photo_url.split(',').length + ' шт.' : '0'}</div>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
+          </div>
         </div>
       `).join('');
     }
@@ -1681,14 +2209,12 @@
       document.getElementById('prod-edit-popular').checked = !!item.is_popular;
       document.getElementById('product-editor-modal').classList.add('open');
     }
-
     function closeProductEditorModal() { document.getElementById('product-editor-modal').classList.remove('open'); }
 
     async function saveProductEditor() {
       const payload = {
         action: editingProductId ? "admin_update_product" : "admin_add_product",
-        admin_id: ADMIN_TELEGRAM_ID,
-        admin_passcode: "m1rfol159036",
+        admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036",
         id: editingProductId,
         title: document.getElementById('prod-edit-name').value.trim(),
         unit: document.getElementById('prod-edit-unit').value.trim(),
@@ -1698,16 +2224,139 @@
         description: document.getElementById('prod-edit-desc').value.trim(),
         is_popular: document.getElementById('prod-edit-popular').checked
       };
-
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload)
-      });
+      await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
       toast("Каталог обновлен");
       closeProductEditorModal();
       loadRootCatalog();
       loadCatalog();
+    }
+
+    async function deleteProductRoot(id) {
+      if (!confirm("Удалить этот товар из базы?")) return;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_delete_product", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", id: id })
+      });
+      loadRootCatalog();
+      loadCatalog();
+    }
+
+    // Клиенты в Root
+    async function loadRootClients() {
+      const container = document.getElementById('root-clients-container');
+      const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+      allRootClients = await res.json();
+      renderRootClients(allRootClients);
+    }
+
+    function filterRootClients() {
+      const q = document.getElementById('root-client-search').value.toLowerCase().trim();
+      const filtered = allRootClients.filter(c => 
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q)) ||
+        (c.username && c.username.toLowerCase().includes(q))
+      );
+      renderRootClients(filtered);
+    }
+
+    function renderRootClients(clients) {
+      const container = document.getElementById('root-clients-container');
+      container.innerHTML = clients.map(c => `
+        <div class="box-card" style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div><b>${c.name}</b><br><span style="font-size:12px; color:var(--text-muted);">${c.phone}</span></div>
+            <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${c.total_spent} ₽</span></div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Telegram: ${c.username || 'скрыт'} · Рег: ${c.reg_date}</div>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt('${c.user_id}', ${c.total_spent})">Изменить выкуп</button>
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteUserRoot('${c.user_id}')">Сбросить</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function editSpentPrompt(uid, current) {
+      const val = prompt("Новая сумма выкупа (₽):", current);
+      if (!val || isNaN(val)) return;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_update_spent", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", target_user_id: uid, total_spent: parseFloat(val) })
+      });
+      loadRootClients();
+    }
+
+    async function deleteUserRoot(uid) {
+      if (!confirm("Сбросить аккаунт клиента?")) return;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_delete_user", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", target_user_id: uid })
+      });
+      loadRootClients();
+    }
+
+    // FAQ в Root
+    async function loadRootFaq() {
+      const container = document.getElementById('root-faq-container');
+      const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+      allRootFaq = await res.json();
+      container.innerHTML = allRootFaq.map(f => `
+        <div class="box-card" style="margin-bottom:8px;">
+          <div style="font-weight:700; font-size:13px;">${f.question}</div>
+          <div style="font-size:12px; color:var(--text-muted); margin:4px 0;">${f.answer}</div>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditFaqModal('${f.id}')">Редактировать</button>
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteFaqRoot('${f.id}')">Удалить</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddFaqModal() {
+      editingFaqId = null;
+      document.getElementById('faq-edit-title').innerText = "Новый вопрос";
+      document.getElementById('faq-edit-q').value = "";
+      document.getElementById('faq-edit-a').value = "";
+      document.getElementById('faq-editor-modal').classList.add('open');
+    }
+
+    function openEditFaqModal(id) {
+      const f = allRootFaq.find(i => String(i.id) === String(id));
+      if (!f) return;
+      editingFaqId = f.id;
+      document.getElementById('faq-edit-title').innerText = `Вопрос ID: ${f.id}`;
+      document.getElementById('faq-edit-q').value = f.question;
+      document.getElementById('faq-edit-a').value = f.answer;
+      document.getElementById('faq-editor-modal').classList.add('open');
+    }
+    function closeFaqEditorModal() { document.getElementById('faq-editor-modal').classList.remove('open'); }
+
+    async function saveFaqEditor() {
+      const q = document.getElementById('faq-edit-q').value.trim();
+      const a = document.getElementById('faq-edit-a').value.trim();
+      if (!q || !a) return;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_update_faq", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", id: editingFaqId || "new", question: q, answer: a })
+      });
+      closeFaqEditorModal();
+      loadRootFaq();
+      loadFaq();
+    }
+
+    async function deleteFaqRoot(id) {
+      if (!confirm("Удалить этот вопрос?")) return;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "admin_delete_faq", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036", id: id })
+      });
+      loadRootFaq();
+      loadFaq();
     }
 
     function secretAdminTap() {
@@ -1726,9 +2375,8 @@
       else window.open(url, '_blank');
     }
 
-    function renderSavedAddresses() {}
-
     loadCatalog();
+    checkUserSession();
     if (String(userId) === ADMIN_TELEGRAM_ID) {
       isAdmin = true;
       document.getElementById('dock-root-btn').style.display = 'flex';
