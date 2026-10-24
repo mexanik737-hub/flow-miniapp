@@ -349,7 +349,7 @@
     .btn-quick-add:active { transform: scale(0.88); }
 
     .btn-select-variant {
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 8px;
       background: rgba(56, 189, 248, 0.14);
       color: var(--cyan);
@@ -709,6 +709,7 @@
       color: var(--cyan);
     }
 
+    /* Чипсы вариаций в модалке товара */
     .variant-selector-block {
       margin-bottom: 12px;
     }
@@ -914,6 +915,38 @@
       gap: 8px;
     }
 
+    /* Таблица вариаций группы в Root */
+    .group-variants-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      margin-bottom: 14px;
+      font-size: 12px;
+    }
+    .group-variants-table th {
+      text-align: left;
+      padding: 6px 8px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 10px;
+    }
+    .group-variants-table td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .group-variants-table input[type="text"],
+    .group-variants-table input[type="number"] {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+
     #toast {
       position: fixed;
       top: 16px;
@@ -976,7 +1009,6 @@
       <div class="box-card" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
-      <!-- Плашка скрыта, если в корзине 0 товаров -->
       <div class="box-card" id="cart-checkout-card" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <span style="font-size:14px; font-weight:700;">Сумма букетов:</span>
@@ -1021,7 +1053,7 @@
         </div>
       </div>
 
-      <!-- Мои заказы в единой неоновой плашке -->
+      <!-- Мои заказы -->
       <div class="box-card neon-glow" style="margin-bottom:14px;">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Мои заказы
@@ -1031,7 +1063,7 @@
         </div>
       </div>
 
-      <!-- FAQ в единой неоновой плашке -->
+      <!-- FAQ -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Часто задаваемые вопросы (FAQ)
@@ -1060,7 +1092,10 @@
 
       <!-- Каталог -->
       <div id="root-sec-catalog" style="display:none;">
-        <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddProductModal()">+ Добавить новый товар в базу</button>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px;">
+          <button class="btn-metro" style="font-size:12px; padding:10px;" onclick="openAddProductModal()">+ Товар</button>
+          <button class="btn-metro btn-secondary" style="font-size:12px; padding:10px; color:var(--cyan);" onclick="openAddGroupModal()">+ Группа вариаций</button>
+        </div>
         <div id="root-catalog-container"></div>
       </div>
 
@@ -1146,7 +1181,7 @@
     </div>
   </div>
 
-  <!-- Модалка карточки букета (с селектором ростовок и мультифото) -->
+  <!-- Модалка карточки букета (с ростовками/оттенками и мультифото) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1160,15 +1195,14 @@
         <span class="thumb-placeholder-text">Фото пока не добавили</span>
       </div>
 
-      <!-- Селекторы вариантов (если товар объединен) -->
       <div id="pop-variant-box" style="display:none;">
         <div class="variant-selector-block" id="pop-pack-block">
-          <div class="variant-selector-label">Количество в пачке:</div>
+          <div class="variant-selector-label" id="pop-pack-label">Количество / Фасовка:</div>
           <div class="variant-chips-wrap" id="pop-pack-chips"></div>
         </div>
-        <div class="variant-selector-block" id="pop-height-block">
-          <div class="variant-selector-label">Высота стебля:</div>
-          <div class="variant-chips-wrap" id="pop-height-chips"></div>
+        <div class="variant-selector-block" id="pop-variant-block">
+          <div class="variant-selector-label" id="pop-variant-label">Высота / Оттенок:</div>
+          <div class="variant-chips-wrap" id="pop-variant-chips"></div>
         </div>
       </div>
 
@@ -1346,7 +1380,7 @@
     </div>
   </div>
 
-  <!-- Модалка добавления сохраненного адреса -->
+  <!-- Модалка добавления адреса -->
   <div class="modal-overlay" id="add-saved-addr-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1375,7 +1409,7 @@
     </div>
   </div>
 
-  <!-- Модалка товара для Root -->
+  <!-- Модалка одиночного товара для Root -->
   <div class="modal-overlay" id="product-editor-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1384,13 +1418,16 @@
       </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название товара: *</label>
-      <input type="text" id="prod-edit-name" class="metro-input" placeholder="Роза Эквадор 40 см">
+      <input type="text" id="prod-edit-name" class="metro-input" placeholder="Роза Эквадор">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Формат продажи: *</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Фасовка / Количество: *</label>
       <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. или 1 шт.">
 
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Модификатор (ростовка / оттенок):</label>
+      <input type="text" id="prod-edit-variant" class="metro-input" placeholder="60 см или Белая">
+
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
-      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы, Экзотика...">
+      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
       <input type="number" id="prod-edit-price" class="metro-input" placeholder="3600">
@@ -1400,10 +1437,10 @@
       <input type="hidden" id="prod-edit-photo">
 
       <div style="display:flex; gap:6px; margin-bottom:14px;">
-        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px;" onclick="triggerProductPhotoUpload()">
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px;" onclick="triggerProductPhotoUpload('single')">
           📷 С камеры / галереи
         </button>
-        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--cyan);" onclick="openDriveMediaModal()">
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--cyan);" onclick="openDriveMediaModal('single')">
           📂 Из Google Диска
         </button>
       </div>
@@ -1425,6 +1462,65 @@
     </div>
   </div>
 
+  <!-- Модалка редактирования ГРУППЫ товаров в Root (Мастер-карточка) -->
+  <div class="modal-overlay" id="group-editor-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title" id="group-edit-title">Группа товаров</div>
+        <button class="close-btn" onclick="closeGroupEditorModal()">✕</button>
+      </div>
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Базовое название группы: *</label>
+      <input type="text" id="group-edit-name" class="metro-input" placeholder="Например: Роза Эквадор или Хризантема">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория группы:</label>
+      <input type="text" id="group-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общие фотографии группы:</label>
+      <div class="prod-photo-strip" id="group-photo-strip"></div>
+      <input type="hidden" id="group-edit-photo">
+
+      <div style="display:flex; gap:6px; margin-bottom:14px;">
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px;" onclick="triggerProductPhotoUpload('group')">
+          📷 С камеры / галереи
+        </button>
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--cyan);" onclick="openDriveMediaModal('group')">
+          📂 Из Google Диска
+        </button>
+      </div>
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общее описание группы:</label>
+      <input type="text" id="group-edit-desc" class="metro-input" placeholder="Премиальная срезка высшей категории...">
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <input type="checkbox" id="group-edit-popular" style="width:18px; height:18px;">
+        <label for="group-edit-popular" style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Хит продаж (для всей группы)</label>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:10px;">
+        <span style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase;">Вариации в группе:</span>
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px 10px; width:auto;" onclick="addGroupVariantRow()">+ Добавить вариант</button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="group-variants-table">
+          <thead>
+            <tr>
+              <th style="width:25%;">Фасовка</th>
+              <th style="width:30%;">Ростовка/Цвет</th>
+              <th style="width:25%;">Цена (₽)</th>
+              <th style="width:10%;">Нал.</th>
+              <th style="width:10%;"></th>
+            </tr>
+          </thead>
+          <tbody id="group-variants-tbody"></tbody>
+        </table>
+      </div>
+
+      <button class="btn-metro" onclick="saveGroupEditor()">Сохранить всю группу</button>
+    </div>
+  </div>
+
   <!-- Модалка выбора фото из архива Google Диска -->
   <div class="modal-overlay" id="drive-media-modal">
     <div class="modal-sheet">
@@ -1432,7 +1528,7 @@
         <div class="modal-title">Архив фото Google Диска</div>
         <button class="close-btn" onclick="closeDriveMediaModal()">✕</button>
       </div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Нажмите на фото, чтобы прикрепить его к товару:</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Нажмите на фото, чтобы прикрепить его:</div>
       <div class="drive-media-grid" id="drive-media-container">
         <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>
       </div>
@@ -1533,8 +1629,8 @@
 
     let activePopItem = null;
     let popQty = 1;
-    let selectedGroupPack = "15 шт.";
-    let selectedGroupHeight = "60 см";
+    let selectedGroupPack = "";
+    let selectedGroupVariant = "";
 
     let orderDelType = 'delivery';
     let orderRecType = 'self';
@@ -1551,8 +1647,10 @@
     let activeRootOrderForEdit = null;
     let tempEditingItems = [];
     let uploadTargetContext = null;
+    let driveModalTarget = "single";
     let suggestDebounceTimer = null;
     let editingProductId = null;
+    let editingGroupName = null;
     let editingFaqId = null;
 
     function toast(text) {
@@ -1607,48 +1705,48 @@
       document.getElementById('time-select-box').classList.remove('open');
     }
 
-    // Программное объединение каталога
+    // Автоматическая группировка витрины по одинаковому названию title
     function buildDisplayCatalog() {
-      const groups = {};
-      const standalone = [];
+      const groupsMap = {};
+      const orderTracker = [];
 
       catalog.forEach(item => {
-        if (/^Роза Эквадор/i.test(item.title)) {
-          if (!groups['Роза Эквадор']) {
-            groups['Роза Эквадор'] = {
-              is_group: true,
-              id: 'group_ecuador_rose',
-              title: 'Роза Эквадор',
-              category: 'Роза Эквадор',
-              variants: [],
-              is_popular: false,
-              is_active: false,
-              photo_url: item.photo_url || "",
-              description: 'Премиальные сортовые розы Эквадор с крупным бутоном. Доступны разные ростовки и фасовки.'
-            };
-          }
-          groups['Роза Эквадор'].variants.push(item);
-          if (item.is_popular) groups['Роза Эквадор'].is_popular = true;
-          if (item.is_active) groups['Роза Эквадор'].is_active = true;
-          if (!groups['Роза Эквадор'].photo_url && item.photo_url) {
-            groups['Роза Эквадор'].photo_url = item.photo_url;
-          }
-        } else {
-          standalone.push(item);
+        const titleKey = item.title.trim();
+        if (!groupsMap[titleKey]) {
+          groupsMap[titleKey] = [];
+          orderTracker.push(titleKey);
         }
+        groupsMap[titleKey].push(item);
       });
 
-      if (groups['Роза Эквадор']) {
-        const prices = groups['Роза Эквадор'].variants.filter(v => v.is_active).map(v => v.price);
-        groups['Роза Эквадор'].price = prices.length ? Math.min(...prices) : Math.min(...groups['Роза Эквадор'].variants.map(v => v.price));
-        groups['Роза Эквадор'].unit = "от 5 до 25 шт.";
-        displayCatalog = [groups['Роза Эквадор'], ...standalone];
-      } else {
-        displayCatalog = [...standalone];
-      }
+      displayCatalog = orderTracker.map(titleKey => {
+        const items = groupsMap[titleKey];
+        if (items.length === 1 && !items[0].variant) {
+          return { ...items[0], is_group: false };
+        }
+
+        const activeVariants = items.filter(v => v.is_active);
+        const prices = (activeVariants.length ? activeVariants : items).map(v => v.price);
+        const minPrice = Math.min(...prices);
+        const hasPhoto = items.find(v => v.photo_url);
+
+        return {
+          is_group: true,
+          id: 'group_' + encodeURIComponent(titleKey),
+          title: titleKey,
+          category: items[0].category,
+          price: minPrice,
+          photo_url: hasPhoto ? hasPhoto.photo_url : "",
+          description: items[0].description,
+          is_active: items.some(v => v.is_active),
+          is_popular: items.some(v => v.is_popular),
+          unit: items.length > 1 ? "Варианты выбора" : items[0].unit,
+          variants: items
+        };
+      });
     }
 
-    // Фильтры витрины (динамические)
+    // Фильтры витрины (динамические цены и категории)
     function setupFilterDropdown() {
       const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
       const sel = document.getElementById('filter-cat-select');
@@ -1798,20 +1896,17 @@
 
     // Модальное окно букета с поддержкой вариантов
     function openProductModal(id) {
-      const isGroup = (id === 'group_ecuador_rose');
-      let item = isGroup 
-        ? displayCatalog.find(i => i.id === 'group_ecuador_rose')
-        : catalog.find(i => String(i.id) === String(id));
-
+      const item = displayCatalog.find(i => String(i.id) === String(id)) || catalog.find(i => String(i.id) === String(id));
       if (!item) return;
+
       activePopItem = item;
       popQty = 1;
 
       const variantBox = document.getElementById('pop-variant-box');
-      if (isGroup) {
+      if (item.is_group) {
         variantBox.style.display = 'block';
-        setupRoseVariantChips();
-        updateSelectedRoseVariantUI();
+        setupGroupVariantChips(item);
+        updateSelectedGroupVariantUI();
       } else {
         variantBox.style.display = 'none';
         setupSingleItemPopUI(item);
@@ -1847,48 +1942,73 @@
       }
     }
 
-    function setupRoseVariantChips() {
+    function setupGroupVariantChips(group) {
+      const packs = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
+      const vars = Array.from(new Set(group.variants.map(v => v.variant).filter(Boolean)));
+
+      if (!selectedGroupPack || !packs.includes(selectedGroupPack)) {
+        selectedGroupPack = packs[0] || "";
+      }
+      if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
+        selectedGroupVariant = vars[0] || "";
+      }
+
+      const packBlock = document.getElementById('pop-pack-block');
       const packWrap = document.getElementById('pop-pack-chips');
-      const heightWrap = document.getElementById('pop-height-chips');
+      if (packs.length > 1 || (packs.length === 1 && vars.length > 0)) {
+        packBlock.style.display = 'block';
+        packWrap.innerHTML = packs.map(p => `
+          <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectGroupPack('${p}')">${p}</div>
+        `).join('');
+      } else {
+        packBlock.style.display = 'none';
+      }
 
-      packWrap.innerHTML = ['5 шт.', '15 шт.', '25 шт.'].map(p => `
-        <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectRosePack('${p}')">${p}</div>
-      `).join('');
-
-      heightWrap.innerHTML = ['40 см', '50 см', '60 см', '70 см', '80 см'].map(h => `
-        <div class="variant-chip ${h === selectedGroupHeight ? 'active' : ''}" onclick="selectRoseHeight('${h}')">${h}</div>
-      `).join('');
+      const varBlock = document.getElementById('pop-variant-block');
+      const varWrap = document.getElementById('pop-variant-chips');
+      if (vars.length > 0) {
+        varBlock.style.display = 'block';
+        varWrap.innerHTML = vars.map(v => `
+          <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectGroupVariant('${v}')">${v}</div>
+        `).join('');
+      } else {
+        varBlock.style.display = 'none';
+      }
     }
 
-    function selectRosePack(pack) {
+    function selectGroupPack(pack) {
       selectedGroupPack = pack;
-      setupRoseVariantChips();
-      updateSelectedRoseVariantUI();
+      setupGroupVariantChips(activePopItem);
+      updateSelectedGroupVariantUI();
     }
 
-    function selectRoseHeight(height) {
-      selectedGroupHeight = height;
-      setupRoseVariantChips();
-      updateSelectedRoseVariantUI();
+    function selectGroupVariant(v) {
+      selectedGroupVariant = v;
+      setupGroupVariantChips(activePopItem);
+      updateSelectedGroupVariantUI();
     }
 
-    function updateSelectedRoseVariantUI() {
+    function updateSelectedGroupVariantUI() {
       if (!activePopItem || !activePopItem.is_group) return;
 
-      const variant = activePopItem.variants.find(v => 
-        v.unit.trim() === selectedGroupPack && v.title.includes(selectedGroupHeight)
-      );
+      const variant = activePopItem.variants.find(v => {
+        const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
+        const varMatch = !selectedGroupVariant || v.variant.trim() === selectedGroupVariant.trim();
+        return packMatch && varMatch;
+      });
 
-      document.getElementById('pop-title').innerText = `Роза Эквадор ${selectedGroupHeight} (${selectedGroupPack})`;
-      document.getElementById('pop-cat').innerText = "Роза Эквадор";
-      document.getElementById('pop-unit').innerText = selectedGroupPack;
+      const varText = selectedGroupVariant ? ` ${selectedGroupVariant}` : '';
+      const packText = selectedGroupPack ? ` (${selectedGroupPack})` : '';
+      document.getElementById('pop-title').innerText = `${activePopItem.title}${varText}${packText}`;
+      document.getElementById('pop-cat').innerText = activePopItem.category;
+      document.getElementById('pop-unit').innerText = selectedGroupPack || activePopItem.unit;
 
       const addBtn = document.getElementById('pop-add-cart-btn');
       const qtyBox = document.getElementById('pop-qty-controls');
 
       if (!variant || !variant.is_active) {
         document.getElementById('pop-price').innerText = variant ? `${variant.price} ₽` : "— ₽";
-        document.getElementById('pop-desc').innerText = "Данная ростовка в выбранной фасовке сейчас отсутствует в наличии.";
+        document.getElementById('pop-desc').innerText = "Данная вариация сейчас отсутствует в наличии.";
         addBtn.innerText = "Нет в наличии";
         addBtn.style.background = "var(--card-inner)";
         addBtn.style.color = "var(--text-muted)";
@@ -1897,7 +2017,7 @@
         renderPopGallery(activePopItem.photo_url);
       } else {
         document.getElementById('pop-price').innerText = `${variant.price} ₽`;
-        document.getElementById('pop-desc').innerText = variant.description || `Роза Эквадор ${selectedGroupHeight}. Пачка ${selectedGroupPack}.`;
+        document.getElementById('pop-desc').innerText = variant.description || activePopItem.description;
         addBtn.innerText = "Добавить в заказ";
         addBtn.style.background = "var(--green)";
         addBtn.style.color = "#fff";
@@ -1931,9 +2051,11 @@
 
       let targetId = activePopItem.id;
       if (activePopItem.is_group) {
-        const variant = activePopItem.variants.find(v => 
-          v.unit.trim() === selectedGroupPack && v.title.includes(selectedGroupHeight)
-        );
+        const variant = activePopItem.variants.find(v => {
+          const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
+          const varMatch = !selectedGroupVariant || v.variant.trim() === selectedGroupVariant.trim();
+          return packMatch && varMatch;
+        });
         if (!variant || !variant.is_active) {
           toast("Товар отсутствует в наличии");
           return;
@@ -1976,7 +2098,7 @@
       toast("Удалено из корзины");
     }
 
-    // Корзина
+    // Корзина с фото и автоскрытием плашки
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
@@ -1996,11 +2118,12 @@
       checkoutCard.style.display = 'block';
 
       container.innerHTML = entries.map(([id, qty]) => {
-        const item = catalog.find(i => i.id == id);
+        const item = catalog.find(i => String(i.id) === String(id));
         if (!item) return '';
         subtotal += item.price * qty;
         const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
         const thumb = photos[0] || "";
+        const varInfo = item.variant ? ` (${item.variant})` : '';
 
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
@@ -2009,7 +2132,7 @@
                 ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
               </div>
               <div>
-                <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}</div>
+                <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}${varInfo}</div>
                 <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit || ''} · ${item.price} ₽ × ${qty}</div>
               </div>
             </div>
@@ -2160,8 +2283,17 @@
     async function submitFinalOrder() {
       let orderItems = [];
       Object.entries(cart).forEach(([id, qty]) => {
-        const item = catalog.find(i => i.id == id);
-        if (item) orderItems.push({ id: item.id, title: item.title, price: item.price, qty: qty, unit: item.unit });
+        const item = catalog.find(i => String(i.id) === String(id));
+        if (item) {
+          orderItems.push({
+            id: item.id,
+            title: item.title,
+            variant: item.variant || "",
+            unit: item.unit || "1 шт.",
+            price: item.price,
+            qty: qty
+          });
+        }
       });
 
       let recInfo = "";
@@ -2468,7 +2600,7 @@
       document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
     }
 
-    // Заказы клиента (с таймером 15 мин и кнопкой оплаты)
+    // Заказы клиента (включая завершенные)
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
       try {
@@ -2495,7 +2627,10 @@
                 <span class="status-badge ${badgeCls}">${ord.status}</span>
               </div>
               <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
-                ${ord.items.map(i => `• ${i.title} × ${i.qty}`).join('<br>')}
+                ${ord.items.map(i => {
+                  const varInfo = i.variant ? ` (${i.variant})` : '';
+                  return `• ${i.title}${varInfo} × ${i.qty}`;
+                }).join('<br>')}
               </div>
               ${isAwaitingPay ? `
                 <button class="btn-metro" style="font-size:12px; padding:8px; margin-bottom:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount})">
@@ -2671,7 +2806,10 @@
 
     function populateCatalogDropdown() {
       const sel = document.getElementById('add-item-catalog-select');
-      if (sel) sel.innerHTML = catalog.map(c => `<option value="${c.id}">${c.title} (${c.price} ₽)</option>`).join('');
+      if (sel) sel.innerHTML = catalog.map(c => {
+        const varInfo = c.variant ? ` (${c.variant})` : '';
+        return `<option value="${c.id}">${c.title}${varInfo} [${c.unit}] — ${c.price} ₽</option>`;
+      }).join('');
     }
 
     function openEditItemsModal(orderId) {
@@ -2690,9 +2828,10 @@
       let autoTotal = 0;
       box.innerHTML = tempEditingItems.map((it, idx) => {
         autoTotal += (it.price * it.qty);
+        const varInfo = it.variant ? ` (${it.variant})` : '';
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-            <div>${it.title} (${it.price} ₽ × ${it.qty})</div>
+            <div>${it.title}${varInfo} (${it.price} ₽ × ${it.qty})</div>
             <div style="display:flex; gap:4px;">
               <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList();">+</button>
               <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList();">–</button>
@@ -2705,10 +2844,10 @@
 
     function addItemToCurrentOrder() {
       const cid = document.getElementById('add-item-catalog-select').value;
-      const c = catalog.find(i => i.id == cid);
+      const c = catalog.find(i => String(i.id) === String(cid));
       if (!c) return;
-      const ex = tempEditingItems.find(i => i.id == c.id);
-      if (ex) ex.qty++; else tempEditingItems.push({ id: c.id, title: c.title, price: c.price, qty: 1 });
+      const ex = tempEditingItems.find(i => String(i.id) === String(c.id));
+      if (ex) ex.qty++; else tempEditingItems.push({ id: c.id, title: c.title, variant: c.variant || '', unit: c.unit || '1 шт.', price: c.price, qty: 1 });
       renderEditItemsList();
     }
 
@@ -2755,8 +2894,9 @@
       document.getElementById('camera-file-input').click();
     }
 
-    function triggerProductPhotoUpload() {
-      uploadTargetContext = { type: 'product' };
+    function triggerProductPhotoUpload(target) {
+      driveModalTarget = target;
+      uploadTargetContext = { type: 'product', target: target };
       document.getElementById('camera-file-input').click();
     }
 
@@ -2778,7 +2918,11 @@
         });
         const d = await res.json();
         if (d.success && uploadTargetContext.type === 'product') {
-          addProductPhotoUrl(d.photo_url);
+          if (uploadTargetContext.target === 'group') {
+            addGroupPhotoUrl(d.photo_url);
+          } else {
+            addProductPhotoUrl(d.photo_url);
+          }
           toast("Фото добавлено!");
         } else if (d.success) {
           toast("Фото букета отправлено клиенту!");
@@ -2788,6 +2932,7 @@
       input.value = "";
     }
 
+    // Фото одиночного товара в Root
     function renderProductEditorPhotos(urlsStr) {
       const box = document.getElementById('prod-photo-strip');
       const hiddenInput = document.getElementById('prod-edit-photo');
@@ -2795,7 +2940,7 @@
       const urls = (urlsStr || "").split(',').map(s => s.trim()).filter(Boolean);
 
       if (!urls.length) {
-        box.innerHTML = '<span style="font-size:11px; color:var(--text-muted); padding:4px 0;">Нет прикрепленных фото</span>';
+        box.innerHTML = '<span style="font-size:11px; color:var(--text-muted); padding:4px 0;">Нет фото</span>';
         return;
       }
 
@@ -2821,55 +2966,247 @@
       renderProductEditorPhotos(urls.join(', '));
     }
 
-    async function openDriveMediaModal() {
-      document.getElementById('drive-media-modal').classList.add('open');
-      const box = document.getElementById('drive-media-container');
-      box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
-      try {
-        const res = await fetch(`${API_URL}?action=admin_drive_media&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
-        const media = await res.json();
-        if (!media.length) { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Папка пуста</div>'; return; }
-        box.innerHTML = media.map(m => `
-          <div class="drive-media-item" onclick="selectDrivePhoto('${m.url}')">
-            <img src="${m.url}" loading="lazy">
-          </div>
-        `).join('');
-      } catch (e) { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Ошибка загрузки</div>'; }
-    }
-    function closeDriveMediaModal() { document.getElementById('drive-media-modal').classList.remove('open'); }
+    // Фото группы товаров в Root
+    function renderGroupEditorPhotos(urlsStr) {
+      const box = document.getElementById('group-photo-strip');
+      const hiddenInput = document.getElementById('group-edit-photo');
+      hiddenInput.value = urlsStr || "";
+      const urls = (urlsStr || "").split(',').map(s => s.trim()).filter(Boolean);
 
-    function selectDrivePhoto(url) {
-      addProductPhotoUrl(url);
-      closeDriveMediaModal();
-      toast("Фото прикреплено к товару");
-    }
+      if (!urls.length) {
+        box.innerHTML = '<span style="font-size:11px; color:var(--text-muted); padding:4px 0;">Нет фото</span>';
+        return;
+      }
 
-    // Каталог в Root
-    async function loadRootCatalog() {
-      const container = document.getElementById('root-catalog-container');
-      const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
-      allRootCatalog = await res.json();
-      container.innerHTML = allRootCatalog.map(it => `
-        <div class="box-card" style="margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between;">
-            <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
-            <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
-          </div>
-          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Фото: ${it.photo_url ? it.photo_url.split(',').length + ' шт.' : '0'}</div>
-          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
-          <div style="display:flex; gap:6px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
-            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
-          </div>
+      box.innerHTML = urls.map((u, idx) => `
+        <div class="prod-photo-thumb-wrap">
+          <img src="${u}">
+          <button class="prod-photo-del-btn" onclick="removeGroupPhoto(${idx})">✕</button>
         </div>
       `).join('');
     }
 
+    function addGroupPhotoUrl(url) {
+      const hiddenInput = document.getElementById('group-edit-photo');
+      const cur = hiddenInput.value.trim();
+      const updated = cur ? `${cur}, ${url}` : url;
+      renderGroupEditorPhotos(updated);
+    }
+
+    function removeGroupPhoto(idx) {
+      const hiddenInput = document.getElementById('group-edit-photo');
+      const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+      urls.splice(idx, 1);
+      renderGroupEditorPhotos(urls.join(', '));
+    }
+
+    function openDriveMediaModal(target) {
+      driveModalTarget = target;
+      document.getElementById('drive-media-modal').classList.add('open');
+      const box = document.getElementById('drive-media-container');
+      box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
+      fetch(`${API_URL}?action=admin_drive_media&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`)
+        .then(r => r.json())
+        .then(media => {
+          if (!media.length) { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Папка пуста</div>'; return; }
+          box.innerHTML = media.map(m => `
+            <div class="drive-media-item" onclick="selectDrivePhoto('${m.url}')">
+              <img src="${m.url}" loading="lazy">
+            </div>
+          `).join('');
+        })
+        .catch(() => { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Ошибка загрузки</div>'; });
+    }
+
+    function closeDriveMediaModal() { document.getElementById('drive-media-modal').classList.remove('open'); }
+
+    function selectDrivePhoto(url) {
+      if (driveModalTarget === 'group') {
+        addGroupPhotoUrl(url);
+      } else {
+        addProductPhotoUrl(url);
+      }
+      closeDriveMediaModal();
+      toast("Фото прикреплено");
+    }
+
+    // Каталог в Root с раздельными карточками одиночных товаров и групп
+    async function loadRootCatalog() {
+      const container = document.getElementById('root-catalog-container');
+      const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
+      allRootCatalog = await res.json();
+
+      const groups = {};
+      const standalone = [];
+
+      allRootCatalog.forEach(item => {
+        const titleKey = item.title.trim();
+        if (!groups[titleKey]) groups[titleKey] = [];
+        groups[titleKey].push(item);
+      });
+
+      const rootCards = [];
+      Object.keys(groups).forEach(key => {
+        const list = groups[key];
+        if (list.length > 1 || list[0].variant) {
+          rootCards.push({ is_group: true, title: key, items: list });
+        } else {
+          rootCards.push({ is_group: false, item: list[0] });
+        }
+      });
+
+      container.innerHTML = rootCards.map(c => {
+        if (c.is_group) {
+          const activeCount = c.items.filter(i => i.is_active).length;
+          const prices = c.items.map(i => i.price);
+          const minP = Math.min(...prices);
+          const maxP = Math.max(...prices);
+          const photoCount = (c.items[0].photo_url ? c.items[0].photo_url.split(',').length : 0);
+
+          return `
+            <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--cyan);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                  <b>${c.title}</b> <span style="font-size:10px; background:rgba(56,189,248,0.15); color:var(--cyan); padding:2px 6px; border-radius:4px; font-weight:700;">Группа (${c.items.length})</span>
+                  <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Категория: ${c.items[0].category} · Фото: ${photoCount}</div>
+                  <div style="font-size:11px; color:var(--amber); margin-top:2px;">Наличие: ${activeCount} из ${c.items.length} активны</div>
+                </div>
+                <div style="text-align:right;">
+                  <span style="color:var(--green); font-weight:800; font-size:13px;">${minP === maxP ? minP + ' ₽' : minP + '–' + maxP + ' ₽'}</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:8px;">
+                <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditGroupModal('${encodeURIComponent(c.title)}')">⚙️ Редактировать группу</button>
+              </div>
+            </div>
+          `;
+        } else {
+          const it = c.item;
+          return `
+            <div class="box-card" style="margin-bottom:8px;">
+              <div style="display:flex; justify-content:space-between;">
+                <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
+                <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
+              </div>
+              <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Фото: ${it.photo_url ? it.photo_url.split(',').length + ' шт.' : '0'}</div>
+              <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
+                <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+    }
+
+    // Редактор группы товаров (Мастер-карточка)
+    function openAddGroupModal() {
+      editingGroupName = null;
+      document.getElementById('group-edit-title').innerText = "Создать группу вариаций";
+      document.getElementById('group-edit-name').value = "";
+      document.getElementById('group-edit-cat').value = "Цветы";
+      document.getElementById('group-edit-desc').value = "";
+      document.getElementById('group-edit-popular').checked = false;
+      renderGroupEditorPhotos("");
+
+      const tbody = document.getElementById('group-variants-tbody');
+      tbody.innerHTML = "";
+      addGroupVariantRow({ unit: "15 шт.", variant: "50 см", price: 3500, is_active: true });
+      addGroupVariantRow({ unit: "15 шт.", variant: "60 см", price: 4000, is_active: true });
+      document.getElementById('group-editor-modal').classList.add('open');
+    }
+
+    function openEditGroupModal(encodedTitle) {
+      const title = decodeURIComponent(encodedTitle);
+      editingGroupName = title;
+      const groupItems = allRootCatalog.filter(i => i.title.trim() === title.trim());
+      if (!groupItems.length) return;
+
+      document.getElementById('group-edit-title').innerText = `Группа: ${title}`;
+      document.getElementById('group-edit-name').value = title;
+      document.getElementById('group-edit-cat').value = groupItems[0].category;
+      document.getElementById('group-edit-desc').value = groupItems[0].description || "";
+      document.getElementById('group-edit-popular').checked = groupItems.some(i => i.is_popular);
+
+      const hasPhoto = groupItems.find(i => i.photo_url);
+      renderGroupEditorPhotos(hasPhoto ? hasPhoto.photo_url : "");
+
+      const tbody = document.getElementById('group-variants-tbody');
+      tbody.innerHTML = "";
+      groupItems.forEach(item => {
+        addGroupVariantRow(item);
+      });
+
+      document.getElementById('group-editor-modal').classList.add('open');
+    }
+
+    function closeGroupEditorModal() { document.getElementById('group-editor-modal').classList.remove('open'); }
+
+    function addGroupVariantRow(data = {}) {
+      const tbody = document.getElementById('group-variants-tbody');
+      const tr = document.createElement('tr');
+      tr.dataset.id = data.id || "";
+      tr.innerHTML = `
+        <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
+        <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см / Белая"></td>
+        <td><input type="number" class="gv-price" value="${data.price || 3500}"></td>
+        <td style="text-align:center;"><input type="checkbox" class="gv-active" ${data.is_active !== false ? 'checked' : ''} style="width:16px; height:16px;"></td>
+        <td><button class="btn-trash-mini" style="color:var(--red); font-size:14px;" onclick="this.closest('tr').remove()">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    async function saveGroupEditor() {
+      const title = document.getElementById('group-edit-name').value.trim();
+      const cat = document.getElementById('group-edit-cat').value.trim();
+      const photo = document.getElementById('group-edit-photo').value.trim();
+      const desc = document.getElementById('group-edit-desc').value.trim();
+      const isPop = document.getElementById('group-edit-popular').checked;
+
+      if (!title) { toast("Укажите базовое название группы"); return; }
+
+      const rows = Array.from(document.querySelectorAll('#group-variants-tbody tr'));
+      if (!rows.length) { toast("Добавьте хотя бы одну вариацию"); return; }
+
+      const variants = rows.map(r => ({
+        id: r.dataset.id || null,
+        unit: r.querySelector('.gv-unit').value.trim() || '1 шт.',
+        variant: r.querySelector('.gv-variant').value.trim(),
+        price: parseFloat(r.querySelector('.gv-price').value) || 0,
+        is_active: r.querySelector('.gv-active').checked
+      }));
+
+      toast("Сохранение группы...");
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: "admin_save_group",
+          admin_id: ADMIN_TELEGRAM_ID,
+          admin_passcode: "m1rfol159036",
+          title: title,
+          category: cat,
+          photo_url: photo,
+          description: desc,
+          is_popular: isPop,
+          variants_json: JSON.stringify(variants)
+        })
+      });
+
+      toast("Группа товаров сохранена!");
+      closeGroupEditorModal();
+      loadRootCatalog();
+      loadCatalog();
+    }
+
+    // Редактор одиночного товара
     function openAddProductModal() {
       editingProductId = null;
-      document.getElementById('prod-edit-title').innerText = "Новый товар";
+      document.getElementById('prod-edit-title').innerText = "Новый одиночный товар";
       document.getElementById('prod-edit-name').value = "";
       document.getElementById('prod-edit-unit').value = "1 шт.";
+      document.getElementById('prod-edit-variant').value = "";
       document.getElementById('prod-edit-cat').value = "Цветы";
       document.getElementById('prod-edit-price').value = "";
       document.getElementById('prod-edit-desc').value = "";
@@ -2886,6 +3223,7 @@
       document.getElementById('prod-edit-title').innerText = `Товар ID: ${item.id}`;
       document.getElementById('prod-edit-name').value = item.title;
       document.getElementById('prod-edit-unit').value = item.unit || "1 шт.";
+      document.getElementById('prod-edit-variant').value = item.variant || "";
       document.getElementById('prod-edit-cat').value = item.category;
       document.getElementById('prod-edit-price').value = item.price;
       document.getElementById('prod-edit-desc').value = item.description || "";
@@ -2903,6 +3241,7 @@
         id: editingProductId,
         title: document.getElementById('prod-edit-name').value.trim(),
         unit: document.getElementById('prod-edit-unit').value.trim(),
+        variant: document.getElementById('prod-edit-variant').value.trim(),
         category: document.getElementById('prod-edit-cat').value.trim(),
         price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
         photo_url: document.getElementById('prod-edit-photo').value.trim(),
@@ -3061,6 +3400,7 @@
       else window.open(url, '_blank');
     }
 
+    // Резервная отрисовка QR-кода на холсте
     function drawQr(canvasId, text) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
