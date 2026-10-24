@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Магазин цветов</title>
+  <title>Магазин «Цветы»</title>
+  
+  <!-- Мгновенное снятие экрана загрузки Telegram -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      window.Telegram.WebApp.setHeaderColor('#090a0d');
+      window.Telegram.WebApp.setBackgroundColor('#090a0d');
+    }
+  </script>
+
   <style>
     :root {
       --bg: #090a0d;
@@ -102,12 +113,6 @@
     }
     .screen.active {
       display: block;
-      animation: tabFade 0.16s ease-out;
-    }
-
-    @keyframes tabFade {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .filter-bar {
@@ -163,12 +168,6 @@
       justify-content: center;
       position: relative;
       overflow: hidden;
-    }
-
-    .product-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
     }
 
     .product-thumb-placeholder {
@@ -528,7 +527,7 @@
       </div>
     </section>
 
-    <!-- Экран 4: Админка кассы -->
+    <!-- Экран 4: Админка -->
     <section id="screen-admin" class="screen">
       <div class="section-card">
         <h3 style="font-size:14px; margin-bottom:12px;">Управление бонусами на кассе</h3>
@@ -572,20 +571,13 @@
   </div>
 
   <script>
-    // Укажите логин в Telegram, куда приходят заказы (без знака @)
-    const TELEGRAM_SHOP_USERNAME = "zelflowg_bot"; 
-
+    const TELEGRAM_SHOP_USERNAME = "zelflowg_bot";
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.expand();
-      tg.ready();
-    }
 
     const userId = tg?.initDataUnsafe?.user?.id || 100001;
     const userName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
     const userHandle = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
 
-    // Локальный каталог (редактируется прямо здесь без внешних таблиц)
     const catalog = [
       { id: 1, title: "25 роз Эквадор (Эксплорер)", category: "Роза эквадорская", price: 4500, photo_url: "" },
       { id: 2, title: "Авторский «Лавандовое небо»", category: "Авторские букеты", price: 5200, photo_url: "" },
@@ -593,7 +585,6 @@
       { id: 4, title: "Монобукет сортовой диантус (19 шт)", category: "Популярное", price: 3800, photo_url: "" }
     ];
 
-    // Локальное хранилище данных клиента в памяти телефона
     let userProfile = JSON.parse(localStorage.getItem('flw_profile') || 'null');
     if (!userProfile) {
       userProfile = {
@@ -716,7 +707,6 @@
       document.getElementById('order-total').innerText = total + ' ₽';
     }
 
-    // Отправка готового заказа прямо в Telegram
     function submitOrder() {
       const entries = Object.entries(cart);
       if (!entries.length) {
@@ -738,18 +728,15 @@
       const discount = Math.min(Math.floor(subtotal * 0.30), userProfile.ruble_balance);
       const finalPrice = Math.max(0, subtotal - discount);
 
-      // Списываем использованные бонусы
       userProfile.bonus_balance -= (discount * 5);
       userProfile.ruble_balance = Math.floor(userProfile.bonus_balance / 5);
       userProfile.total_spent += finalPrice;
-      // Кешбэк за покупку
       const earnedBonus = Math.floor((finalPrice * (userProfile.cashback_rate / 100)) * 5);
       userProfile.bonus_balance += earnedBonus;
       userProfile.ruble_balance = Math.floor(userProfile.bonus_balance / 5);
       localStorage.setItem('flw_profile', JSON.stringify(userProfile));
       updateUserData(userProfile);
 
-      // Формирование текста заказа
       const messageText = 
 `🌸 *НОВЫЙ ЗАКАЗ (Магазин «Цветы»)*
 📍 Георгиевский пр-т, 37к2
@@ -768,7 +755,6 @@ ID карты: ${userProfile.card_number}
       cart = {};
       updateCartUI();
 
-      // Открытие чата в Telegram с готовым текстом
       const tgUrl = `https://t.me/${TELEGRAM_SHOP_USERNAME}?text=${encodeURIComponent(messageText)}`;
       if (tg && tg.openTelegramLink) {
         tg.openTelegramLink(tgUrl);
@@ -790,7 +776,6 @@ ID карты: ${userProfile.card_number}
       notify(`Чек закрыт: ${paid} ₽, начислено: ${earned} б.`);
     }
 
-    // Встроенный QR
     function drawQr(text) {
       const canvas = document.getElementById('qr-canvas');
       const ctx = canvas.getContext('2d');
