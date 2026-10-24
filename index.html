@@ -32,6 +32,23 @@
       --radius-lg: 20px;
     }
 
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-inner: #f1f5f9;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-accent: rgba(2, 132, 199, 0.4);
+      --cyan: #0284c7;
+      --green: #059669;
+      --amber: #d97706;
+      --red: #dc2626;
+      --purple: #9333ea;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --dock-bg: rgba(255, 255, 255, 0.9);
+      --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -47,6 +64,7 @@
       background: var(--bg);
       color: var(--text);
       overflow-x: hidden;
+      transition: background 0.25s ease, color 0.25s ease;
     }
 
     body {
@@ -73,6 +91,7 @@
       z-index: 50;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
+      transition: background 0.25s ease;
     }
 
     .header-content {
@@ -89,6 +108,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
     }
 
     .brand-badge {
@@ -99,23 +119,10 @@
       padding: 2px 7px;
       border-radius: 6px;
       font-weight: 700;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .filter-trigger-btn {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--cyan);
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid var(--border-accent);
-      padding: 5px 12px;
-      border-radius: 20px;
-      cursor: pointer;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 190px;
     }
 
     .user-tag {
@@ -124,10 +131,13 @@
       color: var(--text-muted);
       background: var(--card-inner);
       border: 1px solid var(--border);
-      padding: 5px 10px;
+      padding: 4px 10px;
       border-radius: 20px;
       cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.15s ease;
     }
+    .user-tag:active { transform: scale(0.95); }
 
     .screen {
       display: none;
@@ -144,7 +154,40 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Анимированная неоновая обводка для хитов */
+    /* Верхняя панель каталога с кнопкой Фильтры справа */
+    .catalog-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 0 2px;
+    }
+
+    .catalog-active-filter-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .catalog-active-filter-label b {
+      color: var(--cyan);
+    }
+
+    .filter-btn-pill {
+      padding: 7px 14px;
+      border-radius: 20px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid var(--border-accent);
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .filter-btn-pill:active { transform: scale(0.95); }
+
+    /* Анимированная неоновая обводка для Хитов */
     @property --angle {
       syntax: '<angle>';
       initial-value: 0deg;
@@ -156,6 +199,13 @@
       100% { --angle: 360deg; }
     }
 
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+    }
+
     .product-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -164,8 +214,8 @@
       display: flex;
       flex-direction: column;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       position: relative;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       transition: transform 0.15s ease;
     }
     .product-card:active { transform: scale(0.97); }
@@ -176,14 +226,7 @@
       background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
                   conic-gradient(from var(--angle), #f59e0b, #ef4444, #38bdf8, #f59e0b) border-box;
       animation: rotateNeon 3.5s linear infinite;
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
-    }
-
-    .catalog-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      width: 100%;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
     }
 
     .product-thumb {
@@ -192,8 +235,10 @@
       background: var(--card-inner);
       position: relative;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      text-align: center;
       overflow: hidden;
     }
 
@@ -219,6 +264,25 @@
       display: flex;
       align-items: center;
       gap: 3px;
+    }
+
+    .thumb-placeholder-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .thumb-placeholder-icon {
+      font-size: 28px;
+      opacity: 0.55;
+    }
+
+    .thumb-placeholder-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.25;
+      font-weight: 500;
     }
 
     .product-body {
@@ -275,6 +339,7 @@
       font-size: 17px;
       font-weight: 700;
       cursor: pointer;
+      transition: transform 0.1s ease;
     }
     .btn-quick-add:active { transform: scale(0.88); }
 
@@ -294,8 +359,8 @@
       font-size: 13px;
       cursor: pointer;
       padding: 2px 4px;
-      color: var(--text);
       line-height: 1;
+      color: var(--text);
     }
 
     .cart-active-qty {
@@ -312,11 +377,12 @@
       border-radius: var(--radius-md);
       padding: 14px;
       margin-bottom: 12px;
+      transition: background 0.25s ease;
     }
 
     .box-card.neon-glow {
       border-color: var(--border-accent);
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.18);
     }
 
     .btn-metro {
@@ -334,6 +400,7 @@
       justify-content: center;
       gap: 6px;
       text-decoration: none;
+      transition: transform 0.12s ease;
     }
     .btn-metro:active { transform: scale(0.98); }
 
@@ -691,15 +758,16 @@
           <span>ЦВЕТЫ</span>
           <span class="brand-badge">Георгиевский, 37к2</span>
         </div>
-        <div class="header-actions">
-          <button class="filter-trigger-btn" id="filter-btn-head" onclick="openFilterModal()">⚙️ Фильтры</button>
-          <div class="user-tag" id="hud-name" onclick="secretAdminTap()">Клиент</div>
-        </div>
+        <div class="user-tag" id="hud-name" onclick="secretAdminTap()">Клиент</div>
       </div>
     </header>
 
     <!-- Экран 1: Каталог -->
     <section id="screen-catalog" class="screen active">
+      <div class="catalog-top-bar">
+        <div class="catalog-active-filter-label" id="catalog-filter-summary">Показано: <b>Все</b></div>
+        <button class="filter-btn-pill" onclick="openFilterModal()">Фильтры</button>
+      </div>
       <div class="catalog-grid" id="catalog-wrap"></div>
     </section>
 
@@ -719,7 +787,7 @@
 
     <!-- Экран 3: Профиль -->
     <section id="screen-profile" class="screen">
-      <div class="box-card neon-glow">
+      <div class="box-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;">Карточка клиента</span>
           <span style="font-size:12px; color:var(--cyan); cursor:pointer; font-weight:700;" onclick="openEditProfileModal()">✏️ Изменить</span>
@@ -758,7 +826,7 @@
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>
       </div>
 
-      <!-- FAQ -->
+      <!-- FAQ в единой неоновой плашке -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Часто задаваемые вопросы (FAQ)
@@ -776,7 +844,7 @@
         <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
       </div>
 
-      <!-- Заказы в Root -->
+      <!-- Заказы -->
       <div id="root-sec-orders">
         <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
           <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
@@ -785,19 +853,19 @@
         <div id="root-orders-container"></div>
       </div>
 
-      <!-- Каталог в Root -->
+      <!-- Каталог -->
       <div id="root-sec-catalog" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddProductModal()">+ Добавить новый товар в базу</button>
         <div id="root-catalog-container"></div>
       </div>
 
-      <!-- Клиенты в Root -->
+      <!-- Клиенты -->
       <div id="root-sec-clients" style="display:none;">
         <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
         <div id="root-clients-container"></div>
       </div>
 
-      <!-- FAQ в Root -->
+      <!-- FAQ -->
       <div id="root-sec-faq" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
         <div id="root-faq-container"></div>
@@ -805,7 +873,7 @@
     </section>
   </div>
 
-  <!-- Нижний док навигации -->
+  <!-- Док навигации -->
   <div class="dock-pill-container">
     <nav class="dock-pill" id="dock-pill-bar">
       <button class="dock-tab active" onclick="navigateTab('catalog', this)">
@@ -831,11 +899,11 @@
   <div class="modal-overlay" id="filter-modal">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div class="modal-title">Фильтры каталога</div>
+        <div class="modal-title">Фильтры витрины</div>
         <button class="close-btn" onclick="closeFilterModal()">✕</button>
       </div>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория цветов:</label>
       <select id="filter-cat-select" class="metro-input">
         <option value="Все">Все категории</option>
         <option value="Розы Эквадор">Розы Эквадор</option>
@@ -858,7 +926,7 @@
     </div>
   </div>
 
-  <!-- Модалка букета (мультифото) -->
+  <!-- Модалка карточки букета (мультифото) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -988,7 +1056,7 @@
       </div>
 
       <div style="text-align:center; padding:10px 0 16px 0;">
-        <div style="padding:6px 12px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:12px; font-weight:800; display:inline-block; margin-bottom:10px;" id="pay-timer-box">
+        <div style="padding:6px 12px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:12px; font-weight:800; display:inline-block; margin-bottom:10px;">
           ⏳ Оплатите в течение: <span id="pay-timer-val">15:00</span>
         </div>
 
@@ -1178,8 +1246,8 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
     const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
-    const STORE_LAT = 55.975443;
-    const STORE_LON = 37.151703;
+    const STORE_LAT = 55.966912;
+    const STORE_LON = 37.150646;
 
     const tg = window.Telegram?.WebApp;
     const userId = tg?.initDataUnsafe?.user?.id || 100001;
@@ -1261,7 +1329,7 @@
     bindPhoneMask(document.getElementById('edit-prof-phone'));
     bindPhoneMask(document.getElementById('ord-rec-phone'));
 
-    // Фильтры
+    // Фильтры витрины
     function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
     function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
 
@@ -1276,8 +1344,9 @@
       });
 
       renderCatalog(filteredCatalog);
+      document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
       closeFilterModal();
-      toast(`Найдено: ${filteredCatalog.length}`);
+      toast(`Найдено товаров: ${filteredCatalog.length}`);
     }
 
     function resetFilters() {
@@ -1286,10 +1355,11 @@
       document.getElementById('filter-price-input').value = 10000;
       filteredCatalog = [...catalog];
       renderCatalog(filteredCatalog);
+      document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
       closeFilterModal();
     }
 
-    // Каталог
+    // Каталог товаров
     async function loadCatalog() {
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
@@ -1314,7 +1384,7 @@
           <div class="product-card ${isHit ? 'popular-hit' : ''}" onclick="openProductModal(${p.id})">
             <div class="product-thumb">
               ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
-              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy">` : '<div style="font-size:28px;">🌸</div>'}
+              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy">` : '<div class="thumb-placeholder-box"><span class="thumb-placeholder-icon">🌸</span></div>'}
             </div>
             <div class="product-body">
               <div>
@@ -1402,7 +1472,7 @@
       toast("Удалено из корзины");
     }
 
-    // Корзина с фото и автоскрытием плашки
+    // Корзина с фото и автоскрытием плашки расчета
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
@@ -1513,6 +1583,7 @@
         currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
       }
 
+      // Чистая плашка без скобок и маршрута
       document.getElementById('delivery-calc-badge').innerHTML = 
         `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
 
@@ -1887,7 +1958,7 @@
       } catch (e) {}
     }
 
-    // FAQ
+    // FAQ в профиле
     async function loadFaq() {
       const container = document.getElementById('profile-faq-container');
       try {
@@ -1902,7 +1973,7 @@
       } catch (e) {}
     }
 
-    // Root: Упорядоченный вывод сведений через \n
+    // Панель Root
     function switchRootSection(sec) {
       document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
       document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
@@ -1958,7 +2029,7 @@
               <b>${ord.order_id}</b>
               <span class="status-badge st-building">${ord.status}</span>
             </div>
-            <!-- Упорядоченный вывод сведений через \n -->
+            <!-- Сведения о заказе упорядочены через \n -->
             <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
               <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
               <b>Адрес:</b> ${ord.address}<br>
@@ -2375,6 +2446,7 @@
       else window.open(url, '_blank');
     }
 
+    // Старт приложения
     loadCatalog();
     checkUserSession();
     if (String(userId) === ADMIN_TELEGRAM_ID) {
