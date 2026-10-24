@@ -154,7 +154,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Верхняя панель каталога с кнопкой Фильтры справа */
+    /* Верхняя панель каталога с кнопкой «Фильтры» справа */
     .catalog-top-bar {
       display: flex;
       justify-content: space-between;
@@ -173,7 +173,7 @@
     }
 
     .filter-btn-pill {
-      padding: 7px 14px;
+      padding: 7px 16px;
       border-radius: 20px;
       background: rgba(56, 189, 248, 0.12);
       border: 1px solid var(--border-accent);
@@ -181,24 +181,10 @@
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
     }
     .filter-btn-pill:active { transform: scale(0.95); }
 
-    /* Анимированная неоновая обводка для Хитов */
-    @property --angle {
-      syntax: '<angle>';
-      initial-value: 0deg;
-      inherits: false;
-    }
-
-    @keyframes rotateNeon {
-      0% { --angle: 0deg; }
-      100% { --angle: 360deg; }
-    }
-
+    /* Кроссплатформенный вращающийся неон для Хитов */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -221,12 +207,29 @@
     .product-card:active { transform: scale(0.97); }
 
     .product-card.popular-hit {
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+    }
+    .product-card.popular-hit::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(transparent, transparent, #f59e0b, #38bdf8, transparent);
+      animation: rotateNeonBorder 3.5s linear infinite;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+    .product-card.popular-hit > * {
       position: relative;
-      border: 1px solid transparent;
-      background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
-                  conic-gradient(from var(--angle), #f59e0b, #ef4444, #38bdf8, #f59e0b) border-box;
-      animation: rotateNeon 3.5s linear infinite;
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+      z-index: 1;
+    }
+    @keyframes rotateNeonBorder {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .product-thumb {
@@ -459,7 +462,7 @@
     .st-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
     .st-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
 
-    /* Док навигации с анимацией прокрутки только иконки */
+    /* Док навигации с анимацией вращения только иконки */
     .dock-pill-container {
       position: fixed;
       bottom: max(14px, env(safe-area-inset-bottom, 14px));
@@ -573,7 +576,59 @@
     }
     .metro-input:focus { border-color: var(--cyan); }
 
-    /* Выпадающий список DaData в теме приложения */
+    /* Кастомный селект в стиле приложения */
+    .custom-select-box {
+      position: relative;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+    .custom-select-trigger {
+      width: 100%;
+      padding: 11px 12px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .custom-select-trigger:active, .custom-select-box.open .custom-select-trigger {
+      border-color: var(--cyan);
+    }
+    .custom-select-options {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #0f141f;
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-sm);
+      max-height: 190px;
+      overflow-y: auto;
+      z-index: 125;
+      display: none;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
+    }
+    .custom-select-box.open .custom-select-options {
+      display: block;
+    }
+    .custom-select-option {
+      padding: 11px 12px;
+      font-size: 12px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .custom-select-option:hover, .custom-select-option:active {
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--cyan);
+    }
+
+    /* Выпадающий список DaData в тёмной теме */
     .suggest-wrap { position: relative; width: 100%; }
     .suggest-list {
       position: absolute;
@@ -656,7 +711,7 @@
       color: var(--cyan);
     }
 
-    /* FAQ аккордеон */
+    /* FAQ аккордеон с обязательным отображением */
     .faq-pill-item {
       background: var(--card-inner);
       border: 1px solid var(--border);
@@ -674,6 +729,11 @@
       align-items: center;
       cursor: pointer;
     }
+    .faq-pill-header span:last-child {
+      color: var(--cyan);
+      font-size: 13px;
+      transition: transform 0.2s ease;
+    }
     .faq-pill-body {
       display: none;
       padding: 0 14px 12px 14px;
@@ -681,10 +741,17 @@
       color: var(--text-muted);
       line-height: 1.45;
     }
-    .faq-pill-item.open .faq-pill-body { display: block; }
-    .faq-pill-item.open { border-color: var(--border-accent); }
+    .faq-pill-item.open {
+      border-color: var(--border-accent);
+    }
+    .faq-pill-item.open .faq-pill-header span:last-child {
+      transform: rotate(180deg);
+    }
+    .faq-pill-item.open .faq-pill-body {
+      display: block !important;
+    }
 
-    /* Горизонтальная прокрутка фото товара */
+    /* Горизонтальный скролл фото товара */
     .product-gallery-scroll {
       display: flex;
       gap: 8px;
@@ -722,6 +789,45 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    /* Лента миниатюр мультифото в Root */
+    .prod-photo-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin: 6px 0 12px 0;
+      padding-bottom: 4px;
+    }
+    .prod-photo-thumb-wrap {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-accent);
+      flex-shrink: 0;
+    }
+    .prod-photo-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .prod-photo-del-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(0, 0, 0, 0.7);
+      color: var(--red);
+      border: none;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #toast {
@@ -776,6 +882,7 @@
       <div class="box-card" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
+      <!-- Плашка расчета и оформления скрыта, если корзина пуста -->
       <div class="box-card" id="cart-checkout-card" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <span style="font-size:14px; font-weight:700;">Сумма букетов:</span>
@@ -814,6 +921,7 @@
           <div id="saved-addresses-profile-list"></div>
         </div>
 
+        <!-- Кнопки связи -->
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
           <a class="btn-metro btn-emerald" href="tel:89162257117">📞 Позвонить в магазин</a>
           <button class="btn-metro btn-warm-support" onclick="contactSupport()">💬 Техническая поддержка</button>
@@ -826,7 +934,7 @@
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>
       </div>
 
-      <!-- FAQ в единой неоновой плашке -->
+      <!-- FAQ в общей неоновой плашке -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Часто задаваемые вопросы (FAQ)
@@ -844,7 +952,7 @@
         <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
       </div>
 
-      <!-- Заказы -->
+      <!-- Раздел: Заказы -->
       <div id="root-sec-orders">
         <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
           <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
@@ -853,19 +961,19 @@
         <div id="root-orders-container"></div>
       </div>
 
-      <!-- Каталог -->
+      <!-- Раздел: Товары -->
       <div id="root-sec-catalog" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddProductModal()">+ Добавить новый товар в базу</button>
         <div id="root-catalog-container"></div>
       </div>
 
-      <!-- Клиенты -->
+      <!-- Раздел: Клиенты -->
       <div id="root-sec-clients" style="display:none;">
         <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
         <div id="root-clients-container"></div>
       </div>
 
-      <!-- FAQ -->
+      <!-- Раздел: FAQ -->
       <div id="root-sec-faq" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
         <div id="root-faq-container"></div>
@@ -899,7 +1007,7 @@
   <div class="modal-overlay" id="filter-modal">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div class="modal-title">Фильтры витрины</div>
+        <div class="modal-title">Фильтры каталога</div>
         <button class="close-btn" onclick="closeFilterModal()">✕</button>
       </div>
 
@@ -913,10 +1021,13 @@
         <option value="Букеты и зелень">Зелень и букеты</option>
       </select>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Максимальная цена (₽):</label>
-      <div style="display:flex; gap:10px; align-items:center; margin-top:4px; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (диапазон):</label>
+        <span style="font-size:11px; color:var(--cyan); font-weight:700;"><span id="filter-min-label">0 ₽</span> — <span id="filter-max-label">10000 ₽</span></span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:6px; margin-bottom:8px;">
         <input type="range" id="filter-price-range" min="500" max="10000" step="100" style="flex:1;" oninput="document.getElementById('filter-price-input').value = this.value">
-        <input type="number" id="filter-price-input" class="metro-input" style="width:90px; margin-bottom:0;" value="10000" oninput="document.getElementById('filter-price-range').value = this.value">
+        <input type="number" id="filter-price-input" class="metro-input" style="width:95px; margin-bottom:0;" value="10000" oninput="document.getElementById('filter-price-range').value = this.value">
       </div>
 
       <div style="display:flex; gap:8px; margin-top:14px;">
@@ -954,6 +1065,10 @@
       </div>
 
       <div class="product-gallery-scroll" id="pop-gallery"></div>
+      <div class="thumb-placeholder-box" id="pop-placeholder" style="display:none; padding:30px 0;">
+        <span class="thumb-placeholder-icon">🌸</span>
+        <span class="thumb-placeholder-text">Фото пока не добавили</span>
+      </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
         <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" id="pop-cat">Категория</div>
@@ -1026,14 +1141,21 @@
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
         <input type="text" id="ord-comment" class="metro-input" placeholder="Шлагбаум открыт, не звонить...">
 
+        <!-- Кастомный выбор времени -->
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время доставки:</label>
-        <select id="ord-time" class="metro-input">
-          <option value="Как можно скорее (10:00 - 20:00)">Как можно скорее (~1.5–2 часа с учетом сборки)</option>
-          <option value="Сегодня 11:00 - 14:00">Сегодня 11:00 – 14:00</option>
-          <option value="Сегодня 14:00 - 17:00">Сегодня 14:00 – 17:00</option>
-          <option value="Сегодня 17:00 - 20:00">Сегодня 17:00 – 20:00</option>
-          <option value="Завтра в интервале 10:00 - 20:00">Завтра в интервале 10:00 – 20:00</option>
-        </select>
+        <div class="custom-select-box" id="time-select-box">
+          <div class="custom-select-trigger" onclick="toggleTimeDropdown()">
+            <span id="selected-time-display">Как можно скорее (10:00 – 20:00)</span>
+            <span style="font-size:11px; color:var(--cyan);">▼</span>
+          </div>
+          <div class="custom-select-options" id="time-select-options">
+            <div class="custom-select-option" onclick="selectDeliveryTime('Как можно скорее (10:00 - 20:00)')">Как можно скорее (~1.5–2 часа с учетом сборки)</div>
+            <div class="custom-select-option" onclick="selectDeliveryTime('Сегодня 11:00 - 14:00')">Сегодня 11:00 – 14:00</div>
+            <div class="custom-select-option" onclick="selectDeliveryTime('Сегодня 14:00 - 17:00')">Сегодня 14:00 – 17:00</div>
+            <div class="custom-select-option" onclick="selectDeliveryTime('Сегодня 17:00 - 20:00')">Сегодня 17:00 – 20:00</div>
+            <div class="custom-select-option" onclick="selectDeliveryTime('Завтра в интервале 10:00 - 20:00')">Завтра в интервале 10:00 – 20:00</div>
+          </div>
+        </div>
 
         <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.12); border:1px solid var(--border-accent); color:var(--cyan); font-size:12px; margin-bottom:12px;">
           📍 Введите адрес, чтобы рассчитать точную стоимость доставки (от 400 ₽)
@@ -1066,7 +1188,7 @@
     </div>
   </div>
 
-  <!-- Модалка оплаты (СБП QR + таймер 15 минут) -->
+  <!-- Модалка оплаты (СБП QR с гарантированным отображением + таймер 15 минут) -->
   <div class="modal-overlay" id="payment-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1090,8 +1212,10 @@
           💳 Оплатить через СБП
         </a>
 
+        <!-- QR код с автоматическим переключением на холст если файл не загружен -->
         <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center;">
-          <img src="img/sbp_qr.jpg" alt="QR-код СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
+          <img id="sbp-qr-img" src="img/sbp_qr.jpg" alt="QR-код СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;" onerror="this.style.display='none'; document.getElementById('sbp-qr-canvas').style.display='block';">
+          <canvas id="sbp-qr-canvas" style="display:none;"></canvas>
         </div>
 
         <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
@@ -1122,7 +1246,7 @@
     </div>
   </div>
 
-  <!-- Модалка добавления адреса -->
+  <!-- Модалка добавления сохраненного адреса -->
   <div class="modal-overlay" id="add-saved-addr-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1151,7 +1275,7 @@
     </div>
   </div>
 
-  <!-- Модалка товара для Root (мультифото) -->
+  <!-- Модалка товара для Root (полная мультифото лента + обе галочки) -->
   <div class="modal-overlay" id="product-editor-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1171,8 +1295,10 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
       <input type="number" id="prod-edit-price" class="metro-input" placeholder="3600">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ссылки на фото (через запятую):</label>
-      <textarea id="prod-edit-photo" class="metro-input" style="height:60px; resize:none;" placeholder="https://... , https://..."></textarea>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Прикрепленные фотографии:</label>
+      <div class="prod-photo-strip" id="prod-photo-strip"></div>
+
+      <input type="hidden" id="prod-edit-photo">
 
       <div style="display:flex; gap:6px; margin-bottom:14px;">
         <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px;" onclick="triggerProductPhotoUpload()">
@@ -1183,12 +1309,18 @@
         </button>
       </div>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
       <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Сортовой крупный бутон...">
+
+      <!-- Обе сохраненные галочки -->
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <input type="checkbox" id="prod-edit-active" style="width:18px; height:18px;">
+        <label for="prod-edit-active" style="font-size:13px; font-weight:600; color:var(--text);">Товар в наличии (виден на витрине)</label>
+      </div>
 
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
         <input type="checkbox" id="prod-edit-popular" style="width:18px; height:18px;">
-        <label for="prod-edit-popular" style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Хит продаж (с анимированным неоном)</label>
+        <label for="prod-edit-popular" style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Популярный товар (Хит продаж)</label>
       </div>
 
       <button class="btn-metro" onclick="saveProductEditor()">Сохранить товар</button>
@@ -1202,7 +1334,7 @@
         <div class="modal-title">Архив фото Google Диска</div>
         <button class="close-btn" onclick="closeDriveMediaModal()">✕</button>
       </div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Нажмите на фото, чтобы добавить его к товару:</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Нажмите на фото, чтобы прикрепить его к товару:</div>
       <div class="drive-media-grid" id="drive-media-container">
         <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>
       </div>
@@ -1265,6 +1397,9 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
     const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
+    const SBP_PAYMENT_URL = "https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0";
+    
+    // Строгая точка магазина (Георгиевский 37к2)
     const STORE_LAT = 55.966912;
     const STORE_LON = 37.150646;
 
@@ -1344,6 +1479,7 @@
     }
 
     function bindPhoneMask(input) {
+      if (!input) return;
       input.addEventListener('input', () => {
         let val = input.value.replace(/\D/g, '');
         if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
@@ -1360,8 +1496,32 @@
     bindPhoneMask(document.getElementById('edit-prof-phone'));
     bindPhoneMask(document.getElementById('ord-rec-phone'));
 
-    // Фильтры витрины
-    function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
+    // Кастомный выбор времени
+    function toggleTimeDropdown() {
+      document.getElementById('time-select-box').classList.toggle('open');
+    }
+
+    function selectDeliveryTime(val) {
+      document.getElementById('selected-time-display').innerText = val;
+      document.getElementById('time-select-box').classList.remove('open');
+    }
+
+    // Фильтры витрины (динамические min и max по каталогу)
+    function openFilterModal() {
+      const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
+      const minP = prices.length ? Math.min(...prices) : 500;
+      const maxP = prices.length ? Math.max(...prices) : 10000;
+
+      const rangeEl = document.getElementById('filter-price-range');
+      const numEl = document.getElementById('filter-price-input');
+      rangeEl.min = minP;
+      rangeEl.max = maxP;
+      document.getElementById('filter-min-label').innerText = `${minP} ₽`;
+      document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
+
+      document.getElementById('filter-modal').classList.add('open');
+    }
+
     function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
 
     function applyFilters() {
@@ -1382,8 +1542,10 @@
 
     function resetFilters() {
       document.getElementById('filter-cat-select').value = 'Все';
-      document.getElementById('filter-price-range').value = 10000;
-      document.getElementById('filter-price-input').value = 10000;
+      const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
+      const maxP = prices.length ? Math.max(...prices) : 10000;
+      document.getElementById('filter-price-range').value = maxP;
+      document.getElementById('filter-price-input').value = maxP;
       filteredCatalog = [...catalog];
       renderCatalog(filteredCatalog);
       document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
@@ -1415,7 +1577,11 @@
           <div class="product-card ${isHit ? 'popular-hit' : ''}" onclick="openProductModal(${p.id})">
             <div class="product-thumb">
               ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
-              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy">` : '<div class="thumb-placeholder-box"><span class="thumb-placeholder-icon">🌸</span></div>'}
+              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
+              <div class="thumb-placeholder-box" style="${firstPhoto ? 'display:none;' : ''}">
+                <span class="thumb-placeholder-icon">🌸</span>
+                <span class="thumb-placeholder-text">Фото пока не добавили</span>
+              </div>
             </div>
             <div class="product-body">
               <div>
@@ -1458,13 +1624,17 @@
       document.getElementById('pop-qty').innerText = '1';
 
       const gallery = document.getElementById('pop-gallery');
+      const placeholder = document.getElementById('pop-placeholder');
       const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+
       if (photos.length) {
         gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
         gallery.style.display = 'flex';
+        placeholder.style.display = 'none';
       } else {
         gallery.innerHTML = '';
         gallery.style.display = 'none';
+        placeholder.style.display = 'flex';
       }
 
       document.getElementById('product-modal').classList.add('open');
@@ -1598,7 +1768,7 @@
       const lon = parseFloat(s.data.geo_lon);
 
       if (!lat || !lon) {
-        document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома для расчета доставки`;
+        document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома для точного расчета доставки`;
         currentDeliveryCost = 400;
         recalcOrderFinalTotal();
         return;
@@ -1614,6 +1784,7 @@
         currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
       }
 
+      // Чистый вывод без скобок
       document.getElementById('delivery-calc-badge').innerHTML = 
         `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
 
@@ -1717,6 +1888,7 @@
       }
 
       const shopComm = document.getElementById('ord-shop-comment').value.trim();
+      const dTime = document.getElementById('selected-time-display').innerText;
 
       toast("Создание заказа...");
       try {
@@ -1731,7 +1903,7 @@
             delivery_type: orderDelType,
             recipient_info: recInfo,
             address: fullAddr,
-            delivery_time: document.getElementById('ord-time').value,
+            delivery_time: dTime,
             shop_comment: shopComm,
             items_json: JSON.stringify(orderItems),
             total_amount: currentFinalOrderAmount
@@ -1750,11 +1922,18 @@
       }
     }
 
-    // Оплата с таймером 15 минут
+    // Оплата с гарантированным QR и таймером 15 минут
     function openPaymentModal(orderId, amount) {
       activePaymentOrderId = orderId;
       document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
       document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
+
+      // Проверка отображения QR-кода
+      const qrImg = document.getElementById('sbp-qr-img');
+      const qrCanvas = document.getElementById('sbp-qr-canvas');
+      qrImg.style.display = 'block';
+      qrCanvas.style.display = 'none';
+      drawQr('sbp-qr-canvas', SBP_PAYMENT_URL);
 
       startPaymentTimer(15 * 60, orderId);
       document.getElementById('payment-modal').classList.add('open');
@@ -1903,7 +2082,7 @@
       }).catch(() => {});
     }
 
-    // Профиль клиента
+    // Профиль и сессия
     function openEditProfileModal() {
       if (!currentUser) return;
       document.getElementById('edit-prof-name').value = currentUser.name || '';
@@ -1987,6 +2166,68 @@
       document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
     }
 
+    // Заказы клиента (включая завершенные)
+    async function loadUserOrders() {
+      const container = document.getElementById('user-orders-list');
+      try {
+        const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
+        const orders = await res.json();
+        if (!orders || !orders.length) {
+          container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>';
+          return;
+        }
+
+        container.innerHTML = orders.map(ord => {
+          let badgeCls = 'st-await-pay';
+          if (ord.status.includes('Собирается')) badgeCls = 'st-building';
+          else if (ord.status.includes('В пути') || ord.status.includes('выдаче')) badgeCls = 'st-transit';
+          else if (ord.status.includes('Завершен')) badgeCls = 'st-completed';
+          else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
+
+          return `
+            <div class="box-card" style="margin-bottom:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
+                <span class="status-badge ${badgeCls}">${ord.status}</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
+                ${ord.items.map(i => `• ${i.title} × ${i.qty}`).join('<br>')}
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
+                <span style="color:var(--text-muted);">${ord.date_time}</span>
+                <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {}
+    }
+
+    // FAQ аккордеон
+    async function loadFaq() {
+      const container = document.getElementById('profile-faq-container');
+      try {
+        const res = await fetch(`${API_URL}?action=faq`);
+        const faq = await res.json();
+        container.innerHTML = faq.map(f => `
+          <div class="faq-pill-item" onclick="toggleFaqPill(this)">
+            <div class="faq-pill-header">
+              <span>${f.question}</span>
+              <span>▼</span>
+            </div>
+            <div class="faq-pill-body">${f.answer}</div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    function toggleFaqPill(el) {
+      const isOpen = el.classList.contains('open');
+      document.querySelectorAll('.faq-pill-item').forEach(p => p.classList.remove('open'));
+      if (!isOpen) el.classList.add('open');
+      if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    }
+
     // Панель Root
     function switchRootSection(sec) {
       document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
@@ -2043,6 +2284,7 @@
               <b>${ord.order_id}</b>
               <span class="status-badge st-building">${ord.status}</span>
             </div>
+            <!-- Сведения о заказе упорядочены через \n -->
             <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
               <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
               <b>Адрес:</b> ${ord.address}<br>
@@ -2211,8 +2453,7 @@
         });
         const d = await res.json();
         if (d.success && uploadTargetContext.type === 'product') {
-          const cur = document.getElementById('prod-edit-photo').value.trim();
-          document.getElementById('prod-edit-photo').value = cur ? `${cur}, ${d.photo_url}` : d.photo_url;
+          addProductPhotoUrl(d.photo_url);
           toast("Фото добавлено!");
         } else if (d.success) {
           toast("Фото букета отправлено клиенту!");
@@ -2220,6 +2461,39 @@
       };
       reader.readAsDataURL(file);
       input.value = "";
+    }
+
+    function renderProductEditorPhotos(urlsStr) {
+      const box = document.getElementById('prod-photo-strip');
+      const hiddenInput = document.getElementById('prod-edit-photo');
+      hiddenInput.value = urlsStr || "";
+      const urls = (urlsStr || "").split(',').map(s => s.trim()).filter(Boolean);
+
+      if (!urls.length) {
+        box.innerHTML = '<span style="font-size:11px; color:var(--text-muted);">Нет прикрепленных фото</span>';
+        return;
+      }
+
+      box.innerHTML = urls.map((u, idx) => `
+        <div class="prod-photo-thumb-wrap">
+          <img src="${u}">
+          <button class="prod-photo-del-btn" onclick="removeProductPhoto(${idx})">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function addProductPhotoUrl(url) {
+      const hiddenInput = document.getElementById('prod-edit-photo');
+      const cur = hiddenInput.value.trim();
+      const updated = cur ? `${cur}, ${url}` : url;
+      renderProductEditorPhotos(updated);
+    }
+
+    function removeProductPhoto(idx) {
+      const hiddenInput = document.getElementById('prod-edit-photo');
+      const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+      urls.splice(idx, 1);
+      renderProductEditorPhotos(urls.join(', '));
     }
 
     async function openDriveMediaModal() {
@@ -2240,8 +2514,7 @@
     function closeDriveMediaModal() { document.getElementById('drive-media-modal').classList.remove('open'); }
 
     function selectDrivePhoto(url) {
-      const cur = document.getElementById('prod-edit-photo').value.trim();
-      document.getElementById('prod-edit-photo').value = cur ? `${cur}, ${url}` : url;
+      addProductPhotoUrl(url);
       closeDriveMediaModal();
       toast("Фото прикреплено к товару");
     }
@@ -2258,7 +2531,8 @@
             <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
           <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Фото: ${it.photo_url ? it.photo_url.split(',').length + ' шт.' : '0'}</div>
-          <div style="display:flex; gap:6px; margin-top:6px;">
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
+          <div style="display:flex; gap:6px;">
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
             <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
           </div>
@@ -2273,9 +2547,10 @@
       document.getElementById('prod-edit-unit').value = "1 шт.";
       document.getElementById('prod-edit-cat').value = "Цветы";
       document.getElementById('prod-edit-price').value = "";
-      document.getElementById('prod-edit-photo').value = "";
       document.getElementById('prod-edit-desc').value = "";
+      document.getElementById('prod-edit-active').checked = true;
       document.getElementById('prod-edit-popular').checked = false;
+      renderProductEditorPhotos("");
       document.getElementById('product-editor-modal').classList.add('open');
     }
 
@@ -2288,9 +2563,10 @@
       document.getElementById('prod-edit-unit').value = item.unit || "1 шт.";
       document.getElementById('prod-edit-cat').value = item.category;
       document.getElementById('prod-edit-price').value = item.price;
-      document.getElementById('prod-edit-photo').value = item.photo_url || "";
       document.getElementById('prod-edit-desc').value = item.description || "";
+      document.getElementById('prod-edit-active').checked = item.is_active;
       document.getElementById('prod-edit-popular').checked = !!item.is_popular;
+      renderProductEditorPhotos(item.photo_url || "");
       document.getElementById('product-editor-modal').classList.add('open');
     }
     function closeProductEditorModal() { document.getElementById('product-editor-modal').classList.remove('open'); }
@@ -2306,6 +2582,7 @@
         price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
         photo_url: document.getElementById('prod-edit-photo').value.trim(),
         description: document.getElementById('prod-edit-desc').value.trim(),
+        is_active: document.getElementById('prod-edit-active').checked,
         is_popular: document.getElementById('prod-edit-popular').checked
       };
       await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
@@ -2457,6 +2734,42 @@
       const url = "https://t.me/mkgr52";
       if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
       else window.open(url, '_blank');
+    }
+
+    // Резервная отрисовка QR-кода на холсте
+    function drawQr(canvasId, text) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const size = 160;
+      canvas.width = size;
+      canvas.height = size;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.fillStyle = '#090c12';
+      const drawMarker = (x, y) => {
+        ctx.fillRect(x, y, 36, 36);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x + 5, y + 5, 26, 26);
+        ctx.fillStyle = '#090c12';
+        ctx.fillRect(x + 9, y + 9, 18, 18);
+      };
+
+      drawMarker(10, 10);
+      drawMarker(114, 10);
+      drawMarker(10, 114);
+
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      for (let r = 0; r < 14; r++) {
+        for (let c = 0; c < 14; c++) {
+          if ((r < 5 && c < 5) || (r < 5 && c > 8) || (r > 8 && c < 5)) continue;
+          if ((hash ^ (r * 19 + c * 23)) % 2 === 0) {
+            ctx.fillRect(16 + c * 9, 16 + r * 9, 7, 7);
+          }
+        }
+      }
     }
 
     // Инициализация
