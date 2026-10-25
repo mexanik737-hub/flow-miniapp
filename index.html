@@ -3106,39 +3106,81 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       return isNaN(parsed) ? null : parsed;
     }
 
+    function setPaymentActiveState(isActive) {
+      const sbpBtn = document.getElementById('pay-sbp-btn');
+      const confirmBtn = document.querySelector('#payment-modal button.btn-metro[onclick*="confirmPaymentByClient"]');
+      const timerBox = document.getElementById('pay-timer-box');
+
+      if (!isActive) {
+        if (sbpBtn) {
+          sbpBtn.style.pointerEvents = 'none';
+          sbpBtn.style.opacity = '0.4';
+          sbpBtn.innerText = 'Срок оплаты истёк';
+        }
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.style.opacity = '0.4';
+          confirmBtn.style.cursor = 'not-allowed';
+        }
+        if (timerBox) {
+          timerBox.style.background = 'rgba(239,68,68,0.25)';
+          timerBox.innerHTML = '❌ <b>Заказ отменён (время вышло)</b>';
+        }
+      } else {
+        if (sbpBtn) {
+          sbpBtn.style.pointerEvents = 'auto';
+          sbpBtn.style.opacity = '1';
+          sbpBtn.innerText = '💳 Оплатить через СБП';
+        }
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.style.opacity = '1';
+          confirmBtn.style.cursor = 'pointer';
+        }
+      }
+    }
+
     function startPaymentTimer(durationSec, orderId) {
       clearInterval(paymentTimerInterval);
       let timer = durationSec;
       const display = document.getElementById('pay-timer-val');
 
       if (timer <= 0) {
-        display.textContent = "00:00";
-        closePaymentModal();
-        toast("Время оплаты истекло");
+        if (display) display.textContent = "00:00";
+        setPaymentActiveState(false);
+        toast("Время оплаты истекло. Заказ отменен");
+        fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
+        }).catch(() => {});
         return;
       }
+
+      setPaymentActiveState(true);
 
       const updateDisplay = () => {
         let m = parseInt(timer / 60, 10);
         let s = parseInt(timer % 60, 10);
         m = m < 10 ? "0" + m : m;
         s = s < 10 ? "0" + s : s;
-        display.textContent = m + ":" + s;
+        if (display) display.textContent = m + ":" + s;
       };
 
       updateDisplay();
 
       paymentTimerInterval = setInterval(() => {
-        if (--timer < 0) {
+        if (--timer <= 0) {
           clearInterval(paymentTimerInterval);
-          closePaymentModal();
+          if (display) display.textContent = "00:00";
+          setPaymentActiveState(false);
           toast("Время оплаты истекло. Заказ отменен");
           fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
-          });
-          navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+          }).catch(() => {});
+          loadUserOrders();
         } else {
           updateDisplay();
         }
@@ -3322,26 +3364,40 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     async function checkUserSession() {
+      // 1. Сначала отрисовываем то, что уже есть в локальной памяти (чтобы экран не был пустым)
+      if (currentUser) {
+        renderProfileUI();
+      }
+
       try {
-        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}`);
+        const cleanUid = String(userId).trim();
+        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${encodeURIComponent(cleanUid)}`);
         const user = await res.json();
-        if (user && user.exists && user.phone) {
+
+        if (user && !user.error) {
           currentUser = user;
-          isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
+          isAdmin = (user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
           localStorage.setItem('flw_user_profile', JSON.stringify(user));
-          if (user.address && user.address.startsWith('[')) {
+
+          // Адреса
+          if (user.address && String(user.address).startsWith('[')) {
             try {
               savedAddresses = JSON.parse(user.address);
               localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
             } catch (e) {}
           }
+
+          // Принудительно обновляем все текстовые поля профиля
           renderProfileUI();
-        } else {
+          renderSavedAddresses();
+        } else if (!currentUser) {
           document.getElementById('reg-name').value = tgFirstName;
           document.getElementById('reg-modal').classList.add('open');
         }
       } catch (e) {
-        if (!currentUser) {
+        if (currentUser) {
+          renderProfileUI();
+        } else {
           document.getElementById('reg-name').value = tgFirstName;
           document.getElementById('reg-modal').classList.add('open');
         }
@@ -3373,11 +3429,25 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
 
     function renderProfileUI() {
       if (!currentUser) return;
-      document.getElementById('hud-name').innerText = currentUser.name;
-      document.getElementById('prof-name').innerText = currentUser.name;
-      document.getElementById('prof-phone').innerText = currentUser.phone;
-      document.getElementById('prof-spent').innerText = (currentUser.total_spent || 0) + ' ₽';
-      document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
+      const name = currentUser.name || tgFirstName || "Клиент";
+      const phone = currentUser.phone || "Номер не указан";
+      const spent = (currentUser.total_spent !== undefined && currentUser.total_spent !== null) ? currentUser.total_spent : 0;
+      const regdate = currentUser.reg_date || "-";
+
+      const hudEl = document.getElementById('hud-name');
+      if (hudEl) hudEl.innerText = name;
+
+      const pName = document.getElementById('prof-name');
+      if (pName) pName.innerText = name;
+
+      const pPhone = document.getElementById('prof-phone');
+      if (pPhone) pPhone.innerText = phone;
+
+      const pSpent = document.getElementById('prof-spent');
+      if (pSpent) pSpent.innerText = spent + ' ₽';
+
+      const pReg = document.getElementById('prof-regdate');
+      if (pReg) pReg.innerText = regdate;
     }
 
     async function loadUserOrders() {
