@@ -971,50 +971,58 @@
       outline: none;
     }
 
+    /* Круглая пульсирующая эмблема салона с фото */
     .shop-logo-circle {
-      width: 68px;
-      height: 68px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+      background: var(--card-inner);
       border: 2px solid var(--cyan);
       box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      overflow: hidden;
+      margin: 0 auto 10px auto;
+      animation: pulseLogo 3s ease-in-out infinite;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 34px;
-      margin: 0 auto 10px auto;
-      animation: pulseLogo 3s ease-in-out infinite;
+    }
+    .shop-logo-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     @keyframes pulseLogo {
       0%, 100% { transform: scale(1); box-shadow: 0 0 16px rgba(56, 189, 248, 0.35); }
       50% { transform: scale(1.05); box-shadow: 0 0 26px rgba(56, 189, 248, 0.6); }
     }
 
-    /* Плавающая кнопка редактора текстов для админа */
+    /* Плавающий перетаскиваемый карандаш (Draggable FAB) */
     .floating-editor-btn {
       display: none;
       position: fixed;
       right: 16px;
       bottom: calc(90px + env(safe-area-inset-bottom, 16px));
-      width: 46px;
-      height: 46px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: var(--card-bg);
       border: 2px solid var(--cyan);
-      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
       color: var(--cyan);
-      font-size: 20px;
+      font-size: 22px;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
+      cursor: grab;
       z-index: 150;
-      transition: all 0.2s ease;
+      touch-action: none;
+      transition: border-color 0.2s ease, background 0.2s ease;
     }
+    .floating-editor-btn:active { cursor: grabbing; }
     .floating-editor-btn.active {
       background: var(--green);
       border-color: #fff;
       color: #fff;
-      box-shadow: 0 0 22px rgba(16, 185, 129, 0.8);
+      box-shadow: 0 0 24px rgba(16, 185, 129, 0.8);
       animation: editorPulse 1.8s infinite;
     }
     @keyframes editorPulse {
@@ -1022,11 +1030,11 @@
       50% { transform: scale(1.1); }
     }
 
-    /* Подсветка редактируемых блоков в режиме правки */
+    /* Подсветка блоков при активном режиме редактирования */
     body.in-text-edit-mode [data-config-key] {
       outline: 2px dashed var(--cyan) !important;
       outline-offset: 3px;
-      cursor: crosshair !important;
+      cursor: pointer !important;
       transition: outline-color 0.2s ease;
     }
     body.in-text-edit-mode [data-config-key]:hover {
@@ -1059,8 +1067,8 @@
 
   <div id="toast">Уведомление</div>
 
-  <!-- Плавающая кнопка визуального редактора текстов для админов -->
-  <div class="floating-editor-btn" id="floating-editor-btn" onclick="toggleTextEditingMode()">✏️</div>
+  <!-- Плавающая перетаскиваемая кнопка редактора текстов -->
+  <div class="floating-editor-btn" id="floating-editor-btn">✏️</div>
 
   <!-- Кастомный топ-баннер подтверждения удаления заказа -->
   <div class="top-confirm-popup" id="top-confirm-popup">
@@ -1168,9 +1176,11 @@
 
     <!-- Экран 4: О нас -->
     <section id="screen-about" class="screen">
-      <!-- Верхний блок салона -->
+      <!-- Верхний блок салона с оригинальным фото из Google Диска -->
       <div class="box-card neon-glow" style="text-align:center;">
-        <div class="shop-logo-circle">🌸</div>
+        <div class="shop-logo-circle">
+          <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Салон Цветы">
+        </div>
         <div style="font-size:18px; font-weight:900; color:var(--text); letter-spacing:0.5px;" data-config-key="txt_shop_title">ЦВЕТЫ</div>
         <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:3px 0 10px 0;" data-config-key="txt_shop_subtitle">
           Мелкооптовый цветочный салон
@@ -1188,14 +1198,14 @@
         </a>
       </div>
 
-      <!-- Интерактивная карта с точкой -->
+      <!-- Интерактивная карта со светлой подложкой Яндекса и точными координатами -->
       <div class="box-card neon-glow" style="padding:10px;">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;">
           Мы на карте
         </div>
         <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
           <iframe 
-            src="https://yandex.ru/map-widget/v1/?ll=37.150646%2C55.966912&z=16&pt=37.150646,55.966912,pm2rdm" 
+            src="https://yandex.ru/map-widget/v1/?ll=37.151059%2C55.966987&z=16&pt=37.151059,55.966987,pm2rdm" 
             width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none;">
           </iframe>
         </div>
@@ -1225,6 +1235,15 @@
 
     <!-- Экран 5: Root (Панель управления) -->
     <section id="screen-root" class="screen">
+      <!-- Блок включения режима редактирования -->
+      <div class="box-card" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-color:var(--border-accent);">
+        <div>
+          <b style="font-size:13px; color:var(--cyan);">Режим редактирования</b>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Показать плавающий карандаш для правки текстов</div>
+        </div>
+        <div class="custom-checkbox" id="root-toggle-editor-btn" style="width:24px; height:24px; font-size:14px;" onclick="toggleEditorFabVisibility()"></div>
+      </div>
+
       <div class="toggle-grid">
         <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
         <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
@@ -1256,7 +1275,7 @@
         <div id="root-clients-container"></div>
       </div>
 
-      <!-- FAQ (со стрелками перемещения и переключателем активности) -->
+      <!-- FAQ -->
       <div id="root-sec-faq" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
         <div id="root-faq-container"></div>
@@ -1400,13 +1419,13 @@
       </div>
 
       <div id="other-rec-fields" style="display:none;">
-        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Имя получателя:</label>
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Имя получателя: *</label>
         <input type="text" id="ord-rec-name" class="metro-input" placeholder="Имя адресата">
-        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Телефон получателя:</label>
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Телефон получателя: *</label>
         <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="8 (___) ___-__-__">
       </div>
 
-      <!-- Поля для доставки -->
+      <!-- Поля для доставки (все поля обязательны) -->
       <div id="delivery-extra-fields">
         <div id="order-saved-address-container" style="display:none; margin-bottom:8px;">
           <div style="font-size:11px; color:var(--cyan); font-weight:700; margin-bottom:4px; text-transform:uppercase;">Сохраненные адреса:</div>
@@ -1421,10 +1440,10 @@
 
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон: *</label>
         <div class="address-grid">
-          <input type="text" id="ord-entrance" class="metro-input" placeholder="Подъезд">
-          <input type="text" id="ord-floor" class="metro-input" placeholder="Этаж">
-          <input type="text" id="ord-apt" class="metro-input" placeholder="Кв/Офис">
-          <input type="text" id="ord-intercom" class="metro-input" placeholder="Домофон">
+          <input type="text" id="ord-entrance" class="metro-input" placeholder="Подъезд *">
+          <input type="text" id="ord-floor" class="metro-input" placeholder="Этаж *">
+          <input type="text" id="ord-apt" class="metro-input" placeholder="Кв/Офис *">
+          <input type="text" id="ord-intercom" class="metro-input" placeholder="Домофон *">
         </div>
 
         <div class="custom-checkbox-wrap" onclick="toggleOrderSaveAddressCheckbox()">
@@ -1503,7 +1522,7 @@
     </div>
   </div>
 
-  <!-- Модалка оплаты -->
+  <!-- Модалка оплаты с оригинальным QR-кодом СБП -->
   <div class="modal-overlay" id="payment-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1527,8 +1546,9 @@
           💳 Оплатить через СБП
         </a>
 
-        <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(0,0,0,0.2);">
-          <canvas id="sbp-qr-canvas" width="170" height="170"></canvas>
+        <!-- Оригинальный QR-код из Google Диска -->
+        <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:8px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(0,0,0,0.2);">
+          <img src="https://lh3.googleusercontent.com/d/10mVoT26s9y0xd1EGW8_g-7Jv0C3MWsii" alt="QR СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
         </div>
 
         <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
@@ -1559,7 +1579,7 @@
     </div>
   </div>
 
-  <!-- Модалка адреса -->
+  <!-- Модалка адреса (все поля обязательны) -->
   <div class="modal-overlay" id="add-saved-addr-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1576,12 +1596,12 @@
         <div class="suggest-list" id="new-addr-suggest-list"></div>
       </div>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон: *</label>
       <div class="address-grid">
-        <input type="text" id="new-addr-entrance" class="metro-input" placeholder="Подъезд">
-        <input type="text" id="new-addr-floor" class="metro-input" placeholder="Этаж">
-        <input type="text" id="new-addr-apt" class="metro-input" placeholder="Кв/Офис">
-        <input type="text" id="new-addr-intercom" class="metro-input" placeholder="Домофон">
+        <input type="text" id="new-addr-entrance" class="metro-input" placeholder="Подъезд *">
+        <input type="text" id="new-addr-floor" class="metro-input" placeholder="Этаж *">
+        <input type="text" id="new-addr-apt" class="metro-input" placeholder="Кв/Офис *">
+        <input type="text" id="new-addr-intercom" class="metro-input" placeholder="Домофон *">
       </div>
 
       <button class="btn-metro" style="margin-top:10px;" id="save-addr-modal-btn" onclick="saveNewAddressFromModal()">Сохранить адрес</button>
@@ -1797,8 +1817,9 @@
     const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
     const SBP_PAYMENT_URL = "https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0";
     
-    const STORE_LAT = 55.966912;
-    const STORE_LON = 37.150646;
+    // Точные координаты салона на Георгиевском пр-те, 37к2
+    const STORE_LAT = 55.966987;
+    const STORE_LON = 37.151059;
 
     const tg = window.Telegram?.WebApp;
     
@@ -1829,6 +1850,8 @@
     let catalog = [];
     let displayCatalog = [];
     let filteredCatalog = [];
+    
+    // Композитная корзина: ключ `${id}:::${variant}`
     let cart = {};
     let cartAssemblyItems = {};
     let isAssemblyMode = false;
@@ -1872,12 +1895,12 @@
     let editingSavedAddrIdx = null;
     let editingFaqId = null;
 
-    // Скрытый вход в Root: счетчик 5 тапов
     let hudTapCount = 0;
     let hudTapTimer = null;
 
-    // Плавающий визуальный редактор
+    // Плавающий Draggable редактор текстов
     let isTextEditActive = false;
+    let isFabVisible = false;
 
     function toast(text) {
       const el = document.getElementById('toast');
@@ -1943,7 +1966,7 @@
       if (screenId === 'root') loadRootOrders(true);
     }
 
-    // Скрытый вход по пилюле «ЦВЕТЫ»
+    // Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для других
     function handleHudRootTap() {
       if (isAdmin) {
         navigateTab('root', null);
@@ -1959,12 +1982,28 @@
         const pass = prompt("Код доступа Root:");
         if (pass === 'm1rfol159036' || pass === ADMIN_TELEGRAM_ID) {
           isAdmin = true;
-          document.getElementById('floating-editor-btn').style.display = 'flex';
+          document.getElementById('root-toggle-editor-btn').classList.add('checked');
+          document.getElementById('root-toggle-editor-btn').innerText = '✓';
+          toggleEditorFabVisibility(true);
           toast("Доступ подтвержден");
           navigateTab('root', null);
         } else if (pass !== null) {
           toast("Неверный код");
         }
+      }
+    }
+
+    // Включение/выключение плавающей кнопки карандаша из Root
+    function toggleEditorFabVisibility(forceState = null) {
+      isFabVisible = (forceState !== null) ? forceState : !isFabVisible;
+      const fab = document.getElementById('floating-editor-btn');
+      fab.style.display = isFabVisible ? 'flex' : 'none';
+      const chk = document.getElementById('root-toggle-editor-btn');
+      chk.classList.toggle('checked', isFabVisible);
+      chk.innerText = isFabVisible ? '✓' : '';
+
+      if (!isFabVisible && isTextEditActive) {
+        toggleTextEditingMode(false);
       }
     }
 
@@ -2010,12 +2049,10 @@
 
       // Доставка день-в-день принимается до 19:00
       if (curHour < 19) {
-        // Как можно скорее (если салон работает и курьеры успевают до 20:00)
         if (curHour >= 9 && curHour < 18 || (curHour === 18 && curMin <= 30)) {
           slots.push({ label: "Как можно скорее (в течение 1–2 часов с учетом сборки)", val: "Как можно скорее (1-2 часа)" });
         }
 
-        // Интервалы после 1-2 часов от текущего времени
         if (curHour < 12) {
           slots.push({ label: "Сегодня: 14:00 – 17:00", val: "Сегодня 14:00 - 17:00" });
           slots.push({ label: "Сегодня: 17:00 – 20:00", val: "Сегодня 17:00 - 20:00" });
@@ -2027,7 +2064,6 @@
         }
       }
 
-      // Всегда доступны слоты на завтра
       slots.push({ label: "Завтра: 11:00 – 14:00", val: "Завтра 11:00 - 14:00" });
       slots.push({ label: "Завтра: 14:00 – 17:00", val: "Завтра 14:00 - 17:00" });
       slots.push({ label: "Завтра: 17:00 – 20:00", val: "Завтра 17:00 - 20:00" });
@@ -2057,10 +2093,9 @@
       } catch (e) {}
     }
 
-    // Плавающий редактор текста прямо на экране (для администратора)
-    function toggleTextEditingMode() {
-      if (!isAdmin) return;
-      isTextEditActive = !isTextEditActive;
+    // Режим визуального редактирования текстов (с блокировкой перехода)
+    function toggleTextEditingMode(forcedState = null) {
+      isTextEditActive = (forcedState !== null) ? forcedState : !isTextEditActive;
       const btn = document.getElementById('floating-editor-btn');
       btn.classList.toggle('active', isTextEditActive);
       btn.innerText = isTextEditActive ? '✓' : '✏️';
@@ -2069,24 +2104,28 @@
       if (isTextEditActive) {
         toast("Режим редактирования: нажмите на любой текст для изменения");
       } else {
-        toast("Изменения зафиксированы");
+        toast("Режим редактирования выключен");
       }
     }
 
-    // Клик по тексту в режиме визуального редактирования
+    // Глушение всех кликов и открытие окна правки при активном режиме
     document.addEventListener('click', async (e) => {
       if (!isTextEditActive) return;
-      const target = e.target.closest('[data-config-key]');
-      if (!target) return;
+
+      if (e.target.closest('#floating-editor-btn')) return;
 
       e.preventDefault();
       e.stopPropagation();
+
+      const target = e.target.closest('[data-config-key]');
+      if (!target) return;
 
       const key = target.dataset.configKey;
       const curVal = target.innerText.trim();
       const newVal = prompt("Изменить текст:", curVal);
 
-      if (newVal !== null && newVal.trim() !== curVal) {
+      // Запись в базу только при реальном изменении (Dirty Checking)
+      if (newVal !== null && newVal.trim() !== "" && newVal.trim() !== curVal) {
         const cleanVal = newVal.trim();
         target.innerText = cleanVal;
         toast("Сохранение в таблицу...");
@@ -2108,6 +2147,69 @@
         }
       }
     }, true);
+
+    // Draggable плавающий кружок (сенсорное перетаскивание)
+    (function initDraggableFab() {
+      const fab = document.getElementById('floating-editor-btn');
+      let isDragging = false;
+      let startX, startY;
+      let initialLeft, initialTop;
+      let hasMoved = false;
+
+      function onStart(e) {
+        const touch = e.touches ? e.touches[0] : e;
+        isDragging = true;
+        hasMoved = false;
+        startX = touch.clientX;
+        startY = touch.clientY;
+
+        const rect = fab.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        fab.style.transition = 'none';
+      }
+
+      function onMove(e) {
+        if (!isDragging) return;
+        const touch = e.touches ? e.touches[0] : e;
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+          hasMoved = true;
+        }
+
+        let newLeft = initialLeft + dx;
+        let newTop = initialTop + dy;
+
+        newLeft = Math.max(10, Math.min(window.innerWidth - 60, newLeft));
+        newTop = Math.max(10, Math.min(window.innerHeight - 70, newTop));
+
+        fab.style.left = `${newLeft}px`;
+        fab.style.top = `${newTop}px`;
+        fab.style.right = 'auto';
+        fab.style.bottom = 'auto';
+      }
+
+      function onEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        fab.style.transition = 'border-color 0.2s ease, background 0.2s ease';
+
+        if (!hasMoved) {
+          toggleTextEditingMode();
+        }
+      }
+
+      fab.addEventListener('touchstart', onStart, { passive: true });
+      window.addEventListener('touchmove', onMove, { passive: true });
+      window.addEventListener('touchend', onEnd);
+
+      fab.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+    })();
 
     // Каталог: группа формируется строго если позиций > 1
     function buildDisplayCatalog() {
@@ -2227,12 +2329,19 @@
       }
     }
 
+    function getCartItemQuantity(id) {
+      return Object.entries(cart).reduce((sum, [key, qty]) => {
+        const [itemId] = key.split(':::');
+        return String(itemId) === String(id) ? sum + qty : sum;
+      }, 0);
+    }
+
     function renderCatalog(items) {
       const el = document.getElementById('catalog-wrap');
       el.innerHTML = items.map(p => {
         const photos = (p.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
         const firstPhoto = photos[0] || "";
-        const inCartQty = cart[p.id] || 0;
+        const inCartQty = getCartItemQuantity(p.id);
         const isHit = p.is_popular;
         const isAvailable = p.is_active;
         const isGroup = p.is_group;
@@ -2260,16 +2369,12 @@
                       <button class="btn-select-variant" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
                     ` : (inCartQty > 0 ? `
                       <div class="cart-active-stepper" onclick="event.stopPropagation();">
-                        ${inCartQty === 1 ? `
-                          <button class="btn-trash-mini" onclick="removeFromCartCompletely(${p.id})">🗑️</button>
-                        ` : `
-                          <button class="btn-trash-mini" style="font-weight:800; font-size:15px;" onclick="modifyCart(${p.id}, -1)">–</button>
-                        `}
+                        <button class="btn-trash-mini" onclick="removeAllOfItemFromCart('${p.id}')">🗑️</button>
                         <span class="cart-active-qty">${inCartQty}</span>
-                        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="quickAdd(${p.id})">+</button>
+                        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="openProductModal('${p.id}')">+</button>
                       </div>
                     ` : `
-                      <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd(${p.id})">+</button>
+                      <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
                     `)}
                   </div>
                 ` : `
@@ -2285,23 +2390,32 @@
     function updateProductCardAction(id) {
       const actionEl = document.getElementById(`product-action-${id}`);
       if (!actionEl) return;
-      const inCartQty = cart[id] || 0;
+      const inCartQty = getCartItemQuantity(id);
 
       if (inCartQty > 0) {
         actionEl.innerHTML = `
           <div class="cart-active-stepper" onclick="event.stopPropagation();">
-            ${inCartQty === 1 ? `
-              <button class="btn-trash-mini" onclick="removeFromCartCompletely(${id})">🗑️</button>
-            ` : `
-              <button class="btn-trash-mini" style="font-weight:800; font-size:15px;" onclick="modifyCart(${id}, -1)">–</button>
-            `}
+            <button class="btn-trash-mini" onclick="removeAllOfItemFromCart('${id}')">🗑️</button>
             <span class="cart-active-qty">${inCartQty}</span>
-            <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="quickAdd(${id})">+</button>
+            <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="openProductModal('${id}')">+</button>
           </div>
         `;
       } else {
-        actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd(${id})">+</button>`;
+        actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${id}')">+</button>`;
       }
+    }
+
+    function removeAllOfItemFromCart(id) {
+      Object.keys(cart).forEach(key => {
+        const [itemId] = key.split(':::');
+        if (String(itemId) === String(id)) {
+          delete cart[key];
+          delete cartAssemblyItems[key];
+        }
+      });
+      updateCartUI();
+      updateProductCardAction(id);
+      toast("Удалено из корзины");
     }
 
     // Модальное окно букета с поддержкой слэша (Белые / Желтые) и авто-сортировкой характеристик по возрастанию
@@ -2336,13 +2450,13 @@
         setupGroupVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null);
         updateSelectedGroupVariantUI();
       } else {
-        // Одиночный товар с возможным разделением вариантов по слэшу (Белые / Желтые)
         const hasSlashVariants = item.variant && item.variant.includes('/');
         if (hasSlashVariants) {
           variantBox.style.display = 'block';
           setupSingleItemSlashVariants(item);
         } else {
           variantBox.style.display = 'none';
+          selectedGroupVariant = item.variant || "";
           setupSingleItemPopUI(item);
         }
       }
@@ -2536,10 +2650,13 @@
     function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
     function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
 
+    // Добавление в корзину с фиксацией конкретного выбранного цвета
     function addPopToCart() {
       if (!activePopItem) return;
 
       let targetId = activePopItem.id;
+      let finalVariant = selectedGroupVariant || "";
+
       if (activePopItem.is_group) {
         const variant = activePopItem.variants.find(v => {
           const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
@@ -2565,8 +2682,10 @@
         }
       }
 
-      cart[targetId] = (cart[targetId] || 0) + popQty;
-      cartAssemblyItems[targetId] = true;
+      const cartKey = `${targetId}:::${finalVariant}`;
+      cart[cartKey] = (cart[cartKey] || 0) + popQty;
+      cartAssemblyItems[cartKey] = true;
+
       updateCartUI();
       updateProductCardAction(targetId);
       closeProductModal();
@@ -2574,35 +2693,36 @@
     }
 
     function quickAdd(id) {
-      const item = catalog.find(i => i.id == id);
-      if (item && !item.is_active) return;
-      cart[id] = (cart[id] || 0) + 1;
-      cartAssemblyItems[id] = true;
+      const item = catalog.find(i => String(i.id) === String(id));
+      if (!item || !item.is_active) return;
+
+      let chosenVar = item.variant || "";
+      if (chosenVar.includes('/')) {
+        chosenVar = chosenVar.split('/')[0].trim();
+      }
+
+      const cartKey = `${id}:::${chosenVar}`;
+      cart[cartKey] = (cart[cartKey] || 0) + 1;
+      cartAssemblyItems[cartKey] = true;
+
       updateCartUI();
       updateProductCardAction(id);
       toast("Добавлено в заказ");
     }
 
-    function modifyCart(id, delta) {
-      cart[id] = (cart[id] || 0) + delta;
-      if (cart[id] <= 0) {
-        delete cart[id];
-        delete cartAssemblyItems[id];
+    function modifyCartByKey(cartKey, delta) {
+      cart[cartKey] = (cart[cartKey] || 0) + delta;
+      const [itemId] = cartKey.split(':::');
+      if (cart[cartKey] <= 0) {
+        delete cart[cartKey];
+        delete cartAssemblyItems[cartKey];
       }
       updateCartUI();
-      updateProductCardAction(id);
+      updateProductCardAction(itemId);
     }
 
-    function removeFromCartCompletely(id) {
-      delete cart[id];
-      delete cartAssemblyItems[id];
-      updateCartUI();
-      updateProductCardAction(id);
-      toast("Удалено из корзины");
-    }
-
-    function toggleItemAssemblySelection(id) {
-      cartAssemblyItems[id] = !cartAssemblyItems[id];
+    function toggleItemAssemblySelection(cartKey) {
+      cartAssemblyItems[cartKey] = !cartAssemblyItems[cartKey];
       renderCartItems();
     }
 
@@ -2624,27 +2744,30 @@
       renderCartItems();
     }
 
+    // Отрисовка корзины с указанием точного выбранного цвета/модификатора
     function renderCartItems() {
       const container = document.getElementById('cart-items-container');
       let subtotal = 0;
       const entries = Object.entries(cart);
 
-      container.innerHTML = entries.map(([id, qty]) => {
+      container.innerHTML = entries.map(([cartKey, qty]) => {
+        const [id, selectedVar] = cartKey.split(':::');
         const item = catalog.find(i => String(i.id) === String(id));
         if (!item) return '';
+
         subtotal += item.price * qty;
         const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
         const thumb = photos[0] || "";
-        const varInfo = item.variant ? ` (${item.variant})` : '';
-        const isChecked = !!cartAssemblyItems[id];
+        const varInfo = selectedVar ? ` (${selectedVar})` : '';
+        const isChecked = !!cartAssemblyItems[cartKey];
 
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
             <div style="display:flex; align-items:center; gap:8px; max-width:68%;">
               ${isAssemblyMode ? `
-                <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection(${id})">${isChecked ? '✓' : ''}</div>
+                <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
               ` : ''}
-              <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${item.variant || ''}', '${item.unit || ''}')">
+              <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${selectedVar || ''}', '${item.unit || ''}')">
                 <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
                   ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
                 </div>
@@ -2655,9 +2778,9 @@
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:6px;">
-              <button class="qty-btn" onclick="modifyCart(${id}, -1)">–</button>
+              <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', -1)">–</button>
               <span style="font-size:14px; font-weight:700; min-width:18px; text-align:center;">${qty}</span>
-              <button class="qty-btn" onclick="modifyCart(${id}, 1)">+</button>
+              <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', 1)">+</button>
             </div>
           </div>
         `;
@@ -2798,28 +2921,36 @@
       document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
     }
 
+    // Оформление заказа со строгой валидацией всех полей адреса
     async function submitFinalOrder() {
       const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
 
       let orderItems = [];
-      Object.entries(cart).forEach(([id, qty]) => {
+      Object.entries(cart).forEach(([cartKey, qty]) => {
+        const [id, selectedVar] = cartKey.split(':::');
         const item = catalog.find(i => String(i.id) === String(id));
         if (item) {
           orderItems.push({
             id: item.id,
             title: item.title,
-            variant: item.variant || "",
+            variant: selectedVar || "",
             unit: item.unit || "1 шт.",
             price: item.price,
             qty: qty,
-            in_bouquet: needAssembly && !!cartAssemblyItems[id]
+            in_bouquet: needAssembly && !!cartAssemblyItems[cartKey]
           });
         }
       });
 
       let recInfo = "";
       if (orderRecType === 'other') {
-        recInfo = `${document.getElementById('ord-rec-name').value.trim() || 'Не указано'} (${document.getElementById('ord-rec-phone').value.trim() || 'Не указан'})`;
+        const rName = document.getElementById('ord-rec-name').value.trim();
+        const rPhone = document.getElementById('ord-rec-phone').value.trim();
+        if (!rName || rPhone.length < 17) {
+          toast("Укажите имя и телефон получателя полностью");
+          return;
+        }
+        recInfo = `${rName} (${rPhone})`;
       }
 
       let fullAddr = "";
@@ -2832,8 +2963,14 @@
         const intc = document.getElementById('ord-intercom').value.trim();
         const comm = document.getElementById('ord-comment').value.trim();
 
-        if (!street) { toast("Укажите улицу и дом"); return; }
-        fullAddr = `${street}${ent ? ', под. '+ent : ''}${flr ? ', эт. '+flr : ''}${apt ? ', кв. '+apt : ''}${intc ? ' (домофон: '+intc+')' : ''}${comm ? ' [курьеру: '+comm+']' : ''}`;
+        // Строгая обязательность всех полей адреса
+        if (!street) { toast("Укажите улицу и номер дома"); return; }
+        if (!ent || !flr || !apt || !intc) {
+          toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
+          return;
+        }
+
+        fullAddr = `${street}, под. ${ent}, эт. ${flr}, кв. ${apt} (домофон: ${intc})${comm ? ' [курьеру: '+comm+']' : ''}`;
         dTime = document.getElementById('selected-time-display').innerText;
 
         if (ordSaveAddrChecked && savedAddresses.length < 3) {
@@ -2904,8 +3041,6 @@
       activePaymentOrderId = orderId;
       document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
       document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
-
-      drawQr('sbp-qr-canvas', SBP_PAYMENT_URL);
 
       let durationSec = 15 * 60;
       if (createdAtStr) {
@@ -3077,17 +3212,24 @@
       document.getElementById('new-addr-suggest-list').style.display = 'none';
     }
 
+    // Сохранение адреса в профиль со строгой проверкой всех полей
     function saveNewAddressFromModal() {
       const label = document.getElementById('new-addr-label').value.trim() || "Дом";
       const addr = document.getElementById('new-addr-suggest').value.trim();
-      if (!addr) { toast("Укажите адрес"); return; }
+      const ent = document.getElementById('new-addr-entrance').value.trim();
+      const flr = document.getElementById('new-addr-floor').value.trim();
+      const apt = document.getElementById('new-addr-apt').value.trim();
+      const intc = document.getElementById('new-addr-intercom').value.trim();
+
+      if (!addr) { toast("Укажите улицу и номер дома"); return; }
+      if (!ent || !flr || !apt || !intc) {
+        toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
+        return;
+      }
 
       const addrObj = {
         label: label, address: addr,
-        entrance: document.getElementById('new-addr-entrance').value.trim(),
-        floor: document.getElementById('new-addr-floor').value.trim(),
-        apt: document.getElementById('new-addr-apt').value.trim(),
-        intercom: document.getElementById('new-addr-intercom').value.trim()
+        entrance: ent, floor: flr, apt: apt, intercom: intc
       };
 
       if (editingSavedAddrIdx !== null) {
@@ -3152,7 +3294,6 @@
         if (user && user.exists && user.phone) {
           currentUser = user;
           isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || user.is_admin === true);
-          if (isAdmin) document.getElementById('floating-editor-btn').style.display = 'flex';
           localStorage.setItem('flw_user_profile', JSON.stringify(user));
           if (user.address && user.address.startsWith('[')) {
             try {
@@ -3187,7 +3328,6 @@
         const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
         currentUser = await res.json();
         isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser.is_admin === true);
-        if (isAdmin) document.getElementById('floating-editor-btn').style.display = 'flex';
         localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
         document.getElementById('reg-modal').classList.remove('open');
         renderProfileUI();
@@ -3299,7 +3439,7 @@
     }
 
     function openYandexRoute() {
-      const url = "https://yandex.ru/maps/?rtext=~55.966912,37.150646&rtt=auto";
+      const url = "https://yandex.ru/maps/?rtext=~55.966987,37.151059&rtt=auto";
       if (tg && tg.openLink) tg.openLink(url);
       else window.open(url, '_blank');
     }
@@ -3416,7 +3556,7 @@
     }
 
     function openYandexGoDelivery() {
-      const url = "https://taxi.yandex.ru/route?start-lat=55.966912&start-lon=37.150646&app=delivery";
+      const url = "https://taxi.yandex.ru/route?start-lat=55.966987&start-lon=37.151059&app=delivery";
       if (tg && tg.openLink) tg.openLink(url);
       else window.open(url, '_blank');
     }
@@ -3789,7 +3929,7 @@
       }).join('');
     }
 
-    // Быстрая конвертация одиночного товара в группу
+    // Конвертация одиночного товара в группу
     function convertProductToGroup(id) {
       const it = allRootCatalog.find(i => String(i.id) === String(id));
       if (!it) return;
@@ -3808,9 +3948,7 @@
 
       const tbody = document.getElementById('group-variants-tbody');
       tbody.innerHTML = "";
-      // Первая строка: исходный цветок
       addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", price: it.price, is_active: it.is_active });
-      // Вторая строка: заготовка для нового цвета/ростовки
       addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", price: it.price, is_active: true });
 
       document.getElementById('group-editor-modal').classList.add('open');
@@ -4077,13 +4215,13 @@
       loadRootClients();
     }
 
-    // FAQ в Root: переключатель видимости и кнопки перемещения ▲ / ▼
+    // FAQ в Root: переключатель видимости и стрелки перемещения ▲ / ▼
     async function loadRootFaq() {
       const container = document.getElementById('root-faq-container');
       const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
       allRootFaq = await res.json();
 
-      container.innerHTML = allRootFaq.map((f, idx) => `
+      container.innerHTML = allRootFaq.map(f => `
         <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${f.is_active ? 'var(--green)' : 'var(--red)'};">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div style="font-weight:700; font-size:13px; max-width:70%;">${f.question}</div>
@@ -4091,7 +4229,6 @@
               <span style="font-size:10px; font-weight:800; color:${f.is_active ? 'var(--green)' : 'var(--red)'};">
                 ${f.is_active ? 'АКТИВЕН' : 'СКРЫТ'}
               </span>
-              <!-- Стрелки изменения порядка -->
               <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
               <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
             </div>
@@ -4209,43 +4346,7 @@
       else window.open(url, '_blank');
     }
 
-    function drawQr(canvasId, text) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const size = 170;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, size, size);
-
-      ctx.fillStyle = '#090c12';
-      const drawMarker = (x, y) => {
-        ctx.fillRect(x, y, 38, 38);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(x + 5, y + 5, 28, 28);
-        ctx.fillStyle = '#090c12';
-        ctx.fillRect(x + 10, y + 10, 18, 18);
-      };
-
-      drawMarker(10, 10);
-      drawMarker(122, 10);
-      drawMarker(10, 122);
-
-      let hash = 0;
-      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      
-      for (let r = 0; r < 17; r++) {
-        for (let c = 0; c < 17; c++) {
-          if ((r < 5 && c < 5) || (r < 5 && c > 11) || (r > 11 && c < 5)) continue;
-          if (((hash ^ (r * 23 + c * 37)) % 3) === 0) {
-            ctx.fillRect(16 + c * 8, 16 + r * 8, 6, 6);
-          }
-        }
-      }
-    }
-
-    // Инициализация
+    // Инициализация сервиса
     loadCatalog();
     checkUserSession();
     loadConfig();
