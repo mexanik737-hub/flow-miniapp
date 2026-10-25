@@ -601,7 +601,6 @@
     }
     .metro-input:focus { border-color: var(--cyan); }
 
-    /* Выпадающие списки */
     .custom-select-box {
       position: relative;
       margin-top: 4px;
@@ -972,7 +971,6 @@
       outline: none;
     }
 
-    /* Эмблема магазина */
     .shop-logo-circle {
       width: 68px;
       height: 68px;
@@ -990,6 +988,49 @@
     @keyframes pulseLogo {
       0%, 100% { transform: scale(1); box-shadow: 0 0 16px rgba(56, 189, 248, 0.35); }
       50% { transform: scale(1.05); box-shadow: 0 0 26px rgba(56, 189, 248, 0.6); }
+    }
+
+    /* Плавающая кнопка редактора текстов для админа */
+    .floating-editor-btn {
+      display: none;
+      position: fixed;
+      right: 16px;
+      bottom: calc(90px + env(safe-area-inset-bottom, 16px));
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 2px solid var(--cyan);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+      color: var(--cyan);
+      font-size: 20px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 150;
+      transition: all 0.2s ease;
+    }
+    .floating-editor-btn.active {
+      background: var(--green);
+      border-color: #fff;
+      color: #fff;
+      box-shadow: 0 0 22px rgba(16, 185, 129, 0.8);
+      animation: editorPulse 1.8s infinite;
+    }
+    @keyframes editorPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* Подсветка редактируемых блоков в режиме правки */
+    body.in-text-edit-mode [data-config-key] {
+      outline: 2px dashed var(--cyan) !important;
+      outline-offset: 3px;
+      cursor: crosshair !important;
+      transition: outline-color 0.2s ease;
+    }
+    body.in-text-edit-mode [data-config-key]:hover {
+      outline-color: var(--amber) !important;
     }
 
     #toast {
@@ -1018,7 +1059,10 @@
 
   <div id="toast">Уведомление</div>
 
-  <!-- Всплывающий кастомный топ-баннер подтверждения -->
+  <!-- Плавающая кнопка визуального редактора текстов для админов -->
+  <div class="floating-editor-btn" id="floating-editor-btn" onclick="toggleTextEditingMode()">✏️</div>
+
+  <!-- Кастомный топ-баннер подтверждения удаления заказа -->
   <div class="top-confirm-popup" id="top-confirm-popup">
     <div class="top-confirm-title" id="top-confirm-text">Удалить заказ безвозвратно?</div>
     <div class="top-confirm-actions">
@@ -1033,10 +1077,10 @@
     <!-- Двойной парящий HUD -->
     <header>
       <div class="header-pills-row">
-        <!-- Левая пилюля: скрытый вход в Root -->
+        <!-- Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для остальных -->
         <div class="hud-pill" onclick="handleHudRootTap()">
-          <span class="hud-brand">ЦВЕТЫ</span>
-          <span class="hud-address">Георгиевский пр-т, 37к2</span>
+          <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
+          <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
         </div>
         <!-- Правая пилюля: переход в Профиль -->
         <div class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])">
@@ -1124,17 +1168,17 @@
 
     <!-- Экран 4: О нас -->
     <section id="screen-about" class="screen">
-      <!-- Верхний блок магазина -->
+      <!-- Верхний блок салона -->
       <div class="box-card neon-glow" style="text-align:center;">
         <div class="shop-logo-circle">🌸</div>
-        <div style="font-size:18px; font-weight:900; color:var(--text); letter-spacing:0.5px;">ЦВЕТЫ</div>
-        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:3px 0 10px 0;">
+        <div style="font-size:18px; font-weight:900; color:var(--text); letter-spacing:0.5px;" data-config-key="txt_shop_title">ЦВЕТЫ</div>
+        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:3px 0 10px 0;" data-config-key="txt_shop_subtitle">
           Мелкооптовый цветочный салон
         </div>
-        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
-          📍 Зеленоград, Георгиевский пр-т, 37к2<br>
-          ⏰ Ежедневно с <b>09:00 до 21:00</b><br>
-          🚚 Доставка цветов с <b>10:00 до 20:00</b>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.55; margin-bottom:12px;">
+          📍 <span data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span><br>
+          ⏰ Салон: <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
+          🚚 <span data-config-key="txt_delivery_schedule">Доставка с 10:00 до 20:00 (заказы до 19:00)</span>
         </div>
         <a class="btn-metro btn-emerald" href="tel:89162257117" style="margin-bottom:8px; text-decoration:none;">
           📞 Позвонить в салон
@@ -1173,7 +1217,7 @@
         <button class="btn-metro btn-warm-support" onclick="contactSupport()">
           💬 Техническая поддержка
         </button>
-        <div style="font-size:11px; color:var(--text-muted); line-height:1.4; margin-top:8px;">
+        <div style="font-size:11px; color:var(--text-muted); line-height:1.4; margin-top:8px;" data-config-key="txt_support_hint">
           Служба поддержки по работе приложения. По вопросам букетов, наличия цветов и заказов звоните по телефону салона.
         </div>
       </div>
@@ -1212,7 +1256,7 @@
         <div id="root-clients-container"></div>
       </div>
 
-      <!-- FAQ -->
+      <!-- FAQ (со стрелками перемещения и переключателем активности) -->
       <div id="root-sec-faq" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
         <div id="root-faq-container"></div>
@@ -1362,6 +1406,7 @@
         <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="8 (___) ___-__-__">
       </div>
 
+      <!-- Поля для доставки -->
       <div id="delivery-extra-fields">
         <div id="order-saved-address-container" style="display:none; margin-bottom:8px;">
           <div style="font-size:11px; color:var(--cyan); font-weight:700; margin-bottom:4px; text-transform:uppercase;">Сохраненные адреса:</div>
@@ -1393,16 +1438,10 @@
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время доставки:</label>
         <div class="custom-select-box" id="time-select-box">
           <div class="custom-select-trigger" onclick="toggleDropdown('time-select-box')">
-            <span id="selected-time-display">Как можно скорее (10:00 – 20:00)</span>
+            <span id="selected-time-display">Загрузка времени...</span>
             <span style="font-size:11px; color:var(--cyan);">▼</span>
           </div>
-          <div class="custom-select-options" id="time-select-options">
-            <div class="custom-select-option" onclick="selectDeliveryTime('Как можно скорее (10:00 - 20:00)')">Как можно скорее (~1.5–2 часа с учетом сборки)</div>
-            <div class="custom-select-option" onclick="selectDeliveryTime('Сегодня 11:00 - 14:00')">Сегодня 11:00 – 14:00</div>
-            <div class="custom-select-option" onclick="selectDeliveryTime('Сегодня 14:00 - 17:00')">Сегодня 14:00 – 17:00</div>
-            <div class="custom-select-option" onclick="selectDeliveryTime('Сегодня 17:00 - 20:00')">Сегодня 17:00 – 20:00</div>
-            <div class="custom-select-option" onclick="selectDeliveryTime('Завтра в интервале 10:00 - 20:00')">Завтра в интервале 10:00 – 20:00</div>
-          </div>
+          <div class="custom-select-options" id="time-select-options"></div>
         </div>
 
         <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.12); border:1px solid var(--border-accent); color:var(--cyan); font-size:12px; margin-bottom:12px;">
@@ -1410,11 +1449,14 @@
         </div>
       </div>
 
-      <div id="pickup-extra-fields" style="display:none; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--border-accent); color:var(--cyan); font-size:11px; margin-bottom:12px;">
-        📍 <b>Адрес магазина:</b> Зеленоград, Георгиевский пр-т, 37к2. Самовывоз с 09:00 до 21:00.
+      <!-- Поля для самовывоза -->
+      <div id="pickup-extra-fields" style="display:none; padding:12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--border-accent); color:var(--text); font-size:12px; line-height:1.5; margin-bottom:12px;">
+        📍 <b>Адрес салона:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
+        ⏰ <b>График выдачи:</b> ежедневно с 09:00 до 20:00 (в праздники продлевается).<br>
+        🔔 <b>Уведомление:</b> Как только флорист закончит сборку букета, статус заказа сменится на «Готов к выдаче», и вам поступит уведомление в Telegram.
       </div>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий магазину (необязательно):</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий салону (необязательно):</label>
       <input type="text" id="ord-shop-comment" class="metro-input" placeholder="Пожелания по сборке, цвету ленты...">
 
       <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:12px;">
@@ -1448,11 +1490,11 @@
         <div style="font-size:36px; margin-bottom:8px;">💐</div>
         <div style="font-size:15px; font-weight:800; color:var(--text); margin-bottom:6px;" id="asm-modal-order-id">ORD-XXXXXX</div>
         <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:16px;">
-          Вы выбрали сборку букета флористом! Чтобы флорист сразу приступил к работе и назвал точную стоимость оформления, позвоните в магазин прямо сейчас:
+          Вы выбрали сборку букета флористом! Чтобы флорист сразу приступил к работе и назвал точную стоимость оформления, позвоните в салон прямо сейчас:
         </div>
 
         <a class="btn-metro btn-emerald" href="tel:89162257117" style="margin-bottom:10px; text-decoration:none;">
-          📞 Позвонить в магазин (+7 916 225-71-17)
+          📞 Позвонить в салон (+7 916 225-71-17)
         </a>
         <button class="btn-metro btn-secondary" onclick="closeAssemblyModal()">
           Позже / Перейти в профиль
@@ -1560,8 +1602,8 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Фасовка / Количество: *</label>
       <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. или 1 шт.">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Модификатор (ростовка / оттенок):</label>
-      <input type="text" id="prod-edit-variant" class="metro-input" placeholder="60 см или Белая">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Модификатор (ростовка / оттенок через слэш):</label>
+      <input type="text" id="prod-edit-variant" class="metro-input" placeholder="60 см или Белые / Желтые">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
       <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
@@ -1834,6 +1876,9 @@
     let hudTapCount = 0;
     let hudTapTimer = null;
 
+    // Плавающий визуальный редактор
+    let isTextEditActive = false;
+
     function toast(text) {
       const el = document.getElementById('toast');
       el.innerText = text;
@@ -1914,6 +1959,7 @@
         const pass = prompt("Код доступа Root:");
         if (pass === 'm1rfol159036' || pass === ADMIN_TELEGRAM_ID) {
           isAdmin = true;
+          document.getElementById('floating-editor-btn').style.display = 'flex';
           toast("Доступ подтвержден");
           navigateTab('root', null);
         } else if (pass !== null) {
@@ -1940,12 +1986,130 @@
     bindPhoneMask(document.getElementById('edit-prof-phone'));
     bindPhoneMask(document.getElementById('ord-rec-phone'));
 
+    // Естественная сортировка чисел по возрастанию (40 см, 50 см, 60 см / 5 шт., 15 шт., 25 шт.)
+    function sortAscendingValues(arr) {
+      return arr.sort((a, b) => {
+        const numA = parseInt(String(a).match(/\d+/)?.[0] || 0, 10);
+        const numB = parseInt(String(b).match(/\d+/)?.[0] || 0, 10);
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        return String(a).localeCompare(String(b), 'ru', { numeric: true });
+      });
+    }
+
+    // Динамический расчет интервалов доставки на сегодня / завтра
+    function generateDynamicDeliveryTimeSlots() {
+      const now = new Date();
+      const curHour = now.getHours();
+      const curMin = now.getMinutes();
+      const optionsBox = document.getElementById('time-select-options');
+      const displaySpan = document.getElementById('selected-time-display');
+
+      let slots = [];
+
+      // Доставка день-в-день принимается до 19:00
+      if (curHour < 19) {
+        // Как можно скорее (если салон работает и курьеры успевают до 20:00)
+        if (curHour >= 9 && curHour < 18 || (curHour === 18 && curMin <= 30)) {
+          slots.push({ label: "Как можно скорее (в течение 1–2 часов с учетом сборки)", val: "Как можно скорее (1-2 часа)" });
+        }
+
+        // Интервалы после 1-2 часов от текущего времени
+        if (curHour < 12) {
+          slots.push({ label: "Сегодня: 14:00 – 17:00", val: "Сегодня 14:00 - 17:00" });
+          slots.push({ label: "Сегодня: 17:00 – 20:00", val: "Сегодня 17:00 - 20:00" });
+        } else if (curHour < 15) {
+          slots.push({ label: "Сегодня: 15:00 – 18:00", val: "Сегодня 15:00 - 18:00" });
+          slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
+        } else if (curHour < 17) {
+          slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
+        }
+      }
+
+      // Всегда доступны слоты на завтра
+      slots.push({ label: "Завтра: 11:00 – 14:00", val: "Завтра 11:00 - 14:00" });
+      slots.push({ label: "Завтра: 14:00 – 17:00", val: "Завтра 14:00 - 17:00" });
+      slots.push({ label: "Завтра: 17:00 – 20:00", val: "Завтра 17:00 - 20:00" });
+      slots.push({ label: "Завтра: в интервале с 10:00 до 20:00", val: "Завтра 10:00 - 20:00" });
+
+      displaySpan.innerText = slots[0].label;
+      optionsBox.innerHTML = slots.map(s => `
+        <div class="custom-select-option" onclick="selectDeliveryTime('${s.label}')">${s.label}</div>
+      `).join('');
+    }
+
     function selectDeliveryTime(val) {
       document.getElementById('selected-time-display').innerText = val;
       document.getElementById('time-select-box').classList.remove('open');
     }
 
-    // Группа создается строго при количестве > 1
+    // Загрузка текстов из Google Sheets (Лист «Конфиг»)
+    async function loadConfig() {
+      try {
+        const res = await fetch(`${API_URL}?action=get_config`);
+        const cfg = await res.json();
+        Object.keys(cfg).forEach(key => {
+          document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
+            el.innerText = cfg[key];
+          });
+        });
+      } catch (e) {}
+    }
+
+    // Плавающий редактор текста прямо на экране (для администратора)
+    function toggleTextEditingMode() {
+      if (!isAdmin) return;
+      isTextEditActive = !isTextEditActive;
+      const btn = document.getElementById('floating-editor-btn');
+      btn.classList.toggle('active', isTextEditActive);
+      btn.innerText = isTextEditActive ? '✓' : '✏️';
+      document.body.classList.toggle('in-text-edit-mode', isTextEditActive);
+
+      if (isTextEditActive) {
+        toast("Режим редактирования: нажмите на любой текст для изменения");
+      } else {
+        toast("Изменения зафиксированы");
+      }
+    }
+
+    // Клик по тексту в режиме визуального редактирования
+    document.addEventListener('click', async (e) => {
+      if (!isTextEditActive) return;
+      const target = e.target.closest('[data-config-key]');
+      if (!target) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const key = target.dataset.configKey;
+      const curVal = target.innerText.trim();
+      const newVal = prompt("Изменить текст:", curVal);
+
+      if (newVal !== null && newVal.trim() !== curVal) {
+        const cleanVal = newVal.trim();
+        target.innerText = cleanVal;
+        toast("Сохранение в таблицу...");
+        try {
+          await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+              action: "admin_save_config",
+              admin_id: ADMIN_TELEGRAM_ID,
+              admin_passcode: "m1rfol159036",
+              key: key,
+              value: cleanVal
+            })
+          });
+          toast("Текст сохранен!");
+        } catch (err) {
+          toast("Ошибка сохранения");
+        }
+      }
+    }, true);
+
+    // Каталог: группа формируется строго если позиций > 1
     function buildDisplayCatalog() {
       const groupsMap = {};
       const orderTracker = [];
@@ -2140,6 +2304,7 @@
       }
     }
 
+    // Модальное окно букета с поддержкой слэша (Белые / Желтые) и авто-сортировкой характеристик по возрастанию
     function openProductModal(id, targetVariant = null, targetUnit = null) {
       let item = null;
       let matchedInGroup = false;
@@ -2171,8 +2336,15 @@
         setupGroupVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null);
         updateSelectedGroupVariantUI();
       } else {
-        variantBox.style.display = 'none';
-        setupSingleItemPopUI(item);
+        // Одиночный товар с возможным разделением вариантов по слэшу (Белые / Желтые)
+        const hasSlashVariants = item.variant && item.variant.includes('/');
+        if (hasSlashVariants) {
+          variantBox.style.display = 'block';
+          setupSingleItemSlashVariants(item);
+        } else {
+          variantBox.style.display = 'none';
+          setupSingleItemPopUI(item);
+        }
       }
 
       document.getElementById('product-modal').classList.add('open');
@@ -2205,9 +2377,52 @@
       }
     }
 
+    function setupSingleItemSlashVariants(item) {
+      document.getElementById('pop-pack-block').style.display = 'none';
+      const varBlock = document.getElementById('pop-variant-block');
+      const varWrap = document.getElementById('pop-variant-chips');
+      varBlock.style.display = 'block';
+
+      const rawVars = item.variant.split('/').map(s => s.trim()).filter(Boolean);
+      const vars = sortAscendingValues(rawVars);
+
+      if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
+        selectedGroupVariant = vars[0] || "";
+      }
+
+      varWrap.innerHTML = vars.map(v => `
+        <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectSingleSlashVariant('${v}')">${v}</div>
+      `).join('');
+
+      document.getElementById('pop-title').innerText = `${item.title} (${selectedGroupVariant})`;
+      document.getElementById('pop-cat').innerText = item.category;
+      document.getElementById('pop-unit').innerText = item.unit || '1 шт.';
+      document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
+      document.getElementById('pop-price').innerText = item.price + ' ₽';
+      document.getElementById('pop-qty').innerText = '1';
+      renderPopGallery(item.photo_url);
+    }
+
+    function selectSingleSlashVariant(v) {
+      selectedGroupVariant = v;
+      if (activePopItem) setupSingleItemSlashVariants(activePopItem);
+    }
+
     function setupGroupVariantChips(group, preferredPack = null, preferredVar = null) {
-      const packs = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
-      const vars = Array.from(new Set(group.variants.map(v => v.variant).filter(Boolean)));
+      const rawPacks = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
+      const packs = sortAscendingValues(rawPacks);
+
+      let allRawVars = [];
+      group.variants.forEach(v => {
+        if (v.variant) {
+          if (v.variant.includes('/')) {
+            allRawVars.push(...v.variant.split('/').map(s => s.trim()));
+          } else {
+            allRawVars.push(v.variant.trim());
+          }
+        }
+      });
+      const vars = sortAscendingValues(Array.from(new Set(allRawVars.filter(Boolean))));
 
       if (preferredPack && packs.includes(preferredPack)) {
         selectedGroupPack = preferredPack;
@@ -2261,12 +2476,19 @@
 
       const variant = activePopItem.variants.find(v => {
         const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
-        const varMatch = !selectedGroupVariant || v.variant.trim() === selectedGroupVariant.trim();
+        let varMatch = false;
+        if (!selectedGroupVariant) varMatch = true;
+        else if (v.variant.includes('/')) {
+          const parts = v.variant.split('/').map(s => s.trim());
+          varMatch = parts.includes(selectedGroupVariant);
+        } else {
+          varMatch = (v.variant.trim() === selectedGroupVariant.trim());
+        }
         return packMatch && varMatch;
       });
 
-      const varText = selectedGroupVariant ? ` ${selectedGroupVariant}` : '';
-      const packText = selectedGroupPack ? ` (${selectedGroupPack})` : '';
+      const varText = selectedGroupVariant ? ` (${selectedGroupVariant})` : '';
+      const packText = selectedGroupPack ? ` [${selectedGroupPack}]` : '';
       document.getElementById('pop-title').innerText = `${activePopItem.title}${varText}${packText}`;
       document.getElementById('pop-cat').innerText = activePopItem.category;
       document.getElementById('pop-unit').innerText = selectedGroupPack || activePopItem.unit;
@@ -2321,7 +2543,14 @@
       if (activePopItem.is_group) {
         const variant = activePopItem.variants.find(v => {
           const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
-          const varMatch = !selectedGroupVariant || v.variant.trim() === selectedGroupVariant.trim();
+          let varMatch = false;
+          if (!selectedGroupVariant) varMatch = true;
+          else if (v.variant.includes('/')) {
+            const parts = v.variant.split('/').map(s => s.trim());
+            varMatch = parts.includes(selectedGroupVariant);
+          } else {
+            varMatch = (v.variant.trim() === selectedGroupVariant.trim());
+          }
           return packMatch && varMatch;
         });
         if (!variant || !variant.is_active) {
@@ -2524,6 +2753,7 @@
     }
 
     function openOrderModal() {
+      generateDynamicDeliveryTimeSlots();
       const savedBox = document.getElementById('order-saved-address-container');
       const pillsBox = document.getElementById('order-saved-address-pills');
       if (savedAddresses && savedAddresses.length > 0) {
@@ -2593,6 +2823,7 @@
       }
 
       let fullAddr = "";
+      let dTime = "";
       if (orderDelType === 'delivery') {
         const street = document.getElementById('ord-suggest-input').value.trim();
         const ent = document.getElementById('ord-entrance').value.trim();
@@ -2603,6 +2834,7 @@
 
         if (!street) { toast("Укажите улицу и дом"); return; }
         fullAddr = `${street}${ent ? ', под. '+ent : ''}${flr ? ', эт. '+flr : ''}${apt ? ', кв. '+apt : ''}${intc ? ' (домофон: '+intc+')' : ''}${comm ? ' [курьеру: '+comm+']' : ''}`;
+        dTime = document.getElementById('selected-time-display').innerText;
 
         if (ordSaveAddrChecked && savedAddresses.length < 3) {
           savedAddresses.push({ label: "Адрес " + (savedAddresses.length + 1), address: street, entrance: ent, floor: flr, apt: apt, intercom: intc });
@@ -2610,10 +2842,10 @@
         }
       } else {
         fullAddr = "Самовывоз: Георгиевский пр-т, 37к2";
+        dTime = "Самовывоз (по готовности)";
       }
 
       const shopComm = document.getElementById('ord-shop-comment').value.trim();
-      const dTime = document.getElementById('selected-time-display').innerText;
 
       toast("Создание заказа...");
       try {
@@ -2920,6 +3152,7 @@
         if (user && user.exists && user.phone) {
           currentUser = user;
           isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || user.is_admin === true);
+          if (isAdmin) document.getElementById('floating-editor-btn').style.display = 'flex';
           localStorage.setItem('flw_user_profile', JSON.stringify(user));
           if (user.address && user.address.startsWith('[')) {
             try {
@@ -2954,6 +3187,7 @@
         const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
         currentUser = await res.json();
         isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser.is_admin === true);
+        if (isAdmin) document.getElementById('floating-editor-btn').style.display = 'flex';
         localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
         document.getElementById('reg-modal').classList.remove('open');
         renderProfileUI();
@@ -3040,7 +3274,6 @@
       } catch (e) {}
     }
 
-    // Загрузка FAQ на экране «О нас»
     async function loadAboutFaq() {
       const container = document.getElementById('about-faq-container');
       try {
@@ -3146,7 +3379,7 @@
               <b>Адрес:</b> ${ord.address}<br>
               <b>Стоимость доставки:</b> ${deliveryCostText}<br>
               <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
-              ${ord.shop_comment ? `<b>Комментарий магазину:</b> ${ord.shop_comment}<br>` : ''}
+              ${ord.shop_comment ? `<b>Комментарий салону:</b> ${ord.shop_comment}<br>` : ''}
               <div style="margin:6px 0; padding-top:6px; border-top:1px dashed var(--border);">
                 <b>Состав заказа:</b><br>
                 ${itemsListText || '<i>Нет данных о составе</i>'}
@@ -3575,13 +3808,13 @@
 
       const tbody = document.getElementById('group-variants-tbody');
       tbody.innerHTML = "";
-      // Первая строка: исходный товар
+      // Первая строка: исходный цветок
       addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", price: it.price, is_active: it.is_active });
       // Вторая строка: заготовка для нового цвета/ростовки
       addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", price: it.price, is_active: true });
 
       document.getElementById('group-editor-modal').classList.add('open');
-      toast("Создание группы на базе товара");
+      toast("Создание группы на базе цветка");
     }
 
     function openAddGroupModal() {
@@ -3639,7 +3872,7 @@
       tr.dataset.id = data.id || "";
       tr.innerHTML = `
         <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
-        <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см / Белая"></td>
+        <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см / Белые"></td>
         <td><input type="number" class="gv-price" value="${data.price || 3500}"></td>
         <td style="text-align:center;">
           <div class="custom-checkbox ${data.is_active !== false ? 'checked' : ''}" style="width:18px; height:18px; margin:0 auto;" onclick="this.classList.toggle('checked'); this.innerText = this.classList.contains('checked') ? '✓' : '';">${data.is_active !== false ? '✓' : ''}</div>
@@ -3844,18 +4077,24 @@
       loadRootClients();
     }
 
-    // FAQ в Root с переключателем активности
+    // FAQ в Root: переключатель видимости и кнопки перемещения ▲ / ▼
     async function loadRootFaq() {
       const container = document.getElementById('root-faq-container');
       const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
       allRootFaq = await res.json();
-      container.innerHTML = allRootFaq.map(f => `
+
+      container.innerHTML = allRootFaq.map((f, idx) => `
         <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${f.is_active ? 'var(--green)' : 'var(--red)'};">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div style="font-weight:700; font-size:13px;">${f.question}</div>
-            <span style="font-size:10px; font-weight:800; color:${f.is_active ? 'var(--green)' : 'var(--red)'};">
-              ${f.is_active ? 'АКТИВЕН' : 'СКРЫТ'}
-            </span>
+            <div style="font-weight:700; font-size:13px; max-width:70%;">${f.question}</div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:10px; font-weight:800; color:${f.is_active ? 'var(--green)' : 'var(--red)'};">
+                ${f.is_active ? 'АКТИВЕН' : 'СКРЫТ'}
+              </span>
+              <!-- Стрелки изменения порядка -->
+              <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
+              <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
+            </div>
           </div>
           <div style="font-size:12px; color:var(--text-muted); margin:4px 0;">${f.answer}</div>
           <div style="display:flex; gap:6px; margin-top:6px;">
@@ -3867,6 +4106,22 @@
           </div>
         </div>
       `).join('');
+    }
+
+    async function moveFaqOrder(id, direction) {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: "admin_move_faq",
+          admin_id: ADMIN_TELEGRAM_ID,
+          admin_passcode: "m1rfol159036",
+          id: id,
+          direction: direction
+        })
+      });
+      loadRootFaq();
+      loadAboutFaq();
     }
 
     function openAddFaqModal() {
@@ -3990,8 +4245,10 @@
       }
     }
 
+    // Инициализация
     loadCatalog();
     checkUserSession();
+    loadConfig();
 
     setInterval(() => {
       const activeScreen = document.querySelector('.screen.active')?.id;
