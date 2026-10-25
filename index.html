@@ -1540,13 +1540,13 @@
           📋 Скопировать сумму
         </button>
 
-        <a class="btn-metro" id="pay-sbp-btn" href="https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0" target="_blank" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:14px; text-decoration:none;">
+        <a class="btn-metro" id="pay-sbp-btn" href="#" target="_blank" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:14px; text-decoration:none;">
           💳 Оплатить через СБП
         </a>
 
-        <!-- Оригинальный QR-код из Google Диска -->
+        <!-- QR-код заполняется безопасно с сервера -->
         <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:8px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(0,0,0,0.2);">
-          <img src="https://lh3.googleusercontent.com/d/10mVoT26s9y0xd1EGW8_g-7Jv0C3MWsii" alt="QR СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
+          <img id="sbp-qr-image-tag" src="" alt="QR СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
         </div>
 
         <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
@@ -1811,9 +1811,16 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
-    const DADATA_TOKEN = "ce6cb4591aaa104df75f0d1a9602d1c82097696e";
-    const SBP_PAYMENT_URL = "https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0";
+const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
+    
+    // Динамический защищенный конфиг с сервера
+    let SERVER_CONFIG = {
+      dadata_token: "",
+      sbp_url: "",
+      sbp_qr: "",
+      shop_phone: "8 (916) 225-71-17",
+      shop_phone_tel: "89162257117"
+    };
     
     const STORE_LAT = 55.966987;
     const STORE_LON = 37.151059;
@@ -1831,7 +1838,7 @@
 
     const tgFirstName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
     const tgUsername = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
-    const ADMIN_TELEGRAM_ID = "8900179932";
+    let sessionPasscode = ""; // Заполняется строго при ручном вводе
 
     function applyTelegramTheme() {
       const scheme = tg?.colorScheme || 'dark';
@@ -1861,7 +1868,7 @@
     let allRootFaq = [];
     let lastRootOrdersHash = "";
     let currentRootSubTab = 'active';
-    let isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser?.is_admin === true);
+    let isAdmin = (currentUser?.is_admin === true || String(currentUser?.is_admin).toUpperCase() === 'TRUE');
 
     let activePopItem = null;
     let popQty = 1;
@@ -1974,12 +1981,22 @@
       if (hudTapCount >= 5) {
         hudTapCount = 0;
         const pass = prompt("Код доступа Root:");
-        if (pass === 'm1rfol159036' || pass === ADMIN_TELEGRAM_ID) {
-          isAdmin = true;
-          toast("Доступ подтвержден");
-          navigateTab('root', null);
-        } else if (pass !== null) {
-          toast("Неверный код");
+        if (pass) {
+          sessionPasscode = pass.trim();
+          // Проверяем пароль на сервере
+          fetch(`${API_URL}?action=admin_orders&user_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
+            .then(r => r.json())
+            .then(data => {
+              if (Array.isArray(data)) {
+                isAdmin = true;
+                toast("Доступ подтвержден");
+                navigateTab('root', null);
+              } else {
+                sessionPasscode = "";
+                toast("Неверный код доступа");
+              }
+            })
+            .catch(() => toast("Ошибка проверки"));
         }
       }
     }
@@ -2068,16 +2085,29 @@
     }
 
     async function loadConfig() {
-      try {
-        const res = await fetch(`${API_URL}?action=get_config`);
-        const cfg = await res.json();
-        Object.keys(cfg).forEach(key => {
-          document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
-            el.innerText = cfg[key];
+        try {
+          const res = await fetch(`${API_URL}?action=get_config`);
+          const cfg = await res.json();
+          SERVER_CONFIG = cfg;
+
+          // Автоматически привязываем серверные ссылки к кнопкам оплаты и звонка
+          const sbpBtn = document.getElementById('pay-sbp-btn');
+          if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
+
+          const qrImg = document.getElementById('sbp-qr-image-tag');
+          if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
+
+          document.querySelectorAll('a[href^="tel:"]').forEach(a => {
+            if (cfg.shop_phone_tel) a.href = 'tel:' + cfg.shop_phone_tel;
           });
-        });
-      } catch (e) {}
-    }
+
+          Object.keys(cfg).forEach(key => {
+            document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
+              el.innerText = cfg[key];
+            });
+          });
+        } catch (e) {}
+       }
 
     function toggleTextEditingMode(forcedState = null) {
       isTextEditActive = (forcedState !== null) ? forcedState : !isTextEditActive;
@@ -2119,7 +2149,7 @@
             body: JSON.stringify({
               action: "admin_save_config",
               admin_id: userId,
-              admin_passcode: "m1rfol159036",
+              admin_passcode: sessionPasscode,
               key: key,
               value: cleanVal
             })
@@ -2783,7 +2813,7 @@
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json",
-              "Authorization": "Token " + DADATA_TOKEN
+              "Authorization": "Token " + (SERVER_CONFIG.dadata_token || "")
             },
             body: JSON.stringify({
               query: query,
@@ -3173,7 +3203,7 @@
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json",
-              "Authorization": "Token " + DADATA_TOKEN
+              "Authorization": "Token " + (SERVER_CONFIG.dadata_token || "")
             },
             body: JSON.stringify({ query: query, locations: [{ region: "Москва" }, { region: "Московская" }], count: 5 })
           });
@@ -3449,7 +3479,7 @@
     async function loadRootOrders(force = false) {
       if (!isAdmin) return;
       try {
-        const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=m1rfol159036`);
+        const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
         const orders = await res.json();
         const newHash = JSON.stringify(orders);
 
@@ -3559,7 +3589,7 @@
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_update_order", admin_id: userId, admin_passcode: "m1rfol159036", order_id: orderId, status: "Собирается" })
+        body: JSON.stringify({ action: "admin_update_order", admin_id: userId, admin_passcode: sessionPasscode, order_id: orderId, status: "Собирается" })
       });
       loadRootOrders(true);
     }
@@ -3579,7 +3609,7 @@
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_update_order", admin_id: userId, admin_passcode: "m1rfol159036", order_id: oid, status: st })
+        body: JSON.stringify({ action: "admin_update_order", admin_id: userId, admin_passcode: sessionPasscode, order_id: oid, status: st })
       });
       loadRootOrders(true);
     }
@@ -3673,7 +3703,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
-          action: "admin_update_order", admin_id: userId, admin_passcode: "m1rfol159036",
+          action: "admin_update_order", admin_id: userId, admin_passcode: sessionPasscode,
           order_id: activeRootOrderForEdit.order_id,
           items: tempEditingItems,
           total_amount: totalAmountVal,
@@ -3701,7 +3731,7 @@
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_delete_order", admin_id: userId, admin_passcode: "m1rfol159036", order_id: orderId })
+        body: JSON.stringify({ action: "admin_delete_order", admin_id: userId, admin_passcode: sessionPasscode, order_id: orderId })
       });
       loadRootOrders(true);
     }
@@ -3728,7 +3758,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
-            action: "admin_upload_photo", admin_id: userId, admin_passcode: "m1rfol159036",
+            action: "admin_upload_photo", admin_id: userId, admin_passcode: sessionPasscode,
             base64: base64,
             order_id: uploadTargetContext.type === 'order' ? uploadTargetContext.id : ""
           })
@@ -3820,7 +3850,7 @@
       document.getElementById('drive-media-modal').classList.add('open');
       const box = document.getElementById('drive-media-container');
       box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
-      fetch(`${API_URL}?action=admin_drive_media&admin_id=${userId}&admin_passcode=m1rfol159036`)
+      fetch(`${API_URL}?action=admin_drive_media&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
         .then(r => r.json())
         .then(media => {
           if (!media.length) { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Папка пуста</div>'; return; }
@@ -3847,7 +3877,7 @@
 
     async function loadRootCatalog() {
       const container = document.getElementById('root-catalog-container');
-      const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${userId}&admin_passcode=m1rfol159036`);
+      const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
       allRootCatalog = await res.json();
 
       const groups = {};
@@ -4030,7 +4060,7 @@
         body: JSON.stringify({
           action: "admin_save_group",
           admin_id: userId,
-          admin_passcode: "m1rfol159036",
+          admin_passcode: sessionPasscode,
           title: title,
           category: cat,
           photo_url: photo,
@@ -4093,7 +4123,7 @@
     async function saveProductEditor() {
       const payload = {
         action: editingProductId ? "admin_update_product" : "admin_add_product",
-        admin_id: userId, admin_passcode: "m1rfol159036",
+        admin_id: userId, admin_passcode: sessionPasscode,
         id: editingProductId,
         title: document.getElementById('prod-edit-name').value.trim(),
         unit: document.getElementById('prod-edit-unit').value.trim(),
@@ -4117,7 +4147,7 @@
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_delete_product", admin_id: userId, admin_passcode: "m1rfol159036", id: id })
+        body: JSON.stringify({ action: "admin_delete_product", admin_id: userId, admin_passcode: sessionPasscode, id: id })
       });
       loadRootCatalog();
       loadCatalog();
@@ -4125,7 +4155,7 @@
 
     async function loadRootClients() {
       const container = document.getElementById('root-clients-container');
-      const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${userId}&admin_passcode=m1rfol159036`);
+      const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
       allRootClients = await res.json();
       renderRootClients(allRootClients);
     }
@@ -4186,7 +4216,7 @@
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_update_spent", admin_id: userId, admin_passcode: "m1rfol159036", target_user_id: uid, total_spent: parseFloat(val) })
+        body: JSON.stringify({ action: "admin_update_spent", admin_id: userId, admin_passcode: sessionPasscode, target_user_id: uid, total_spent: parseFloat(val) })
       });
       loadRootClients();
     }
@@ -4196,14 +4226,14 @@
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_delete_user", admin_id: userId, admin_passcode: "m1rfol159036", target_user_id: uid })
+        body: JSON.stringify({ action: "admin_delete_user", admin_id: userId, admin_passcode: sessionPasscode, target_user_id: uid })
       });
       loadRootClients();
     }
 
     async function loadRootFaq() {
       const container = document.getElementById('root-faq-container');
-      const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${userId}&admin_passcode=m1rfol159036`);
+      const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
       allRootFaq = await res.json();
 
       container.innerHTML = allRootFaq.map(f => `
@@ -4237,7 +4267,7 @@
         body: JSON.stringify({
           action: "admin_move_faq",
           admin_id: userId,
-          admin_passcode: "m1rfol159036",
+          admin_passcode: sessionPasscode,
           id: id,
           direction: direction
         })
@@ -4282,7 +4312,7 @@
         body: JSON.stringify({
           action: "admin_update_faq",
           admin_id: userId,
-          admin_passcode: "m1rfol159036",
+          admin_passcode: sessionPasscode,
           id: editingFaqId || "new",
           question: q,
           answer: a,
@@ -4303,7 +4333,7 @@
         body: JSON.stringify({
           action: "admin_update_faq",
           admin_id: userId,
-          admin_passcode: "m1rfol159036",
+          admin_passcode: sessionPasscode,
           id: f.id,
           question: f.question,
           answer: f.answer,
@@ -4319,7 +4349,7 @@
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_delete_faq", admin_id: userId, admin_passcode: "m1rfol159036", id: id })
+        body: JSON.stringify({ action: "admin_delete_faq", admin_id: userId, admin_passcode: sessionPasscode, id: id })
       });
       loadRootFaq();
       loadAboutFaq();
