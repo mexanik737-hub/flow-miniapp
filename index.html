@@ -81,7 +81,6 @@
       flex-direction: column;
     }
 
-    /* 3. Верхний HUD: две парящие полупрозрачные пилюли */
     header {
       width: 100%;
       position: sticky;
@@ -105,7 +104,7 @@
       border-radius: 40px;
       backdrop-filter: blur(28px);
       -webkit-backdrop-filter: blur(28px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
       padding: 6px 12px;
       display: flex;
       align-items: center;
@@ -190,11 +189,10 @@
       width: 100%;
     }
 
-    /* Карточки каталога с неоновым свечением */
     .product-card {
       background: var(--card-bg);
       border: 1px solid var(--border-accent);
-      box-shadow: 0 0 14px rgba(56, 189, 248, 0.16);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.14);
       border-radius: var(--radius-md);
       overflow: hidden;
       display: flex;
@@ -435,10 +433,11 @@
     }
     .btn-metro:active { transform: scale(0.98); }
 
+    /* Адаптированная вторичная кнопка под обе темы */
     .btn-secondary {
       background: var(--card-inner);
       border: 1px solid var(--border);
-      color: #fff;
+      color: var(--text);
     }
 
     .btn-danger {
@@ -603,7 +602,7 @@
     }
     .metro-input:focus { border-color: var(--cyan); }
 
-    /* 1. Кастомные выпадающие списки (единый неоновый стиль) */
+    /* Выпадающие списки (адаптированы под обе темы через переменные) */
     .custom-select-box {
       position: relative;
       margin-top: 4px;
@@ -633,14 +632,14 @@
       top: calc(100% + 4px);
       left: 0;
       right: 0;
-      background: #0f141f;
+      background: var(--card-bg);
       border: 1px solid var(--border-accent);
       border-radius: var(--radius-sm);
       max-height: 200px;
       overflow-y: auto;
       z-index: 130;
       display: none;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
     }
     .custom-select-box.open .custom-select-options {
       display: block;
@@ -657,7 +656,6 @@
       color: var(--cyan);
     }
 
-    /* 1. Кастомные чекбоксы под стиль приложения */
     .custom-checkbox-wrap {
       display: flex;
       align-items: center;
@@ -692,13 +690,13 @@
       top: 100%;
       left: 0;
       right: 0;
-      background: #0f141f;
+      background: var(--card-bg);
       border: 1px solid var(--border-accent);
       border-radius: var(--radius-sm);
       max-height: 190px;
       overflow-y: auto;
       z-index: 120;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
       display: none;
     }
     .suggest-item {
@@ -1013,7 +1011,7 @@
   <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
   <div class="app-wrapper">
-    <!-- 3. Двойной парящий HUD -->
+    <!-- Двойной парящий HUD -->
     <header>
       <div class="header-pills-row">
         <div class="hud-pill">
@@ -1035,14 +1033,13 @@
       <div class="catalog-grid" id="catalog-wrap"></div>
     </section>
 
-    <!-- Экран 2: Корзина (с подсветкой neon-glow) -->
+    <!-- Экран 2: Корзина -->
     <section id="screen-cart" class="screen">
       <div class="box-card neon-glow" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
 
       <div class="box-card neon-glow" id="cart-checkout-card" style="display:none;">
-        <!-- Переключатель сборки букета -->
         <div style="background:var(--card-inner); border:1px solid var(--border-accent); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:12px;">
           <div class="custom-checkbox-wrap" onclick="toggleCartAssemblyMode()">
             <div class="custom-checkbox" id="cart-assembly-checkbox-ui"></div>
@@ -1063,7 +1060,7 @@
       </div>
     </section>
 
-    <!-- Экран 3: Профиль (с подсветкой neon-glow) -->
+    <!-- Экран 3: Профиль -->
     <section id="screen-profile" class="screen">
       <div class="box-card neon-glow">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1108,7 +1105,7 @@
         </div>
       </div>
 
-      <!-- FAQ (2. Расширенный список вопросов) -->
+      <!-- FAQ -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Часто задаваемые вопросы (FAQ)
@@ -1180,7 +1177,7 @@
     </nav>
   </div>
 
-  <!-- Модалка фильтров (5. Выпадающий список в стиле приложения) -->
+  <!-- Модалка фильтров -->
   <div class="modal-overlay" id="filter-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1374,7 +1371,7 @@
     </div>
   </div>
 
-  <!-- Модалка звонка в магазин при согласовании упаковки букета -->
+  <!-- Модалка согласования букета -->
   <div class="modal-overlay" id="assembly-call-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1399,7 +1396,7 @@
     </div>
   </div>
 
-  <!-- Модалка оплаты (6. СБП QR с гарантированной нативной отрисовкой + 9. Таймер) -->
+  <!-- Модалка оплаты -->
   <div class="modal-overlay" id="payment-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1423,8 +1420,8 @@
           💳 Оплатить через СБП
         </a>
 
-        <!-- 6. QR-код: гарантированная отрисовка canvas -->
-        <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(255,255,255,0.2);">
+        <!-- QR-код на холсте -->
+        <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(0,0,0,0.2);">
           <canvas id="sbp-qr-canvas" width="170" height="170"></canvas>
         </div>
 
@@ -1456,7 +1453,7 @@
     </div>
   </div>
 
-  <!-- 8. Модалка добавления / изменения сохраненного адреса -->
+  <!-- Модалка адреса -->
   <div class="modal-overlay" id="add-saved-addr-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1631,7 +1628,7 @@
     </div>
   </div>
 
-  <!-- 4. Модалка редактирования состава заказа в Root (с раздельной доставкой и упаковкой) -->
+  <!-- Модалка состава заказа в Root -->
   <div class="modal-overlay" id="edit-items-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1693,7 +1690,6 @@
 
     const tg = window.Telegram?.WebApp;
     
-    // Изоляция анонимных сессий
     let userId = tg?.initDataUnsafe?.user?.id;
     if (!userId) {
       userId = localStorage.getItem('flw_user_id');
@@ -1847,7 +1843,7 @@
       document.getElementById('time-select-box').classList.remove('open');
     }
 
-    // 7. Сортировка каталога: товары в наличии показываются первыми
+    // 4. Группа создается строго при количестве > 1
     function buildDisplayCatalog() {
       const groupsMap = {};
       const orderTracker = [];
@@ -1863,7 +1859,8 @@
 
       const rawDisplay = orderTracker.map(titleKey => {
         const items = groupsMap[titleKey];
-        if (items.length === 1 && !items[0].variant) {
+        // Если запись всего одна — это строго одиночный товар
+        if (items.length === 1) {
           return { ...items[0], is_group: false };
         }
 
@@ -1882,16 +1879,15 @@
           description: items[0].description,
           is_active: items.some(v => v.is_active),
           is_popular: items.some(v => v.is_popular),
-          unit: items.length > 1 ? "Варианты выбора" : items[0].unit,
+          unit: "Варианты выбора",
           variants: items
         };
       });
 
-      // Сортировка: сначала активные (is_active: true), неактивные — строго в конец
+      // Товары в наличии первыми
       displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
     }
 
-    // 5. Выпадающий список категорий в фильтре под тему приложения
     function setupFilterDropdown() {
       const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
       const optionsBox = document.getElementById('filter-cat-options');
@@ -2044,7 +2040,6 @@
       }
     }
 
-    // Модальное окно букета
     function openProductModal(id, targetVariant = null, targetUnit = null) {
       let item = null;
       let matchedInGroup = false;
@@ -2343,7 +2338,6 @@
       document.getElementById('cart-total').innerText = subtotal + ' ₽';
     }
 
-    // Подсказки DaData
     function onAddressInput(query) {
       clearTimeout(suggestDebounceTimer);
       const box = document.getElementById('ord-suggest-list');
@@ -2556,7 +2550,6 @@
           if (needAssembly) {
             openAssemblyCallModal(data.order_id);
           } else {
-            // Привязываем таймер к текущему моменту
             openPaymentModal(data.order_id, currentFinalOrderAmount, new Date().toISOString());
           }
         }
@@ -2575,16 +2568,13 @@
       navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
     }
 
-    // 6. QR-код: гарантированная нативная отрисовка на canvas + 9. Фиксированный таймер
     function openPaymentModal(orderId, amount, createdAtStr = null) {
       activePaymentOrderId = orderId;
       document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
       document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
 
-      // 6. Отрисовка QR-кода на холсте
       drawQr('sbp-qr-canvas', SBP_PAYMENT_URL);
 
-      // 9. Расчет оставшихся секунд от времени создания
       let durationSec = 15 * 60;
       if (createdAtStr) {
         const createdTs = parseOrderDateToTs(createdAtStr);
@@ -2605,7 +2595,6 @@
 
     function parseOrderDateToTs(dateStr) {
       if (!dateStr) return null;
-      // Поддержка форматов "HH:mm dd.MM.yyyy" и ISO
       const match = dateStr.match(/(\d{2}):(\d{2})\s(\d{2})\.(\d{2})\.(\d{4})/);
       if (match) {
         const [_, h, m, day, mon, yr] = match;
@@ -2676,7 +2665,6 @@
       }
     }
 
-    // 8. Сохраненные адреса (добавление, редактирование, удаление)
     function renderSavedAddresses() {
       const box = document.getElementById('saved-addresses-profile-list');
       if (!savedAddresses.length) {
@@ -2710,7 +2698,6 @@
       document.getElementById('add-saved-addr-modal').classList.add('open');
     }
 
-    // 8. Открытие модалки редактирования адреса
     function openEditSavedAddressModal(idx) {
       editingSavedAddrIdx = idx;
       const a = savedAddresses[idx];
@@ -2800,7 +2787,6 @@
       }).catch(() => {});
     }
 
-    // Профиль
     function openEditProfileModal() {
       if (!currentUser) return;
       document.getElementById('edit-prof-name').value = currentUser.name || '';
@@ -2884,7 +2870,6 @@
       document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
     }
 
-    // 9. Заказы клиента: отображение таймера прямо в карточке заказа
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
       try {
@@ -2906,7 +2891,6 @@
           const isAwaitingPay = (ord.status === 'Ожидает оплаты');
           const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
 
-          // Расчет остатка времени для карточки
           let timerCardBadge = "";
           if (isAwaitingPay) {
             const createdTs = parseOrderDateToTs(ord.date_time);
@@ -2954,41 +2938,12 @@
       } catch (e) {}
     }
 
-    // 2. Расширенный FAQ о приложении и тонкостях заказа
     async function loadFaq() {
       const container = document.getElementById('profile-faq-container');
       try {
         const res = await fetch(`${API_URL}?action=faq`);
-        let faq = await res.json();
-        
-        // Встроенные расширенные ответы о взаимодействии с приложением
-        const localExtendedFaq = [
-          {
-            question: "Как выбрать нужную ростовку или цвет букета?",
-            answer: "В каталоге розы и сортовые цветы объединены в общие карточки. Нажмите кнопку «Выбрать» на карточке, чтобы открыть меню с выбором нужной длины стебля (40–80 см), оттенка бутона и количества цветов в пачке (5, 15 или 25 шт.)."
-          },
-          {
-            question: "Как заказать сборку нескольких упаковок в один букет?",
-            answer: "Положите нужные цветы в корзину (например, пачку хризантем, альстромерий и эвкалипт), включите галочку «💐 Собрать выбранные цветы в букет» и подтвердите заказ. После этого нажмите кнопку звонка в магазин — флорист согласует с вами упаковку и ленту, упакует букет и выставит счет на оплату в приложении."
-          },
-          {
-            question: "Как рассчитывается стоимость доставки курьером?",
-            answer: "Доставка рассчитывается автоматически по карте от нашего магазина на Георгиевском пр-те, 37к2 до вашего адреса. Базовый тариф по району — 400 ₽ (до 2 км), далее +45 ₽ за каждый километр."
-          },
-          {
-            question: "Сколько времени дается на оплату по СБП?",
-            answer: "На оплату заказа выделяется ровно 15 минут с момента оформления. Если оплата не поступает, заказ автоматически отменяется для возврата свежих цветов на витрину."
-          },
-          {
-            question: "Как изменить или удалить сохраненный адрес?",
-            answer: "В блоке «Мои адреса» в профиле нажмите значок карандаша ✏️ рядом с нужным адресом для полного изменения корпуса, подъезда или домофона, либо крестик ✕ для удаления."
-          }
-        ];
-
-        // Объединение с серверным FAQ
-        const combined = [...localExtendedFaq, ...(faq || [])];
-
-        container.innerHTML = combined.map(f => `
+        const faq = await res.json();
+        container.innerHTML = faq.map(f => `
           <div class="faq-pill-item" onclick="toggleFaqPill(this)">
             <div class="faq-pill-header">
               <span>${f.question}</span>
@@ -3007,7 +2962,6 @@
       if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
     }
 
-    // Панель Root
     function switchRootSection(sec) {
       document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
       document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
@@ -3047,6 +3001,7 @@
       } catch (e) {}
     }
 
+    // 2. В Root на карточке выводится полный состав заказа и прямая ссылка на приложение Яндекс Go
     function renderRootOrders() {
       const container = document.getElementById('root-orders-container');
       const filtered = allRootOrders.filter(ord => {
@@ -3066,6 +3021,12 @@
           ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
           : '0 ₽ (Самовывоз)';
 
+        const itemsListText = (ord.items || []).map(i => {
+          const varInfo = i.variant ? ` (${i.variant})` : '';
+          const bqTag = i.in_bouquet ? ' [в букет]' : '';
+          return `• ${i.title}${varInfo} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
+        }).join('<br>');
+
         return `
           <div class="box-card" style="margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -3078,11 +3039,15 @@
               <b>Стоимость доставки:</b> ${deliveryCostText}<br>
               <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
               ${ord.shop_comment ? `<b>Комментарий магазину:</b> ${ord.shop_comment}<br>` : ''}
+              <div style="margin:6px 0; padding-top:6px; border-top:1px dashed var(--border);">
+                <b>Состав заказа:</b><br>
+                ${itemsListText || '<i>Нет данных о составе</i>'}
+              </div>
               <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
             </div>
             ${isAssembly ? `
               <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
-                💐 <b>Требуется сборка букета!</b> Согласуйте упаковку с клиентом, добавьте сумму в «Состав заказа» и выставьте счет.
+                💐 <b>Требуется сборка букета!</b> Согласуйте упаковку с клиентом, скорректируйте сумму в «Составе заказа» и переведите в «Ожидает оплаты».
               </div>
             ` : ''}
             ${isAwaiting ? `
@@ -3092,7 +3057,12 @@
             ` : ''}
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
               <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="copyCourierData('${ord.order_id}')">📋 Для курьера</button>
-              <a class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber); text-decoration:none;" href="https://dostavka.yandex.ru/account/create" target="_blank">🚚 Яндекс Доставка</a>
+              <!-- 3. Прямой запуск приложения Яндекс Go (Доставка) с фоллбэком -->
+              <a class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber); text-decoration:none;" 
+                 href="yandexgo://route?start-lat=55.966912&start-lon=37.150646&app=delivery" 
+                 onclick="setTimeout(() => { window.location.href = 'https://taxi.yandex.ru/'; }, 800);">
+                🚚 Яндекс Go
+              </a>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
               <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openStatusModal('${ord.order_id}')">Сменить статус</button>
@@ -3145,7 +3115,6 @@
       loadRootOrders(true);
     }
 
-    // 4. Наполнение кастомного списка цветов в «Составе заказа» Root
     function populateCatalogDropdown() {
       const optionsBox = document.getElementById('add-item-catalog-options');
       if (!optionsBox) return;
@@ -3169,7 +3138,6 @@
       document.getElementById('add-item-catalog-box').classList.remove('open');
     }
 
-    // 4. Модалка состава заказа с независимыми полями Доставки и Упаковки
     function openEditItemsModal(orderId) {
       const ord = allRootOrders.find(o => o.order_id === orderId);
       if (!ord) return;
@@ -3225,9 +3193,7 @@
     async function saveEditedOrderItems() {
       if (!activeRootOrderForEdit) return;
       const totalAmountVal = parseFloat(document.getElementById('edit-order-total-input').value) || 0;
-      const assemblyVal = parseFloat(document.getElementById('edit-order-assembly-input').value) || 0;
 
-      // Если в заказе была сборка — переводим в статус готовности к оплате СБП
       let nextStatus = activeRootOrderForEdit.status;
       if (nextStatus === 'Ожидает согласования упаковки') {
         nextStatus = 'Ожидает оплаты';
@@ -3410,7 +3376,7 @@
       toast("Фото прикреплено");
     }
 
-    // Каталог в Root
+    // Каталог в Root (одиночные товары не объединяются в группы)
     async function loadRootCatalog() {
       const container = document.getElementById('root-catalog-container');
       const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
@@ -3426,7 +3392,8 @@
       const rootCards = [];
       Object.keys(groups).forEach(key => {
         const list = groups[key];
-        if (list.length > 1 || list[0].variant) {
+        // 4. Группа строго если позиций с одинаковым именем > 1
+        if (list.length > 1) {
           rootCards.push({ is_group: true, title: key, items: list });
         } else {
           rootCards.push({ is_group: false, item: list[0] });
@@ -3663,7 +3630,6 @@
       loadCatalog();
     }
 
-    // Клиенты в Root с кнопками «Позвонить» и «Написать»
     async function loadRootClients() {
       const container = document.getElementById('root-clients-container');
       const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
@@ -3736,7 +3702,6 @@
       loadRootClients();
     }
 
-    // FAQ в Root
     async function loadRootFaq() {
       const container = document.getElementById('root-faq-container');
       const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
@@ -3813,7 +3778,6 @@
       else window.open(url, '_blank');
     }
 
-    // 6. Гарантированный рендер QR-кода на холсте (надежная математика без внешних библиотек)
     function drawQr(canvasId, text) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
@@ -3850,7 +3814,6 @@
       }
     }
 
-    // Инициализация
     loadCatalog();
     checkUserSession();
     if (String(userId) === ADMIN_TELEGRAM_ID) {
