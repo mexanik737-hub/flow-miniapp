@@ -1188,11 +1188,11 @@
           ⏰ Салон: <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
           🚚 <span data-config-key="txt_delivery_schedule">Доставка с 10:00 до 20:00 (заказы до 19:00)</span>
         </div>
-        <a class="btn-metro btn-emerald" href="tel:89162257117" style="margin-bottom:8px; text-decoration:none;" data-config-key="txt_btn_call_shop">
+        <a class="btn-metro btn-emerald" id="shop-call-btn" href="#" style="margin-bottom:8px; text-decoration:none;" data-config-key="txt_btn_call_shop">
           📞 Позвонить в салон
         </a>
-        <a class="btn-metro btn-secondary" href="tel:89162257117" style="font-size:12px; padding:9px; text-decoration:none;" data-config-key="txt_shop_phone_btn">
-          8 (916) 225-71-17
+        <a class="btn-metro btn-secondary" id="shop-phone-text-btn" href="#" style="font-size:12px; padding:9px; text-decoration:none;" data-config-key="txt_shop_phone_btn">
+          Загрузка телефона...
         </a>
       </div>
 
@@ -1203,7 +1203,8 @@
         </div>
         <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
           <iframe 
-            src="https://yandex.ru/map-widget/v1/?ll=37.151059%2C55.966987&z=16&pt=37.151059,55.966987,pm2rdm" 
+            id="yandex-map-iframe"
+            src="about:blank" 
             width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none;">
           </iframe>
         </div>
@@ -1510,8 +1511,8 @@
           Вы выбрали сборку букета флористом! Чтобы флорист сразу приступил к работе и назвал точную стоимость оформления, позвоните в салон прямо сейчас:
         </div>
 
-        <a class="btn-metro btn-emerald" href="tel:89162257117" style="margin-bottom:10px; text-decoration:none;">
-          📞 Позвонить в салон (+7 916 225-71-17)
+        <a class="btn-metro btn-emerald" id="assembly-call-btn" href="#" style="margin-bottom:10px; text-decoration:none;">
+          📞 Позвонить в салон
         </a>
         <button class="btn-metro btn-secondary" onclick="closeAssemblyModal()">
           Позже / Перейти в профиль
@@ -1818,12 +1819,12 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       dadata_token: "",
       sbp_url: "",
       sbp_qr: "",
-      shop_phone: "8 (916) 225-71-17",
-      shop_phone_tel: "89162257117"
+      shop_phone: "",
+      shop_phone_tel: "",
+      support_url: "",
+      store_lat: null,
+      store_lon: null
     };
-    
-    const STORE_LAT = 55.966987;
-    const STORE_LON = 37.151059;
 
     const tg = window.Telegram?.WebApp;
     
@@ -2085,29 +2086,54 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     async function loadConfig() {
-        try {
-          const res = await fetch(`${API_URL}?action=get_config`);
-          const cfg = await res.json();
-          SERVER_CONFIG = cfg;
+      try {
+        const res = await fetch(`${API_URL}?action=get_config`);
+        const cfg = await res.json();
+        SERVER_CONFIG = cfg;
 
-          // Автоматически привязываем серверные ссылки к кнопкам оплаты и звонка
-          const sbpBtn = document.getElementById('pay-sbp-btn');
-          if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
+        // 1. Ссылка на оплату СБП
+        const sbpBtn = document.getElementById('pay-sbp-btn');
+        if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
 
-          const qrImg = document.getElementById('sbp-qr-image-tag');
-          if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
+        // 2. Картинка QR-кода оплаты
+        const qrImg = document.getElementById('sbp-qr-image-tag');
+        if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
 
-          document.querySelectorAll('a[href^="tel:"]').forEach(a => {
-            if (cfg.shop_phone_tel) a.href = 'tel:' + cfg.shop_phone_tel;
+        // 3. Динамическая подстановка телефонов в кнопки звонка
+        if (cfg.shop_phone_tel) {
+          const telLink = 'tel:' + cfg.shop_phone_tel;
+          const callBtn = document.getElementById('shop-call-btn');
+          if (callBtn) callBtn.href = telLink;
+
+          const phoneTextBtn = document.getElementById('shop-phone-text-btn');
+          if (phoneTextBtn) {
+            phoneTextBtn.href = telLink;
+            if (cfg.shop_phone) phoneTextBtn.innerText = cfg.shop_phone;
+          }
+
+          const asmBtn = document.getElementById('assembly-call-btn');
+          if (asmBtn) {
+            asmBtn.href = telLink;
+            asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
+          }
+        }
+
+        // 4. Динамическая загрузка карты по координатам из таблицы
+        if (cfg.store_lat && cfg.store_lon) {
+          const mapIframe = document.getElementById('yandex-map-iframe');
+          if (mapIframe) {
+            mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
+          }
+        }
+
+        // 5. Тексты витрины
+        Object.keys(cfg).forEach(key => {
+          document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
+            el.innerText = cfg[key];
           });
-
-          Object.keys(cfg).forEach(key => {
-            document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
-              el.innerText = cfg[key];
-            });
-          });
-        } catch (e) {}
-       }
+        });
+      } catch (e) {}
+    }
 
     function toggleTextEditingMode(forcedState = null) {
       isTextEditActive = (forcedState !== null) ? forcedState : !isTextEditActive;
@@ -3447,7 +3473,10 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     function openYandexRoute() {
-      const url = "https://yandex.ru/maps/?rtext=~55.966987,37.151059&rtt=auto";
+      const lat = SERVER_CONFIG.store_lat;
+      const lon = SERVER_CONFIG.store_lon;
+      if (!lat || !lon) return;
+      const url = `https://yandex.ru/maps/?rtext=~${lat},${lon}&rtt=auto`;
       if (tg && tg.openLink) tg.openLink(url);
       else window.open(url, '_blank');
     }
@@ -3571,7 +3600,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         navigator.clipboard.writeText(orderAddress);
         toast("Адрес скопирован! Вставьте его в Яндекс Go");
       }
-      const url = `https://3.redirect.appmetrica.yandex.com/route?start-lat=${STORE_LAT}&start-lon=${STORE_LON}&appmetrica_tracking_id=1178268795219780156`;
+      const lat = SERVER_CONFIG.store_lat;
+      const lon = SERVER_CONFIG.store_lon;
+      const url = `https://3.redirect.appmetrica.yandex.com/route?start-lat=${lat}&start-lon=${lon}&appmetrica_tracking_id=1178268795219780156`;
       if (tg && tg.openLink) tg.openLink(url);
       else window.open(url, '_blank');
     }
@@ -4356,7 +4387,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     function contactSupport() {
-      const url = "https://t.me/mkgr52";
+      const url = SERVER_CONFIG.support_url || "https://t.me/";
       if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
       else window.open(url, '_blank');
     }
@@ -4368,14 +4399,13 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     setInterval(() => {
       const activeScreen = document.querySelector('.screen.active')?.id;
       if (activeScreen === 'screen-profile') {
-        checkUserSession();
         loadUserOrders();
       }
       if (activeScreen === 'screen-root' && isAdmin) {
         const secOrders = document.getElementById('root-sec-orders').style.display !== 'none';
         if (secOrders) loadRootOrders(false);
       }
-    }, 10000);
+    }, 35000);
   </script>
 </body>
 </html>
