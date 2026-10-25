@@ -81,7 +81,6 @@
       flex-direction: column;
     }
 
-    /* Двойной парящий HUD */
     header {
       width: 100%;
       position: sticky;
@@ -971,7 +970,6 @@
       outline: none;
     }
 
-    /* Круглая пульсирующая эмблема салона с фото */
     .shop-logo-circle {
       width: 72px;
       height: 72px;
@@ -996,7 +994,6 @@
       50% { transform: scale(1.05); box-shadow: 0 0 26px rgba(56, 189, 248, 0.6); }
     }
 
-    /* Плавающий перетаскиваемый карандаш (Draggable FAB) */
     .floating-editor-btn {
       display: none;
       position: fixed;
@@ -1030,7 +1027,6 @@
       50% { transform: scale(1.1); }
     }
 
-    /* Подсветка блоков при активном режиме редактирования */
     body.in-text-edit-mode [data-config-key] {
       outline: 2px dashed var(--cyan) !important;
       outline-offset: 3px;
@@ -1067,10 +1063,8 @@
 
   <div id="toast">Уведомление</div>
 
-  <!-- Плавающая перетаскиваемая кнопка редактора текстов -->
   <div class="floating-editor-btn" id="floating-editor-btn">✏️</div>
 
-  <!-- Кастомный топ-баннер подтверждения удаления заказа -->
   <div class="top-confirm-popup" id="top-confirm-popup">
     <div class="top-confirm-title" id="top-confirm-text">Удалить заказ безвозвратно?</div>
     <div class="top-confirm-actions">
@@ -1082,22 +1076,18 @@
   <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
   <div class="app-wrapper">
-    <!-- Двойной парящий HUD -->
     <header>
       <div class="header-pills-row">
-        <!-- Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для других -->
         <div class="hud-pill" onclick="handleHudRootTap()">
           <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
           <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
         </div>
-        <!-- Правая пилюля: переход в Профиль -->
         <div class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])">
           <span id="hud-name">Клиент</span>
         </div>
       </div>
     </header>
 
-    <!-- Экран 1: Каталог -->
     <section id="screen-catalog" class="screen active">
       <div class="catalog-top-bar">
         <div class="catalog-active-filter-label" id="catalog-filter-summary">Показано: <b>Все</b></div>
@@ -1106,7 +1096,6 @@
       <div class="catalog-grid" id="catalog-wrap"></div>
     </section>
 
-    <!-- Экран 2: Корзина -->
     <section id="screen-cart" class="screen">
       <div class="box-card neon-glow" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
@@ -1133,7 +1122,6 @@
       </div>
     </section>
 
-    <!-- Экран 3: Профиль -->
     <section id="screen-profile" class="screen">
       <div class="box-card neon-glow">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1163,7 +1151,6 @@
         </div>
       </div>
 
-      <!-- Мои заказы -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Мои заказы
@@ -1174,9 +1161,7 @@
       </div>
     </section>
 
-    <!-- Экран 4: О нас -->
     <section id="screen-about" class="screen">
-      <!-- Верхний блок салона с оригинальным фото из Google Диска -->
       <div class="box-card neon-glow" style="text-align:center;">
         <div class="shop-logo-circle">
           <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Салон Цветы">
@@ -1198,7 +1183,6 @@
         </a>
       </div>
 
-      <!-- Интерактивная карта со светлой подложкой Яндекса и точными координатами -->
       <div class="box-card neon-glow" style="padding:10px;">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;">
           Мы на карте
@@ -1214,7 +1198,6 @@
         </button>
       </div>
 
-      <!-- FAQ -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Часто задаваемые вопросы (FAQ)
@@ -1222,7 +1205,6 @@
         <div id="about-faq-container"></div>
       </div>
 
-      <!-- Техподдержка -->
       <div class="box-card neon-glow" style="text-align:center;">
         <button class="btn-metro btn-warm-support" onclick="contactSupport()">
           💬 Техническая поддержка
@@ -1233,9 +1215,7 @@
       </div>
     </section>
 
-    <!-- Экран 5: Root (Панель управления) -->
     <section id="screen-root" class="screen">
-      <!-- Блок включения режима редактирования -->
       <div class="box-card" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-color:var(--border-accent);">
         <div>
           <b style="font-size:13px; color:var(--cyan);">Режим редактирования</b>
@@ -1251,7 +1231,6 @@
         <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
       </div>
 
-      <!-- Заказы -->
       <div id="root-sec-orders">
         <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
           <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
@@ -1260,7 +1239,6 @@
         <div id="root-orders-container"></div>
       </div>
 
-      <!-- Каталог -->
       <div id="root-sec-catalog" style="display:none;">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px;">
           <button class="btn-metro" style="font-size:12px; padding:10px;" onclick="openAddProductModal()">+ Товар</button>
@@ -1269,13 +1247,11 @@
         <div id="root-catalog-container"></div>
       </div>
 
-      <!-- Клиенты -->
       <div id="root-sec-clients" style="display:none;">
         <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
         <div id="root-clients-container"></div>
       </div>
 
-      <!-- FAQ -->
       <div id="root-sec-faq" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
         <div id="root-faq-container"></div>
@@ -1283,7 +1259,6 @@
     </section>
   </div>
 
-  <!-- Док навигации -->
   <div class="dock-pill-container">
     <nav class="dock-pill" id="dock-pill-bar">
       <button class="dock-tab active" onclick="navigateTab('catalog', this)">
@@ -1305,7 +1280,6 @@
     </nav>
   </div>
 
-  <!-- Модалка фильтров -->
   <div class="modal-overlay" id="filter-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1338,7 +1312,6 @@
     </div>
   </div>
 
-  <!-- Модалка регистрации -->
   <div class="modal-overlay" id="reg-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1357,7 +1330,6 @@
     </div>
   </div>
 
-  <!-- Модалка карточки букета -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1424,7 +1396,7 @@
         <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="8 (___) ___-__-__">
       </div>
 
-      <!-- Поля для доставки (все поля обязательны) -->
+      <!-- Поля для доставки (все поля адреса строго обязательны) -->
       <div id="delivery-extra-fields">
         <div id="order-saved-address-container" style="display:none; margin-bottom:8px;">
           <div style="font-size:11px; color:var(--cyan); font-weight:700; margin-bottom:4px; text-transform:uppercase;">Сохраненные адреса:</div>
@@ -1521,7 +1493,7 @@
     </div>
   </div>
 
-  <!-- Модалка оплаты с оригинальным QR-кодом СБП -->
+  <!-- Модалка оплаты с оригинальным QR-кодом СБП из Google Диска -->
   <div class="modal-overlay" id="payment-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1578,7 +1550,7 @@
     </div>
   </div>
 
-  <!-- Модалка адреса (все поля обязательны) -->
+  <!-- Модалка адреса (все поля строго обязательны) -->
   <div class="modal-overlay" id="add-saved-addr-modal">
     <div class="modal-sheet">
       <div class="modal-header">
