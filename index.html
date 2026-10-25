@@ -190,23 +190,24 @@
       width: 100%;
     }
 
+    /* Все карточки каталога с неоновой подсветкой */
     .product-card {
       background: var(--card-bg);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.16);
       border-radius: var(--radius-md);
       overflow: hidden;
       display: flex;
       flex-direction: column;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       position: relative;
-      transition: transform 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
     }
     .product-card:active { transform: scale(0.97); }
 
     .product-card.popular-hit {
       border: 1px solid rgba(245, 158, 11, 0.4);
-      box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
     }
     .product-card.popular-hit::after {
       content: '';
@@ -709,7 +710,6 @@
       color: var(--cyan);
     }
 
-    /* Чипсы вариаций в модалке товара */
     .variant-selector-block {
       margin-bottom: 12px;
     }
@@ -740,11 +740,6 @@
       background: rgba(56, 189, 248, 0.16);
       border-color: var(--cyan);
       color: var(--cyan);
-    }
-    .variant-chip.disabled {
-      opacity: 0.45;
-      text-decoration: line-through;
-      cursor: not-allowed;
     }
 
     .quick-addr-pills {
@@ -915,7 +910,6 @@
       gap: 8px;
     }
 
-    /* Таблица вариаций группы в Root */
     .group-variants-table {
       width: 100%;
       border-collapse: collapse;
@@ -1004,21 +998,36 @@
       <div class="catalog-grid" id="catalog-wrap"></div>
     </section>
 
-    <!-- Экран 2: Корзина -->
+    <!-- Экран 2: Корзина (с подсветкой neon-glow) -->
     <section id="screen-cart" class="screen">
-      <div class="box-card" id="cart-items-container">
+      <div class="box-card neon-glow" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
-      <div class="box-card" id="cart-checkout-card" style="display:none;">
+
+      <!-- Блок сборки букета и оформления (с подсветкой neon-glow) -->
+      <div class="box-card neon-glow" id="cart-checkout-card" style="display:none;">
+        <!-- Переключатель сборки букета -->
+        <div style="background:var(--card-inner); border:1px solid var(--border-accent); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="cart-assembly-checkbox" style="width:18px; height:18px;" onchange="toggleCartAssemblyMode(this.checked)">
+            <label for="cart-assembly-checkbox" style="font-size:13px; font-weight:700; color:var(--cyan); cursor:pointer;">
+              💐 Собрать выбранные цветы в букет
+            </label>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.35;">
+            Отметьте галочками позиции для букета. Стоимость упаковки согласуется по телефону после оформления.
+          </div>
+        </div>
+
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <span style="font-size:14px; font-weight:700;">Сумма букетов:</span>
+          <span style="font-size:14px; font-weight:700;">Сумма цветов:</span>
           <span id="cart-total" style="font-size:18px; font-weight:800; color:var(--text);">0 ₽</span>
         </div>
         <button class="btn-metro" onclick="openOrderModal()">Оформить заказ</button>
       </div>
     </section>
 
-    <!-- Экран 3: Профиль -->
+    <!-- Экран 3: Профиль (с подсветкой neon-glow) -->
     <section id="screen-profile" class="screen">
       <div class="box-card neon-glow">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1181,7 +1190,7 @@
     </div>
   </div>
 
-  <!-- Модалка карточки букета (с ростовками/оттенками и мультифото) -->
+  <!-- Модалка карточки букета (Единая для каталога и корзины) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1319,7 +1328,32 @@
         </div>
       </div>
 
-      <button class="btn-metro" onclick="submitFinalOrder()">Перейти к оплате</button>
+      <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
+    </div>
+  </div>
+
+  <!-- Модалка звонка в магазин при согласовании букета (Вариант В) -->
+  <div class="modal-overlay" id="assembly-call-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title" id="asm-modal-title">Заказ оформлен</div>
+        <button class="close-btn" onclick="closeAssemblyModal()">✕</button>
+      </div>
+
+      <div style="text-align:center; padding:10px 0 16px 0;">
+        <div style="font-size:36px; margin-bottom:8px;">💐</div>
+        <div style="font-size:15px; font-weight:800; color:var(--text); margin-bottom:6px;" id="asm-modal-order-id">ORD-XXXXXX</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:16px;">
+          Вы выбрали сборку букета флористом! Чтобы флорист сразу приступил к работе и назвал точную стоимость оформления, позвоните в магазин прямо сейчас:
+        </div>
+
+        <a class="btn-metro btn-emerald" href="tel:89162257117" style="margin-bottom:10px;">
+          📞 Позвонить в магазин (+7 916 225-71-17)
+        </a>
+        <button class="btn-metro btn-secondary" onclick="closeAssemblyModal()">
+          Позже / Перейти в профиль
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1380,7 +1414,7 @@
     </div>
   </div>
 
-  <!-- Модалка добавления адреса -->
+  <!-- Модалка добавления сохраненного адреса -->
   <div class="modal-overlay" id="add-saved-addr-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1544,6 +1578,7 @@
       </div>
       <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
         <button class="toggle-btn" style="color:var(--amber);" onclick="applyStatusChoice('Ожидает оплаты')">Ожидает оплаты</button>
+        <button class="toggle-btn" style="color:var(--cyan);" onclick="applyStatusChoice('Ожидает согласования упаковки')">Согласование упаковки</button>
         <button class="toggle-btn" style="color:var(--purple);" onclick="applyStatusChoice('Ожидает подтверждения оплаты')">Ожидает подтверждения</button>
         <button class="toggle-btn" style="color:var(--cyan);" onclick="applyStatusChoice('Собирается')">Собирается</button>
         <button class="toggle-btn" style="color:var(--purple);" onclick="applyStatusChoice('В пути')">В пути</button>
@@ -1597,7 +1632,17 @@
     const STORE_LON = 37.150646;
 
     const tg = window.Telegram?.WebApp;
-    const userId = tg?.initDataUnsafe?.user?.id || 100001;
+    
+    // Изоляция анонимных пользователей (AyuGram / скрытые профили)
+    let userId = tg?.initDataUnsafe?.user?.id;
+    if (!userId) {
+      userId = localStorage.getItem('flw_user_id');
+      if (!userId) {
+        userId = 'anon_' + Math.floor(10000000 + Math.random() * 90000000);
+        localStorage.setItem('flw_user_id', userId);
+      }
+    }
+
     const tgFirstName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
     const tgUsername = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
     const ADMIN_TELEGRAM_ID = "8900179932";
@@ -1617,6 +1662,9 @@
     let displayCatalog = [];
     let filteredCatalog = [];
     let cart = {};
+    let cartAssemblyItems = {};
+    let isAssemblyMode = false;
+
     let currentUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null');
     let savedAddresses = JSON.parse(localStorage.getItem('flw_saved_addresses') || '[]');
     let allRootOrders = [];
@@ -1705,7 +1753,7 @@
       document.getElementById('time-select-box').classList.remove('open');
     }
 
-    // Автоматическая группировка витрины по одинаковому названию title
+    // Автоматическая группировка витрины
     function buildDisplayCatalog() {
       const groupsMap = {};
       const orderTracker = [];
@@ -1746,7 +1794,6 @@
       });
     }
 
-    // Фильтры витрины (динамические цены и категории)
     function setupFilterDropdown() {
       const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
       const sel = document.getElementById('filter-cat-select');
@@ -1802,7 +1849,6 @@
       closeFilterModal();
     }
 
-    // Каталог товаров
     async function loadCatalog() {
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
@@ -1894,9 +1940,28 @@
       }
     }
 
-    // Модальное окно букета с поддержкой вариантов
-    function openProductModal(id) {
-      const item = displayCatalog.find(i => String(i.id) === String(id)) || catalog.find(i => String(i.id) === String(id));
+    // Модальное окно букета с автораскрытием выбранного варианта
+    function openProductModal(id, targetVariant = null, targetUnit = null) {
+      let item = null;
+      let matchedInGroup = false;
+
+      // 1. Поиск по прямому ID в каталоге
+      const directItem = catalog.find(i => String(i.id) === String(id));
+      if (directItem) {
+        const titleKey = directItem.title.trim();
+        const groupParent = displayCatalog.find(g => g.is_group && g.title.trim() === titleKey);
+        if (groupParent) {
+          item = groupParent;
+          matchedInGroup = true;
+          selectedGroupPack = targetUnit || directItem.unit;
+          selectedGroupVariant = targetVariant || directItem.variant;
+        } else {
+          item = directItem;
+        }
+      } else {
+        item = displayCatalog.find(i => String(i.id) === String(id));
+      }
+
       if (!item) return;
 
       activePopItem = item;
@@ -1905,7 +1970,7 @@
       const variantBox = document.getElementById('pop-variant-box');
       if (item.is_group) {
         variantBox.style.display = 'block';
-        setupGroupVariantChips(item);
+        setupGroupVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null);
         updateSelectedGroupVariantUI();
       } else {
         variantBox.style.display = 'none';
@@ -1942,14 +2007,19 @@
       }
     }
 
-    function setupGroupVariantChips(group) {
+    function setupGroupVariantChips(group, preferredPack = null, preferredVar = null) {
       const packs = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
       const vars = Array.from(new Set(group.variants.map(v => v.variant).filter(Boolean)));
 
-      if (!selectedGroupPack || !packs.includes(selectedGroupPack)) {
+      if (preferredPack && packs.includes(preferredPack)) {
+        selectedGroupPack = preferredPack;
+      } else if (!selectedGroupPack || !packs.includes(selectedGroupPack)) {
         selectedGroupPack = packs[0] || "";
       }
-      if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
+
+      if (preferredVar && vars.includes(preferredVar)) {
+        selectedGroupVariant = preferredVar;
+      } else if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
         selectedGroupVariant = vars[0] || "";
       }
 
@@ -1978,13 +2048,13 @@
 
     function selectGroupPack(pack) {
       selectedGroupPack = pack;
-      setupGroupVariantChips(activePopItem);
+      setupGroupVariantChips(activePopItem, pack, selectedGroupVariant);
       updateSelectedGroupVariantUI();
     }
 
     function selectGroupVariant(v) {
       selectedGroupVariant = v;
-      setupGroupVariantChips(activePopItem);
+      setupGroupVariantChips(activePopItem, selectedGroupPack, v);
       updateSelectedGroupVariantUI();
     }
 
@@ -2069,6 +2139,7 @@
       }
 
       cart[targetId] = (cart[targetId] || 0) + popQty;
+      cartAssemblyItems[targetId] = true;
       updateCartUI();
       updateProductCardAction(targetId);
       closeProductModal();
@@ -2079,6 +2150,7 @@
       const item = catalog.find(i => i.id == id);
       if (item && !item.is_active) return;
       cart[id] = (cart[id] || 0) + 1;
+      cartAssemblyItems[id] = true;
       updateCartUI();
       updateProductCardAction(id);
       toast("Добавлено в заказ");
@@ -2086,36 +2158,55 @@
 
     function modifyCart(id, delta) {
       cart[id] = (cart[id] || 0) + delta;
-      if (cart[id] <= 0) delete cart[id];
+      if (cart[id] <= 0) {
+        delete cart[id];
+        delete cartAssemblyItems[id];
+      }
       updateCartUI();
       updateProductCardAction(id);
     }
 
     function removeFromCartCompletely(id) {
       delete cart[id];
+      delete cartAssemblyItems[id];
       updateCartUI();
       updateProductCardAction(id);
       toast("Удалено из корзины");
     }
 
-    // Корзина с фото и автоскрытием плашки
+    // Режим сборки букета
+    function toggleCartAssemblyMode(checked) {
+      isAssemblyMode = checked;
+      renderCartItems();
+    }
+
+    function toggleItemAssemblySelection(id, checked) {
+      cartAssemblyItems[id] = checked;
+    }
+
+    // Корзина с подсветкой и мини-фото
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
 
-      const container = document.getElementById('cart-items-container');
       const checkoutCard = document.getElementById('cart-checkout-card');
-      let subtotal = 0;
       const entries = Object.entries(cart);
 
       if (!entries.length) {
-        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
+        document.getElementById('cart-items-container').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
         checkoutCard.style.display = 'none';
         currentFlowersSubtotal = 0;
         return;
       }
 
       checkoutCard.style.display = 'block';
+      renderCartItems();
+    }
+
+    function renderCartItems() {
+      const container = document.getElementById('cart-items-container');
+      let subtotal = 0;
+      const entries = Object.entries(cart);
 
       container.innerHTML = entries.map(([id, qty]) => {
         const item = catalog.find(i => String(i.id) === String(id));
@@ -2124,19 +2215,25 @@
         const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
         const thumb = photos[0] || "";
         const varInfo = item.variant ? ` (${item.variant})` : '';
+        const isChecked = !!cartAssemblyItems[id];
 
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
-            <div style="display:flex; align-items:center; gap:10px; max-width:65%; cursor:pointer;" onclick="openProductModal(${item.id})">
-              <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0;">
-                ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
-              </div>
-              <div>
-                <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}${varInfo}</div>
-                <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit || ''} · ${item.price} ₽ × ${qty}</div>
+            <div style="display:flex; align-items:center; gap:8px; max-width:68%;">
+              ${isAssemblyMode ? `
+                <input type="checkbox" style="width:18px; height:18px; flex-shrink:0;" ${isChecked ? 'checked' : ''} onchange="toggleItemAssemblySelection(${id}, this.checked)">
+              ` : ''}
+              <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${item.variant || ''}', '${item.unit || ''}')">
+                <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
+                  ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
+                </div>
+                <div>
+                  <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}${varInfo}</div>
+                  <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit || ''} · ${item.price} ₽ × ${qty}</div>
+                </div>
               </div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:6px;">
               <button class="qty-btn" onclick="modifyCart(${id}, -1)">–</button>
               <span style="font-size:14px; font-weight:700; min-width:18px; text-align:center;">${qty}</span>
               <button class="qty-btn" onclick="modifyCart(${id}, 1)">+</button>
@@ -2164,11 +2261,7 @@
               "Accept": "application/json",
               "Authorization": "Token " + DADATA_TOKEN
             },
-            body: JSON.stringify({
-              query: query,
-              locations: [{ region: "Москва" }, { region: "Московская" }],
-              count: 6
-            })
+            body: JSON.stringify({ query: query, locations: [{ region: "Москва" }, { region: "Московская" }], count: 6 })
           });
           const data = await res.json();
           const items = data.suggestions || [];
@@ -2281,6 +2374,8 @@
     }
 
     async function submitFinalOrder() {
+      const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
+
       let orderItems = [];
       Object.entries(cart).forEach(([id, qty]) => {
         const item = catalog.find(i => String(i.id) === String(id));
@@ -2291,7 +2386,8 @@
             variant: item.variant || "",
             unit: item.unit || "1 шт.",
             price: item.price,
-            qty: qty
+            qty: qty,
+            in_bouquet: needAssembly && !!cartAssemblyItems[id]
           });
         }
       });
@@ -2341,20 +2437,40 @@
             shop_comment: shopComm,
             delivery_cost: orderDelType === 'delivery' ? currentDeliveryCost : 0,
             items_json: JSON.stringify(orderItems),
-            total_amount: currentFinalOrderAmount
+            total_amount: currentFinalOrderAmount,
+            need_assembly: needAssembly
           })
         });
         const data = await res.json();
         if (data.success) {
           cart = {};
+          cartAssemblyItems = {};
+          isAssemblyMode = false;
+          document.getElementById('cart-assembly-checkbox').checked = false;
           updateCartUI();
           renderCatalog(filteredCatalog);
           closeOrderModal();
-          openPaymentModal(data.order_id, currentFinalOrderAmount);
+
+          if (needAssembly) {
+            openAssemblyCallModal(data.order_id);
+          } else {
+            openPaymentModal(data.order_id, currentFinalOrderAmount);
+          }
         }
       } catch (e) {
         toast("Ошибка связи");
       }
+    }
+
+    // Модалка согласования букета по телефону
+    function openAssemblyCallModal(orderId) {
+      document.getElementById('asm-modal-order-id').innerText = orderId;
+      document.getElementById('assembly-call-modal').classList.add('open');
+    }
+
+    function closeAssemblyModal() {
+      document.getElementById('assembly-call-modal').classList.remove('open');
+      navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
     }
 
     // Оплата с таймером 15 минут
@@ -2516,7 +2632,7 @@
       }).catch(() => {});
     }
 
-    // Профиль и регистрация
+    // Профиль и сессия
     function openEditProfileModal() {
       if (!currentUser) return;
       document.getElementById('edit-prof-name').value = currentUser.name || '';
@@ -2600,7 +2716,7 @@
       document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
     }
 
-    // Заказы клиента (включая завершенные)
+    // Заказы клиента в профиле
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
       try {
@@ -2617,8 +2733,10 @@
           else if (ord.status.includes('В пути') || ord.status.includes('выдаче')) badgeCls = 'st-transit';
           else if (ord.status.includes('Завершен')) badgeCls = 'st-completed';
           else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
+          else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
 
           const isAwaitingPay = (ord.status === 'Ожидает оплаты');
+          const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
 
           return `
             <div class="box-card" style="margin-bottom:8px;">
@@ -2629,13 +2747,19 @@
               <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
                 ${ord.items.map(i => {
                   const varInfo = i.variant ? ` (${i.variant})` : '';
-                  return `• ${i.title}${varInfo} × ${i.qty}`;
+                  const packTag = i.in_bouquet ? ' <b>[в букет]</b>' : '';
+                  return `• ${i.title}${varInfo} × ${i.qty}${packTag}`;
                 }).join('<br>')}
               </div>
               ${isAwaitingPay ? `
                 <button class="btn-metro" style="font-size:12px; padding:8px; margin-bottom:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount})">
                   💳 Оплатить ${ord.total_amount} ₽ (СБП)
                 </button>
+              ` : ''}
+              ${isAwaitingAssembly ? `
+                <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:8px; margin-bottom:8px; text-decoration:none;">
+                  📞 Позвонить флористу для согласования
+                </a>
               ` : ''}
               <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
                 <span style="color:var(--text-muted);">${ord.date_time}</span>
@@ -2726,6 +2850,7 @@
 
       container.innerHTML = filtered.map(ord => {
         const isAwaiting = (ord.status === 'Ожидает оплаты' || ord.status === 'Ожидает подтверждения оплаты');
+        const isAssembly = (ord.status === 'Ожидает согласования упаковки');
         const deliveryCostText = ord.delivery_type === 'delivery' 
           ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
           : '0 ₽ (Самовывоз)';
@@ -2744,6 +2869,11 @@
               ${ord.shop_comment ? `<b>Комментарий магазину:</b> ${ord.shop_comment}<br>` : ''}
               <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
             </div>
+            ${isAssembly ? `
+              <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
+                💐 <b>Требуется сборка букета!</b> Согласуйте упаковку с клиентом, скорректируйте сумму в «Составе заказа» и переведите в «Ожидает оплаты».
+              </div>
+            ` : ''}
             ${isAwaiting ? `
               <button class="btn-metro" style="font-size:11px; padding:7px; margin-bottom:6px;" onclick="confirmOrderRoot('${ord.order_id}')">
                 ✅ Оплата поступила ➔ В «Собирается»
@@ -2829,9 +2959,10 @@
       box.innerHTML = tempEditingItems.map((it, idx) => {
         autoTotal += (it.price * it.qty);
         const varInfo = it.variant ? ` (${it.variant})` : '';
+        const packTag = it.in_bouquet ? ' <b>[в букет]</b>' : '';
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-            <div>${it.title}${varInfo} (${it.price} ₽ × ${it.qty})</div>
+            <div>${it.title}${varInfo}${packTag} (${it.price} ₽ × ${it.qty})</div>
             <div style="display:flex; gap:4px;">
               <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList();">+</button>
               <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList();">–</button>
@@ -2932,7 +3063,6 @@
       input.value = "";
     }
 
-    // Фото одиночного товара в Root
     function renderProductEditorPhotos(urlsStr) {
       const box = document.getElementById('prod-photo-strip');
       const hiddenInput = document.getElementById('prod-edit-photo');
@@ -2966,7 +3096,6 @@
       renderProductEditorPhotos(urls.join(', '));
     }
 
-    // Фото группы товаров в Root
     function renderGroupEditorPhotos(urlsStr) {
       const box = document.getElementById('group-photo-strip');
       const hiddenInput = document.getElementById('group-edit-photo');
@@ -3030,15 +3159,13 @@
       toast("Фото прикреплено");
     }
 
-    // Каталог в Root с раздельными карточками одиночных товаров и групп
+    // Каталог в Root
     async function loadRootCatalog() {
       const container = document.getElementById('root-catalog-container');
       const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
       allRootCatalog = await res.json();
 
       const groups = {};
-      const standalone = [];
-
       allRootCatalog.forEach(item => {
         const titleKey = item.title.trim();
         if (!groups[titleKey]) groups[titleKey] = [];
@@ -3267,7 +3394,7 @@
       loadCatalog();
     }
 
-    // Клиенты в Root
+    // Клиенты в Root с кнопками «Позвонить» и «Написать»
     async function loadRootClients() {
       const container = document.getElementById('root-clients-container');
       const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${ADMIN_TELEGRAM_ID}&admin_passcode=m1rfol159036`);
@@ -3287,19 +3414,36 @@
 
     function renderRootClients(clients) {
       const container = document.getElementById('root-clients-container');
-      container.innerHTML = clients.map(c => `
-        <div class="box-card" style="margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between;">
-            <div><b>${c.name}</b><br><span style="font-size:12px; color:var(--text-muted);">${c.phone}</span></div>
-            <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${c.total_spent} ₽</span></div>
+      container.innerHTML = clients.map(c => {
+        const hasTgUser = c.username && c.username !== 'скрыт' && c.username.length > 2;
+        const tgLink = hasTgUser 
+          ? `https://t.me/${c.username.replace('@','')}`
+          : (!c.user_id.startsWith('anon_') ? `tg://user?id=${c.user_id}` : '');
+
+        return `
+          <div class="box-card" style="margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between;">
+              <div><b>${c.name}</b><br><span style="font-size:12px; color:var(--text-muted);">${c.phone}</span></div>
+              <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${c.total_spent} ₽</span></div>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Telegram: ${c.username || 'скрыт'} · Рег: ${c.reg_date}</div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;">
+              <a href="tel:${c.phone}" class="btn-metro btn-emerald" style="font-size:11px; padding:7px; text-decoration:none;">📞 Позвонить</a>
+              ${tgLink ? `
+                <a href="${tgLink}" target="_blank" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--cyan); text-decoration:none;">💬 Написать</a>
+              ` : `
+                <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; opacity:0.45;" disabled>💬 Чат скрыт</button>
+              `}
+            </div>
+
+            <div style="display:flex; gap:6px; margin-top:6px;">
+              <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt('${c.user_id}', ${c.total_spent})">Изменить выкуп</button>
+              <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteUserRoot('${c.user_id}')">Сбросить</button>
+            </div>
           </div>
-          <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Telegram: ${c.username || 'скрыт'} · Рег: ${c.reg_date}</div>
-          <div style="display:flex; gap:6px; margin-top:6px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt('${c.user_id}', ${c.total_spent})">Изменить выкуп</button>
-            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteUserRoot('${c.user_id}')">Сбросить</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     async function editSpentPrompt(uid, current) {
@@ -3400,7 +3544,6 @@
       else window.open(url, '_blank');
     }
 
-    // Резервная отрисовка QR-кода на холсте
     function drawQr(canvasId, text) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
