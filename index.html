@@ -1085,7 +1085,7 @@
     <!-- Двойной парящий HUD -->
     <header>
       <div class="header-pills-row">
-        <!-- Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для остальных -->
+        <!-- Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для других -->
         <div class="hud-pill" onclick="handleHudRootTap()">
           <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
           <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
@@ -1398,7 +1398,6 @@
       <button class="btn-metro" id="pop-add-cart-btn" onclick="addPopToCart()">Добавить в заказ</button>
     </div>
   </div>
-
   <!-- Модалка оформления заказа -->
   <div class="modal-overlay" id="order-modal">
     <div class="modal-sheet">
@@ -2148,243 +2147,79 @@
       }
     }, true);
 
-    // Draggable плавающий кружок (сенсорное перетаскивание)
+    // Плавающий перетаскиваемый карандаш (без задвоения сенсорных и мышиных событий)
     (function initDraggableFab() {
       const fab = document.getElementById('floating-editor-btn');
       let isDragging = false;
-      let startX, startY;
-      let initialLeft, initialTop;
+      let startX = 0, startY = 0;
+      let initialLeft = 0, initialTop = 0;
       let hasMoved = false;
 
-      function onStart(e) {
-        const touch = e.touches ? e.touches[0] : e;
+      function onPointerDown(e) {
+        if (e.button !== undefined && e.button !== 0) return;
         isDragging = true;
         hasMoved = false;
-        startX = touch.clientX;
-        startY = touch.clientY;
+        startX = e.clientX;
+        startY = e.clientY;
 
         const rect = fab.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
 
         fab.style.transition = 'none';
+        if (fab.setPointerCapture) {
+          try { fab.setPointerCapture(e.pointerId); } catch(err) {}
+        }
       }
 
-      function onMove(e) {
+      function onPointerMove(e) {
         if (!isDragging) return;
-        const touch = e.touches ? e.touches[0] : e;
-        const dx = touch.clientX - startX;
-        const dy = touch.clientY - startY;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
 
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
           hasMoved = true;
         }
 
-        let newLeft = initialLeft + dx;
-        let newTop = initialTop + dy;
+        if (hasMoved) {
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
 
-        newLeft = Math.max(10, Math.min(window.innerWidth - 60, newLeft));
-        newTop = Math.max(10, Math.min(window.innerHeight - 70, newTop));
+          newLeft = Math.max(10, Math.min(window.innerWidth - 60, newLeft));
+          newTop = Math.max(10, Math.min(window.innerHeight - 70, newTop));
 
-        fab.style.left = `${newLeft}px`;
-        fab.style.top = `${newTop}px`;
-        fab.style.right = 'auto';
-        fab.style.bottom = 'auto';
+          fab.style.left = `${newLeft}px`;
+          fab.style.top = `${newTop}px`;
+          fab.style.right = 'auto';
+          fab.style.bottom = 'auto';
+        }
       }
 
-      function onEnd() {
+      function onPointerUp(e) {
         if (!isDragging) return;
         isDragging = false;
         fab.style.transition = 'border-color 0.2s ease, background 0.2s ease';
+
+        if (fab.releasePointerCapture) {
+          try { fab.releasePointerCapture(e.pointerId); } catch(err) {}
+        }
 
         if (!hasMoved) {
           toggleTextEditingMode();
         }
       }
 
-      fab.addEventListener('touchstart', onStart, { passive: true });
-      window.addEventListener('touchmove', onMove, { passive: true });
-      window.addEventListener('touchend', onEnd);
-
-      fab.addEventListener('mousedown', onStart);
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onEnd);
+      fab.addEventListener('pointerdown', onPointerDown);
+      fab.addEventListener('pointermove', onPointerMove);
+      fab.addEventListener('pointerup', onPointerUp);
+      fab.addEventListener('pointercancel', onPointerUp);
     })();
-
-    // Каталог: группа формируется строго если позиций > 1
-    function buildDisplayCatalog() {
-      const groupsMap = {};
-      const orderTracker = [];
-
-      catalog.forEach(item => {
-        const titleKey = item.title.trim();
-        if (!groupsMap[titleKey]) {
-          groupsMap[titleKey] = [];
-          orderTracker.push(titleKey);
-        }
-        groupsMap[titleKey].push(item);
-      });
-
-      const rawDisplay = orderTracker.map(titleKey => {
-        const items = groupsMap[titleKey];
-        if (items.length === 1) {
-          return { ...items[0], is_group: false };
-        }
-
-        const activeVariants = items.filter(v => v.is_active);
-        const prices = (activeVariants.length ? activeVariants : items).map(v => v.price);
-        const minPrice = Math.min(...prices);
-        const hasPhoto = items.find(v => v.photo_url);
-
-        return {
-          is_group: true,
-          id: 'group_' + encodeURIComponent(titleKey),
-          title: titleKey,
-          category: items[0].category,
-          price: minPrice,
-          photo_url: hasPhoto ? hasPhoto.photo_url : "",
-          description: items[0].description,
-          is_active: items.some(v => v.is_active),
-          is_popular: items.some(v => v.is_popular),
-          unit: "Варианты выбора",
-          variants: items
-        };
-      });
-
-      displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
-    }
-
-    function setupFilterDropdown() {
-      const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
-      const optionsBox = document.getElementById('filter-cat-options');
-      optionsBox.innerHTML = `
-        <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
-      ` + cats.map(c => `
-        <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
-      `).join('');
-
-      const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
-      const minP = prices.length ? Math.min(...prices) : 100;
-      const maxP = prices.length ? Math.max(...prices) : 10000;
-
-      const rangeEl = document.getElementById('filter-price-range');
-      const numEl = document.getElementById('filter-price-input');
-      rangeEl.min = minP;
-      rangeEl.max = maxP;
-      rangeEl.value = maxP;
-      numEl.value = maxP;
-      document.getElementById('filter-min-label').innerText = `${minP} ₽`;
-      document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
-    }
-
-    let selectedFilterCategoryValue = 'Все';
-    function selectFilterCategory(cat) {
-      selectedFilterCategoryValue = cat;
-      document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
-      document.getElementById('filter-cat-box').classList.remove('open');
-    }
-
-    function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
-    function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
-
-    function applyFilters() {
-      const cat = selectedFilterCategoryValue;
-      const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
-
-      filteredCatalog = displayCatalog.filter(item => {
-        const catMatch = (cat === 'Все' || item.category === cat);
-        const priceMatch = (item.price <= maxPrice);
-        return catMatch && priceMatch;
-      });
-
-      renderCatalog(filteredCatalog);
-      document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
-      closeFilterModal();
-      toast(`Найдено позиций: ${filteredCatalog.length}`);
-    }
-
-    function resetFilters() {
-      selectFilterCategory('Все');
-      const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
-      const maxP = prices.length ? Math.max(...prices) : 10000;
-      document.getElementById('filter-price-range').value = maxP;
-      document.getElementById('filter-price-input').value = maxP;
-      filteredCatalog = [...displayCatalog];
-      renderCatalog(filteredCatalog);
-      document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
-      closeFilterModal();
-    }
-
-    async function loadCatalog() {
-      try {
-        const res = await fetch(`${API_URL}?action=catalog`);
-        catalog = await res.json();
-        buildDisplayCatalog();
-        filteredCatalog = [...displayCatalog];
-        setupFilterDropdown();
-        renderCatalog(filteredCatalog);
-        populateCatalogDropdown();
-      } catch (e) {
-        toast("Ошибка загрузки каталога");
-      }
-    }
 
     function getCartItemQuantity(id) {
       return Object.entries(cart).reduce((sum, [key, qty]) => {
         const [itemId] = key.split(':::');
         return String(itemId) === String(id) ? sum + qty : sum;
       }, 0);
-    }
-
-    function renderCatalog(items) {
-      const el = document.getElementById('catalog-wrap');
-      el.innerHTML = items.map(p => {
-        const photos = (p.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
-        const firstPhoto = photos[0] || "";
-        const inCartQty = getCartItemQuantity(p.id);
-        const isHit = p.is_popular;
-        const isAvailable = p.is_active;
-        const isGroup = p.is_group;
-
-        return `
-          <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="openProductModal('${p.id}')">
-            <div class="product-thumb">
-              ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
-              ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
-              <div class="thumb-placeholder-box" style="${firstPhoto ? 'display:none;' : ''}">
-                <span class="thumb-placeholder-icon">🌸</span>
-                <span class="thumb-placeholder-text">Фото пока не добавили</span>
-              </div>
-            </div>
-            <div class="product-body">
-              <div>
-                <div class="product-title">${p.title}</div>
-                <div class="product-unit">${p.unit || '1 шт.'}</div>
-              </div>
-              <div class="product-footer">
-                ${isAvailable ? `
-                  <span class="product-price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
-                  <div id="product-action-${p.id}">
-                    ${isGroup ? `
-                      <button class="btn-select-variant" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
-                    ` : (inCartQty > 0 ? `
-                      <div class="cart-active-stepper" onclick="event.stopPropagation();">
-                        <button class="btn-trash-mini" onclick="removeAllOfItemFromCart('${p.id}')">🗑️</button>
-                        <span class="cart-active-qty">${inCartQty}</span>
-                        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="openProductModal('${p.id}')">+</button>
-                      </div>
-                    ` : `
-                      <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
-                    `)}
-                  </div>
-                ` : `
-                  <div class="out-of-stock-badge">Нет в наличии</div>
-                `}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
     }
 
     function updateProductCardAction(id) {
@@ -2417,238 +2252,6 @@
       updateProductCardAction(id);
       toast("Удалено из корзины");
     }
-
-    // Модальное окно букета с поддержкой слэша (Белые / Желтые) и авто-сортировкой характеристик по возрастанию
-    function openProductModal(id, targetVariant = null, targetUnit = null) {
-      let item = null;
-      let matchedInGroup = false;
-
-      const directItem = catalog.find(i => String(i.id) === String(id));
-      if (directItem) {
-        const titleKey = directItem.title.trim();
-        const groupParent = displayCatalog.find(g => g.is_group && g.title.trim() === titleKey);
-        if (groupParent) {
-          item = groupParent;
-          matchedInGroup = true;
-          selectedGroupPack = targetUnit || directItem.unit;
-          selectedGroupVariant = targetVariant || directItem.variant;
-        } else {
-          item = directItem;
-        }
-      } else {
-        item = displayCatalog.find(i => String(i.id) === String(id));
-      }
-
-      if (!item) return;
-
-      activePopItem = item;
-      popQty = 1;
-
-      const variantBox = document.getElementById('pop-variant-box');
-      if (item.is_group) {
-        variantBox.style.display = 'block';
-        setupGroupVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null);
-        updateSelectedGroupVariantUI();
-      } else {
-        const hasSlashVariants = item.variant && item.variant.includes('/');
-        if (hasSlashVariants) {
-          variantBox.style.display = 'block';
-          setupSingleItemSlashVariants(item);
-        } else {
-          variantBox.style.display = 'none';
-          selectedGroupVariant = item.variant || "";
-          setupSingleItemPopUI(item);
-        }
-      }
-
-      document.getElementById('product-modal').classList.add('open');
-    }
-
-    function setupSingleItemPopUI(item) {
-      document.getElementById('pop-title').innerText = item.title;
-      document.getElementById('pop-cat').innerText = item.category;
-      document.getElementById('pop-unit').innerText = item.unit || '1 шт.';
-      document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
-      document.getElementById('pop-price').innerText = item.price + ' ₽';
-      document.getElementById('pop-qty').innerText = '1';
-
-      renderPopGallery(item.photo_url);
-
-      const addBtn = document.getElementById('pop-add-cart-btn');
-      const qtyBox = document.getElementById('pop-qty-controls');
-      if (!item.is_active) {
-        addBtn.innerText = "Нет в наличии";
-        addBtn.style.background = "var(--card-inner)";
-        addBtn.style.color = "var(--text-muted)";
-        addBtn.disabled = true;
-        qtyBox.style.display = 'none';
-      } else {
-        addBtn.innerText = "Добавить в заказ";
-        addBtn.style.background = "var(--green)";
-        addBtn.style.color = "#fff";
-        addBtn.disabled = false;
-        qtyBox.style.display = 'flex';
-      }
-    }
-
-    function setupSingleItemSlashVariants(item) {
-      document.getElementById('pop-pack-block').style.display = 'none';
-      const varBlock = document.getElementById('pop-variant-block');
-      const varWrap = document.getElementById('pop-variant-chips');
-      varBlock.style.display = 'block';
-
-      const rawVars = item.variant.split('/').map(s => s.trim()).filter(Boolean);
-      const vars = sortAscendingValues(rawVars);
-
-      if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
-        selectedGroupVariant = vars[0] || "";
-      }
-
-      varWrap.innerHTML = vars.map(v => `
-        <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectSingleSlashVariant('${v}')">${v}</div>
-      `).join('');
-
-      document.getElementById('pop-title').innerText = `${item.title} (${selectedGroupVariant})`;
-      document.getElementById('pop-cat').innerText = item.category;
-      document.getElementById('pop-unit').innerText = item.unit || '1 шт.';
-      document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
-      document.getElementById('pop-price').innerText = item.price + ' ₽';
-      document.getElementById('pop-qty').innerText = '1';
-      renderPopGallery(item.photo_url);
-    }
-
-    function selectSingleSlashVariant(v) {
-      selectedGroupVariant = v;
-      if (activePopItem) setupSingleItemSlashVariants(activePopItem);
-    }
-
-    function setupGroupVariantChips(group, preferredPack = null, preferredVar = null) {
-      const rawPacks = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
-      const packs = sortAscendingValues(rawPacks);
-
-      let allRawVars = [];
-      group.variants.forEach(v => {
-        if (v.variant) {
-          if (v.variant.includes('/')) {
-            allRawVars.push(...v.variant.split('/').map(s => s.trim()));
-          } else {
-            allRawVars.push(v.variant.trim());
-          }
-        }
-      });
-      const vars = sortAscendingValues(Array.from(new Set(allRawVars.filter(Boolean))));
-
-      if (preferredPack && packs.includes(preferredPack)) {
-        selectedGroupPack = preferredPack;
-      } else if (!selectedGroupPack || !packs.includes(selectedGroupPack)) {
-        selectedGroupPack = packs[0] || "";
-      }
-
-      if (preferredVar && vars.includes(preferredVar)) {
-        selectedGroupVariant = preferredVar;
-      } else if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
-        selectedGroupVariant = vars[0] || "";
-      }
-
-      const packBlock = document.getElementById('pop-pack-block');
-      const packWrap = document.getElementById('pop-pack-chips');
-      if (packs.length > 1 || (packs.length === 1 && vars.length > 0)) {
-        packBlock.style.display = 'block';
-        packWrap.innerHTML = packs.map(p => `
-          <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectGroupPack('${p}')">${p}</div>
-        `).join('');
-      } else {
-        packBlock.style.display = 'none';
-      }
-
-      const varBlock = document.getElementById('pop-variant-block');
-      const varWrap = document.getElementById('pop-variant-chips');
-      if (vars.length > 0) {
-        varBlock.style.display = 'block';
-        varWrap.innerHTML = vars.map(v => `
-          <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectGroupVariant('${v}')">${v}</div>
-        `).join('');
-      } else {
-        varBlock.style.display = 'none';
-      }
-    }
-
-    function selectGroupPack(pack) {
-      selectedGroupPack = pack;
-      setupGroupVariantChips(activePopItem, pack, selectedGroupVariant);
-      updateSelectedGroupVariantUI();
-    }
-
-    function selectGroupVariant(v) {
-      selectedGroupVariant = v;
-      setupGroupVariantChips(activePopItem, selectedGroupPack, v);
-      updateSelectedGroupVariantUI();
-    }
-
-    function updateSelectedGroupVariantUI() {
-      if (!activePopItem || !activePopItem.is_group) return;
-
-      const variant = activePopItem.variants.find(v => {
-        const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
-        let varMatch = false;
-        if (!selectedGroupVariant) varMatch = true;
-        else if (v.variant.includes('/')) {
-          const parts = v.variant.split('/').map(s => s.trim());
-          varMatch = parts.includes(selectedGroupVariant);
-        } else {
-          varMatch = (v.variant.trim() === selectedGroupVariant.trim());
-        }
-        return packMatch && varMatch;
-      });
-
-      const varText = selectedGroupVariant ? ` (${selectedGroupVariant})` : '';
-      const packText = selectedGroupPack ? ` [${selectedGroupPack}]` : '';
-      document.getElementById('pop-title').innerText = `${activePopItem.title}${varText}${packText}`;
-      document.getElementById('pop-cat').innerText = activePopItem.category;
-      document.getElementById('pop-unit').innerText = selectedGroupPack || activePopItem.unit;
-
-      const addBtn = document.getElementById('pop-add-cart-btn');
-      const qtyBox = document.getElementById('pop-qty-controls');
-
-      if (!variant || !variant.is_active) {
-        document.getElementById('pop-price').innerText = variant ? `${variant.price} ₽` : "— ₽";
-        document.getElementById('pop-desc').innerText = "Данная вариация сейчас отсутствует в наличии.";
-        addBtn.innerText = "Нет в наличии";
-        addBtn.style.background = "var(--card-inner)";
-        addBtn.style.color = "var(--text-muted)";
-        addBtn.disabled = true;
-        qtyBox.style.display = 'none';
-        renderPopGallery(activePopItem.photo_url);
-      } else {
-        document.getElementById('pop-price').innerText = `${variant.price} ₽`;
-        document.getElementById('pop-desc').innerText = variant.description || activePopItem.description;
-        addBtn.innerText = "Добавить в заказ";
-        addBtn.style.background = "var(--green)";
-        addBtn.style.color = "#fff";
-        addBtn.disabled = false;
-        qtyBox.style.display = 'flex';
-        renderPopGallery(variant.photo_url || activePopItem.photo_url);
-      }
-    }
-
-    function renderPopGallery(photosStr) {
-      const gallery = document.getElementById('pop-gallery');
-      const placeholder = document.getElementById('pop-placeholder');
-      const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
-
-      if (photos.length) {
-        gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
-        gallery.style.display = 'flex';
-        placeholder.style.display = 'none';
-      } else {
-        gallery.innerHTML = '';
-        gallery.style.display = 'none';
-        placeholder.style.display = 'flex';
-      }
-    }
-
-    function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
-    function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
 
     // Добавление в корзину с фиксацией конкретного выбранного цвета
     function addPopToCart() {
@@ -3556,9 +3159,13 @@
     }
 
     function openYandexGoDelivery() {
-      const url = "https://taxi.yandex.ru/route?start-lat=55.966987&start-lon=37.151059&app=delivery";
-      if (tg && tg.openLink) tg.openLink(url);
-      else window.open(url, '_blank');
+      // Прямой диплинк вызова тарифа Доставка в приложение Яндекс Go с забором на Георгиевском, 37к2
+      const yandexDeliveryUrl = "https://3.redirect.appmetrica.yandex.com/route?start-lat=55.966987&start-lon=37.151059&tariff=delivery&app=ytaxi";
+      if (tg && tg.openLink) {
+        tg.openLink(yandexDeliveryUrl);
+      } else {
+        window.open(yandexDeliveryUrl, '_blank');
+      }
     }
 
     function copyCourierData(orderId) {
@@ -3948,7 +3555,9 @@
 
       const tbody = document.getElementById('group-variants-tbody');
       tbody.innerHTML = "";
+      // Первая строка: исходный цветок
       addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", price: it.price, is_active: it.is_active });
+      // Вторая строка: заготовка для нового цвета/ростовки
       addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", price: it.price, is_active: true });
 
       document.getElementById('group-editor-modal').classList.add('open');
