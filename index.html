@@ -25,7 +25,7 @@
       --purple: #a855f7;
       --text: #f1f5f9;
       --text-muted: #94a3b8;
-      --dock-bg: rgba(19, 24, 34, 0.9);
+      --dock-bg: rgba(19, 24, 34, 0.88);
       --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
       --radius-sm: 8px;
       --radius-md: 14px;
@@ -45,7 +45,7 @@
       --purple: #9333ea;
       --text: #0f172a;
       --text-muted: #64748b;
-      --dock-bg: rgba(255, 255, 255, 0.9);
+      --dock-bg: rgba(255, 255, 255, 0.88);
       --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
     }
 
@@ -81,67 +81,67 @@
       flex-direction: column;
     }
 
+    /* 3. Верхний HUD: две парящие полупрозрачные пилюли */
     header {
       width: 100%;
-      padding: 12px 16px;
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 50;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      transition: background 0.25s ease;
+      padding: 10px 14px 6px 14px;
+      pointer-events: none;
     }
 
-    .header-content {
+    .header-pills-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
+      pointer-events: auto;
     }
 
-    .brand-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--text);
+    .hud-pill {
+      background: var(--dock-bg);
+      border: 1px solid var(--border-accent);
+      border-radius: 40px;
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      padding: 6px 12px;
       display: flex;
       align-items: center;
       gap: 6px;
-      white-space: nowrap;
     }
 
-    .brand-badge {
+    .hud-brand {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+
+    .hud-address {
       font-size: 10px;
-      background: rgba(56, 189, 248, 0.14);
+      background: rgba(56, 189, 248, 0.15);
       color: var(--cyan);
       border: 1px solid var(--border-accent);
       padding: 2px 7px;
-      border-radius: 6px;
+      border-radius: 20px;
       font-weight: 700;
       white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      max-width: 190px;
     }
 
-    .user-tag {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: var(--card-inner);
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 20px;
+    .hud-user-btn {
       cursor: pointer;
-      white-space: nowrap;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
       transition: transform 0.15s ease;
     }
-    .user-tag:active { transform: scale(0.95); }
+    .hud-user-btn:active { transform: scale(0.95); }
 
     .screen {
       display: none;
-      padding: 14px 16px;
+      padding: 10px 14px;
       width: 100%;
     }
     .screen.active {
@@ -190,7 +190,7 @@
       width: 100%;
     }
 
-    /* Все карточки каталога с неоновой подсветкой */
+    /* Карточки каталога с неоновым свечением */
     .product-card {
       background: var(--card-bg);
       border: 1px solid var(--border-accent);
@@ -233,6 +233,8 @@
 
     .product-card.out-of-stock {
       opacity: 0.72;
+      box-shadow: none;
+      border-color: var(--border);
     }
 
     .product-thumb {
@@ -551,9 +553,9 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       z-index: 110;
       align-items: flex-end;
       justify-content: center;
@@ -601,10 +603,12 @@
     }
     .metro-input:focus { border-color: var(--cyan); }
 
+    /* 1. Кастомные выпадающие списки (единый неоновый стиль) */
     .custom-select-box {
       position: relative;
       margin-top: 4px;
       margin-bottom: 12px;
+      width: 100%;
     }
     .custom-select-trigger {
       width: 100%;
@@ -619,23 +623,24 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      transition: border-color 0.2s ease;
     }
     .custom-select-trigger:active, .custom-select-box.open .custom-select-trigger {
       border-color: var(--cyan);
     }
     .custom-select-options {
       position: absolute;
-      top: 100%;
+      top: calc(100% + 4px);
       left: 0;
       right: 0;
       background: #0f141f;
       border: 1px solid var(--border-accent);
       border-radius: var(--radius-sm);
-      max-height: 190px;
+      max-height: 200px;
       overflow-y: auto;
-      z-index: 125;
+      z-index: 130;
       display: none;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
     }
     .custom-select-box.open .custom-select-options {
       display: block;
@@ -650,6 +655,35 @@
     .custom-select-option:hover, .custom-select-option:active {
       background: rgba(56, 189, 248, 0.16);
       color: var(--cyan);
+    }
+
+    /* 1. Кастомные чекбоксы под стиль приложения */
+    .custom-checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .custom-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      background: var(--card-inner);
+      border: 1px solid var(--border-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .custom-checkbox.checked {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
     }
 
     .suggest-wrap { position: relative; width: 100%; }
@@ -769,7 +803,7 @@
     .faq-pill-item {
       background: var(--card-inner);
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: 14px;
       margin-bottom: 8px;
       overflow: hidden;
     }
@@ -967,7 +1001,7 @@
 
   <div id="toast">Уведомление</div>
 
-  <!-- Всплывающий кастомный топ-баннер подтверждения удаления заказа -->
+  <!-- Всплывающий кастомный топ-баннер подтверждения -->
   <div class="top-confirm-popup" id="top-confirm-popup">
     <div class="top-confirm-title" id="top-confirm-text">Удалить заказ безвозвратно?</div>
     <div class="top-confirm-actions">
@@ -979,13 +1013,16 @@
   <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
   <div class="app-wrapper">
+    <!-- 3. Двойной парящий HUD -->
     <header>
-      <div class="header-content">
-        <div class="brand-title">
-          <span>ЦВЕТЫ</span>
-          <span class="brand-badge">Георгиевский пр-т, 37к2</span>
+      <div class="header-pills-row">
+        <div class="hud-pill">
+          <span class="hud-brand">ЦВЕТЫ</span>
+          <span class="hud-address">Георгиевский пр-т, 37к2</span>
         </div>
-        <div class="user-tag" id="hud-name" onclick="secretAdminTap()">Клиент</div>
+        <div class="hud-pill hud-user-btn" id="hud-name-pill" onclick="secretAdminTap()">
+          <span id="hud-name">Клиент</span>
+        </div>
       </div>
     </header>
 
@@ -1004,18 +1041,17 @@
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>
       </div>
 
-      <!-- Блок сборки букета и оформления (с подсветкой neon-glow) -->
       <div class="box-card neon-glow" id="cart-checkout-card" style="display:none;">
         <!-- Переключатель сборки букета -->
         <div style="background:var(--card-inner); border:1px solid var(--border-accent); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:12px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="cart-assembly-checkbox" style="width:18px; height:18px;" onchange="toggleCartAssemblyMode(this.checked)">
-            <label for="cart-assembly-checkbox" style="font-size:13px; font-weight:700; color:var(--cyan); cursor:pointer;">
+          <div class="custom-checkbox-wrap" onclick="toggleCartAssemblyMode()">
+            <div class="custom-checkbox" id="cart-assembly-checkbox-ui"></div>
+            <span style="font-size:13px; font-weight:700; color:var(--cyan);">
               💐 Собрать выбранные цветы в букет
-            </label>
+            </span>
           </div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.35;">
-            Отметьте галочками позиции для букета. Стоимость упаковки согласуется по телефону после оформления.
+          <div style="font-size:11px; color:var(--text-muted); line-height:1.35; padding-left:30px;">
+            Отметьте галочками нужные пачки цветов. Стоимость упаковки согласуется по телефону после оформления заказа.
           </div>
         </div>
 
@@ -1072,7 +1108,7 @@
         </div>
       </div>
 
-      <!-- FAQ -->
+      <!-- FAQ (2. Расширенный список вопросов) -->
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;">
           Часто задаваемые вопросы (FAQ)
@@ -1144,7 +1180,7 @@
     </nav>
   </div>
 
-  <!-- Модалка фильтров -->
+  <!-- Модалка фильтров (5. Выпадающий список в стиле приложения) -->
   <div class="modal-overlay" id="filter-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1153,7 +1189,13 @@
       </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория цветов:</label>
-      <select id="filter-cat-select" class="metro-input"></select>
+      <div class="custom-select-box" id="filter-cat-box">
+        <div class="custom-select-trigger" onclick="toggleDropdown('filter-cat-box')">
+          <span id="filter-cat-display">Все категории</span>
+          <span style="font-size:11px; color:var(--cyan);">▼</span>
+        </div>
+        <div class="custom-select-options" id="filter-cat-options"></div>
+      </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (до):</label>
@@ -1190,7 +1232,7 @@
     </div>
   </div>
 
-  <!-- Модалка карточки букета (Единая для каталога и корзины) -->
+  <!-- Модалка товара (каталог + корзина) -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1278,9 +1320,9 @@
           <input type="text" id="ord-intercom" class="metro-input" placeholder="Домофон">
         </div>
 
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <input type="checkbox" id="ord-save-addr-checkbox" style="width:16px; height:16px;">
-          <label for="ord-save-addr-checkbox" style="font-size:12px; color:var(--text-muted);">Сохранить этот адрес в профиль</label>
+        <div class="custom-checkbox-wrap" onclick="toggleOrderSaveAddressCheckbox()">
+          <div class="custom-checkbox" id="ord-save-addr-checkbox-ui"></div>
+          <span style="font-size:12px; color:var(--text-muted);">Сохранить этот адрес в профиль</span>
         </div>
 
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
@@ -1288,7 +1330,7 @@
 
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время доставки:</label>
         <div class="custom-select-box" id="time-select-box">
-          <div class="custom-select-trigger" onclick="toggleTimeDropdown()">
+          <div class="custom-select-trigger" onclick="toggleDropdown('time-select-box')">
             <span id="selected-time-display">Как можно скорее (10:00 – 20:00)</span>
             <span style="font-size:11px; color:var(--cyan);">▼</span>
           </div>
@@ -1332,7 +1374,7 @@
     </div>
   </div>
 
-  <!-- Модалка звонка в магазин при согласовании букета (Вариант В) -->
+  <!-- Модалка звонка в магазин при согласовании упаковки букета -->
   <div class="modal-overlay" id="assembly-call-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1347,7 +1389,7 @@
           Вы выбрали сборку букета флористом! Чтобы флорист сразу приступил к работе и назвал точную стоимость оформления, позвоните в магазин прямо сейчас:
         </div>
 
-        <a class="btn-metro btn-emerald" href="tel:89162257117" style="margin-bottom:10px;">
+        <a class="btn-metro btn-emerald" href="tel:89162257117" style="margin-bottom:10px; text-decoration:none;">
           📞 Позвонить в магазин (+7 916 225-71-17)
         </a>
         <button class="btn-metro btn-secondary" onclick="closeAssemblyModal()">
@@ -1357,7 +1399,7 @@
     </div>
   </div>
 
-  <!-- Модалка оплаты (СБП QR + таймер 15 минут) -->
+  <!-- Модалка оплаты (6. СБП QR с гарантированной нативной отрисовкой + 9. Таймер) -->
   <div class="modal-overlay" id="payment-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1377,13 +1419,13 @@
           📋 Скопировать сумму
         </button>
 
-        <a class="btn-metro" id="pay-sbp-btn" href="https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0" target="_blank" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:14px;">
+        <a class="btn-metro" id="pay-sbp-btn" href="https://qr.nspk.ru/AS1A007U5QDP72VT900BN87SNOK7SRUP?type=01&bank=100000000111&crc=BBC0" target="_blank" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:14px; text-decoration:none;">
           💳 Оплатить через СБП
         </a>
 
-        <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center;">
-          <img id="sbp-qr-img" src="img/sbp_qr.jpg" alt="QR-код СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;" onerror="this.style.display='none'; document.getElementById('sbp-qr-canvas').style.display='block';">
-          <canvas id="sbp-qr-canvas" style="display:none;"></canvas>
+        <!-- 6. QR-код: гарантированная отрисовка canvas -->
+        <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:10px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(255,255,255,0.2);">
+          <canvas id="sbp-qr-canvas" width="170" height="170"></canvas>
         </div>
 
         <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
@@ -1414,11 +1456,11 @@
     </div>
   </div>
 
-  <!-- Модалка добавления сохраненного адреса -->
+  <!-- 8. Модалка добавления / изменения сохраненного адреса -->
   <div class="modal-overlay" id="add-saved-addr-modal">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div class="modal-title">Новый сохраненный адрес</div>
+        <div class="modal-title" id="saved-addr-modal-title">Новый сохраненный адрес</div>
         <button class="close-btn" onclick="closeAddSavedAddressModal()">✕</button>
       </div>
 
@@ -1439,7 +1481,7 @@
         <input type="text" id="new-addr-intercom" class="metro-input" placeholder="Домофон">
       </div>
 
-      <button class="btn-metro" style="margin-top:10px;" onclick="saveNewAddressFromModal()">Сохранить адрес</button>
+      <button class="btn-metro" style="margin-top:10px;" id="save-addr-modal-btn" onclick="saveNewAddressFromModal()">Сохранить адрес</button>
     </div>
   </div>
 
@@ -1482,21 +1524,21 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
       <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Сортовой крупный бутон...">
 
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-        <input type="checkbox" id="prod-edit-active" style="width:18px; height:18px;">
-        <label for="prod-edit-active" style="font-size:13px; font-weight:600; color:var(--text);">Товар в наличии (виден на витрине)</label>
+      <div class="custom-checkbox-wrap" onclick="toggleCheckbox('prod-edit-active-ui')">
+        <div class="custom-checkbox checked" id="prod-edit-active-ui">✓</div>
+        <span style="font-size:13px; font-weight:600; color:var(--text);">Товар в наличии (виден на витрине)</span>
       </div>
 
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
-        <input type="checkbox" id="prod-edit-popular" style="width:18px; height:18px;">
-        <label for="prod-edit-popular" style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Популярный товар (Хит продаж)</label>
+      <div class="custom-checkbox-wrap" onclick="toggleCheckbox('prod-edit-popular-ui')">
+        <div class="custom-checkbox" id="prod-edit-popular-ui"></div>
+        <span style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Популярный товар (Хит продаж)</span>
       </div>
 
       <button class="btn-metro" onclick="saveProductEditor()">Сохранить товар</button>
     </div>
   </div>
 
-  <!-- Модалка редактирования ГРУППЫ товаров в Root (Мастер-карточка) -->
+  <!-- Модалка группы товаров в Root -->
   <div class="modal-overlay" id="group-editor-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1526,9 +1568,9 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общее описание группы:</label>
       <input type="text" id="group-edit-desc" class="metro-input" placeholder="Премиальная срезка высшей категории...">
 
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
-        <input type="checkbox" id="group-edit-popular" style="width:18px; height:18px;">
-        <label for="group-edit-popular" style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Хит продаж (для всей группы)</label>
+      <div class="custom-checkbox-wrap" onclick="toggleCheckbox('group-edit-popular-ui')">
+        <div class="custom-checkbox" id="group-edit-popular-ui"></div>
+        <span style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Хит продаж (для всей группы)</span>
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:10px;">
@@ -1589,7 +1631,7 @@
     </div>
   </div>
 
-  <!-- Модалка редактирования состава заказа (Root) -->
+  <!-- 4. Модалка редактирования состава заказа в Root (с раздельной доставкой и упаковкой) -->
   <div class="modal-overlay" id="edit-items-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -1597,14 +1639,32 @@
         <button class="close-btn" onclick="closeEditItemsModal()">✕</button>
       </div>
       <div id="edit-items-list" style="margin-bottom:14px;"></div>
+      
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Добавить позицию:</label>
-      <select id="add-item-catalog-select" class="metro-input"></select>
-      <button class="btn-metro btn-secondary" style="margin-bottom:14px; font-size:12px; padding:10px;" onclick="addItemToCurrentOrder()">+ Добавить в заказ</button>
-      <div style="border-top:1px solid var(--border); padding-top:12px; margin-top:8px;">
-        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Итоговая сумма (₽):</label>
-        <input type="number" id="edit-order-total-input" class="metro-input">
+      <div class="custom-select-box" id="add-item-catalog-box">
+        <div class="custom-select-trigger" onclick="toggleDropdown('add-item-catalog-box')">
+          <span id="add-item-catalog-display">Выберите цветок для добавления...</span>
+          <span style="font-size:11px; color:var(--cyan);">▼</span>
+        </div>
+        <div class="custom-select-options" id="add-item-catalog-options"></div>
       </div>
-      <button class="btn-metro" onclick="saveEditedOrderItems()">Сохранить изменения</button>
+      <button class="btn-metro btn-secondary" style="margin-bottom:14px; font-size:12px; padding:10px;" onclick="addItemToCurrentOrder()">+ Добавить выбранный цветок</button>
+      
+      <div style="border-top:1px solid var(--border); padding-top:12px; margin-top:8px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Доставка (₽):</label>
+            <input type="number" id="edit-order-delivery-input" class="metro-input" oninput="recalcEditOrderTotalFromInputs()">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Сборка / Упаковка (₽):</label>
+            <input type="number" id="edit-order-assembly-input" class="metro-input" oninput="recalcEditOrderTotalFromInputs()">
+          </div>
+        </div>
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Итоговая сумма к оплате (₽):</label>
+        <input type="number" id="edit-order-total-input" class="metro-input" style="font-size:16px; font-weight:800; color:var(--green);">
+      </div>
+      <button class="btn-metro" onclick="saveEditedOrderItems()">Сохранить изменения и выставить счет</button>
     </div>
   </div>
 
@@ -1633,7 +1693,7 @@
 
     const tg = window.Telegram?.WebApp;
     
-    // Изоляция анонимных пользователей (AyuGram / скрытые профили)
+    // Изоляция анонимных сессий
     let userId = tg?.initDataUnsafe?.user?.id;
     if (!userId) {
       userId = localStorage.getItem('flw_user_id');
@@ -1664,6 +1724,7 @@
     let cart = {};
     let cartAssemblyItems = {};
     let isAssemblyMode = false;
+    let ordSaveAddrChecked = false;
 
     let currentUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null');
     let savedAddresses = JSON.parse(localStorage.getItem('flw_saved_addresses') || '[]');
@@ -1694,11 +1755,13 @@
     let activeRootOrderForStatus = null;
     let activeRootOrderForEdit = null;
     let tempEditingItems = [];
+    let tempSelectedCatalogIdToAdd = "";
     let uploadTargetContext = null;
     let driveModalTarget = "single";
     let suggestDebounceTimer = null;
     let editingProductId = null;
     let editingGroupName = null;
+    let editingSavedAddrIdx = null;
     let editingFaqId = null;
 
     function toast(text) {
@@ -1706,6 +1769,41 @@
       el.innerText = text;
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), 2400);
+    }
+
+    function toggleDropdown(boxId) {
+      const el = document.getElementById(boxId);
+      const wasOpen = el.classList.contains('open');
+      document.querySelectorAll('.custom-select-box').forEach(b => b.classList.remove('open'));
+      if (!wasOpen) el.classList.add('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.custom-select-box')) {
+        document.querySelectorAll('.custom-select-box').forEach(b => b.classList.remove('open'));
+      }
+    });
+
+    function toggleCheckbox(elId) {
+      const el = document.getElementById(elId);
+      const isChecked = el.classList.contains('checked');
+      el.classList.toggle('checked', !isChecked);
+      el.innerText = !isChecked ? '✓' : '';
+    }
+
+    function toggleOrderSaveAddressCheckbox() {
+      ordSaveAddrChecked = !ordSaveAddrChecked;
+      const el = document.getElementById('ord-save-addr-checkbox-ui');
+      el.classList.toggle('checked', ordSaveAddrChecked);
+      el.innerText = ordSaveAddrChecked ? '✓' : '';
+    }
+
+    function toggleCartAssemblyMode() {
+      isAssemblyMode = !isAssemblyMode;
+      const el = document.getElementById('cart-assembly-checkbox-ui');
+      el.classList.toggle('checked', isAssemblyMode);
+      el.innerText = isAssemblyMode ? '✓' : '';
+      renderCartItems();
     }
 
     function navigateTab(screenId, btn) {
@@ -1744,16 +1842,12 @@
     bindPhoneMask(document.getElementById('edit-prof-phone'));
     bindPhoneMask(document.getElementById('ord-rec-phone'));
 
-    function toggleTimeDropdown() {
-      document.getElementById('time-select-box').classList.toggle('open');
-    }
-
     function selectDeliveryTime(val) {
       document.getElementById('selected-time-display').innerText = val;
       document.getElementById('time-select-box').classList.remove('open');
     }
 
-    // Автоматическая группировка витрины
+    // 7. Сортировка каталога: товары в наличии показываются первыми
     function buildDisplayCatalog() {
       const groupsMap = {};
       const orderTracker = [];
@@ -1767,7 +1861,7 @@
         groupsMap[titleKey].push(item);
       });
 
-      displayCatalog = orderTracker.map(titleKey => {
+      const rawDisplay = orderTracker.map(titleKey => {
         const items = groupsMap[titleKey];
         if (items.length === 1 && !items[0].variant) {
           return { ...items[0], is_group: false };
@@ -1792,12 +1886,20 @@
           variants: items
         };
       });
+
+      // Сортировка: сначала активные (is_active: true), неактивные — строго в конец
+      displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
     }
 
+    // 5. Выпадающий список категорий в фильтре под тему приложения
     function setupFilterDropdown() {
       const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
-      const sel = document.getElementById('filter-cat-select');
-      sel.innerHTML = `<option value="Все">Все категории</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+      const optionsBox = document.getElementById('filter-cat-options');
+      optionsBox.innerHTML = `
+        <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
+      ` + cats.map(c => `
+        <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
+      `).join('');
 
       const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
       const minP = prices.length ? Math.min(...prices) : 100;
@@ -1813,16 +1915,18 @@
       document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
     }
 
-    function openFilterModal() {
-      document.getElementById('filter-modal').classList.add('open');
+    let selectedFilterCategoryValue = 'Все';
+    function selectFilterCategory(cat) {
+      selectedFilterCategoryValue = cat;
+      document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
+      document.getElementById('filter-cat-box').classList.remove('open');
     }
 
-    function closeFilterModal() {
-      document.getElementById('filter-modal').classList.remove('open');
-    }
+    function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
+    function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
 
     function applyFilters() {
-      const cat = document.getElementById('filter-cat-select').value;
+      const cat = selectedFilterCategoryValue;
       const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
 
       filteredCatalog = displayCatalog.filter(item => {
@@ -1838,7 +1942,7 @@
     }
 
     function resetFilters() {
-      document.getElementById('filter-cat-select').value = 'Все';
+      selectFilterCategory('Все');
       const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
       const maxP = prices.length ? Math.max(...prices) : 10000;
       document.getElementById('filter-price-range').value = maxP;
@@ -1940,12 +2044,11 @@
       }
     }
 
-    // Модальное окно букета с автораскрытием выбранного варианта
+    // Модальное окно букета
     function openProductModal(id, targetVariant = null, targetUnit = null) {
       let item = null;
       let matchedInGroup = false;
 
-      // 1. Поиск по прямому ID в каталоге
       const directItem = catalog.find(i => String(i.id) === String(id));
       if (directItem) {
         const titleKey = directItem.title.trim();
@@ -2174,17 +2277,11 @@
       toast("Удалено из корзины");
     }
 
-    // Режим сборки букета
-    function toggleCartAssemblyMode(checked) {
-      isAssemblyMode = checked;
+    function toggleItemAssemblySelection(id) {
+      cartAssemblyItems[id] = !cartAssemblyItems[id];
       renderCartItems();
     }
 
-    function toggleItemAssemblySelection(id, checked) {
-      cartAssemblyItems[id] = checked;
-    }
-
-    // Корзина с подсветкой и мини-фото
     function updateCartUI() {
       const count = Object.values(cart).reduce((a, b) => a + b, 0);
       document.getElementById('cart-counter').innerText = count;
@@ -2221,7 +2318,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
             <div style="display:flex; align-items:center; gap:8px; max-width:68%;">
               ${isAssemblyMode ? `
-                <input type="checkbox" style="width:18px; height:18px; flex-shrink:0;" ${isChecked ? 'checked' : ''} onchange="toggleItemAssemblySelection(${id}, this.checked)">
+                <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection(${id})">${isChecked ? '✓' : ''}</div>
               ` : ''}
               <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${item.variant || ''}', '${item.unit || ''}')">
                 <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
@@ -2261,7 +2358,11 @@
               "Accept": "application/json",
               "Authorization": "Token " + DADATA_TOKEN
             },
-            body: JSON.stringify({ query: query, locations: [{ region: "Москва" }, { region: "Московская" }], count: 6 })
+            body: JSON.stringify({
+              query: query,
+              locations: [{ region: "Москва" }, { region: "Московская" }],
+              count: 6
+            })
           });
           const data = await res.json();
           const items = data.suggestions || [];
@@ -2409,7 +2510,7 @@
         if (!street) { toast("Укажите улицу и дом"); return; }
         fullAddr = `${street}${ent ? ', под. '+ent : ''}${flr ? ', эт. '+flr : ''}${apt ? ', кв. '+apt : ''}${intc ? ' (домофон: '+intc+')' : ''}${comm ? ' [курьеру: '+comm+']' : ''}`;
 
-        if (document.getElementById('ord-save-addr-checkbox').checked && savedAddresses.length < 3) {
+        if (ordSaveAddrChecked && savedAddresses.length < 3) {
           savedAddresses.push({ label: "Адрес " + (savedAddresses.length + 1), address: street, entrance: ent, floor: flr, apt: apt, intercom: intc });
           syncSavedAddresses();
         }
@@ -2446,7 +2547,8 @@
           cart = {};
           cartAssemblyItems = {};
           isAssemblyMode = false;
-          document.getElementById('cart-assembly-checkbox').checked = false;
+          document.getElementById('cart-assembly-checkbox-ui').classList.remove('checked');
+          document.getElementById('cart-assembly-checkbox-ui').innerText = '';
           updateCartUI();
           renderCatalog(filteredCatalog);
           closeOrderModal();
@@ -2454,7 +2556,8 @@
           if (needAssembly) {
             openAssemblyCallModal(data.order_id);
           } else {
-            openPaymentModal(data.order_id, currentFinalOrderAmount);
+            // Привязываем таймер к текущему моменту
+            openPaymentModal(data.order_id, currentFinalOrderAmount, new Date().toISOString());
           }
         }
       } catch (e) {
@@ -2462,7 +2565,6 @@
       }
     }
 
-    // Модалка согласования букета по телефону
     function openAssemblyCallModal(orderId) {
       document.getElementById('asm-modal-order-id').innerText = orderId;
       document.getElementById('assembly-call-modal').classList.add('open');
@@ -2473,19 +2575,26 @@
       navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
     }
 
-    // Оплата с таймером 15 минут
-    function openPaymentModal(orderId, amount) {
+    // 6. QR-код: гарантированная нативная отрисовка на canvas + 9. Фиксированный таймер
+    function openPaymentModal(orderId, amount, createdAtStr = null) {
       activePaymentOrderId = orderId;
       document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
       document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
 
-      const qrImg = document.getElementById('sbp-qr-img');
-      const qrCanvas = document.getElementById('sbp-qr-canvas');
-      qrImg.style.display = 'block';
-      qrCanvas.style.display = 'none';
+      // 6. Отрисовка QR-кода на холсте
       drawQr('sbp-qr-canvas', SBP_PAYMENT_URL);
 
-      startPaymentTimer(15 * 60, orderId);
+      // 9. Расчет оставшихся секунд от времени создания
+      let durationSec = 15 * 60;
+      if (createdAtStr) {
+        const createdTs = parseOrderDateToTs(createdAtStr);
+        if (createdTs) {
+          const elapsedSec = Math.floor((Date.now() - createdTs) / 1000);
+          durationSec = Math.max(0, (15 * 60) - elapsedSec);
+        }
+      }
+
+      startPaymentTimer(durationSec, orderId);
       document.getElementById('payment-modal').classList.add('open');
     }
 
@@ -2494,18 +2603,41 @@
       document.getElementById('payment-modal').classList.remove('open');
     }
 
+    function parseOrderDateToTs(dateStr) {
+      if (!dateStr) return null;
+      // Поддержка форматов "HH:mm dd.MM.yyyy" и ISO
+      const match = dateStr.match(/(\d{2}):(\d{2})\s(\d{2})\.(\d{2})\.(\d{4})/);
+      if (match) {
+        const [_, h, m, day, mon, yr] = match;
+        return new Date(yr, mon - 1, day, h, m).getTime();
+      }
+      const parsed = Date.parse(dateStr);
+      return isNaN(parsed) ? null : parsed;
+    }
+
     function startPaymentTimer(durationSec, orderId) {
       clearInterval(paymentTimerInterval);
       let timer = durationSec;
       const display = document.getElementById('pay-timer-val');
 
-      paymentTimerInterval = setInterval(() => {
+      if (timer <= 0) {
+        display.textContent = "00:00";
+        closePaymentModal();
+        toast("Время оплаты истекло");
+        return;
+      }
+
+      const updateDisplay = () => {
         let m = parseInt(timer / 60, 10);
         let s = parseInt(timer % 60, 10);
         m = m < 10 ? "0" + m : m;
         s = s < 10 ? "0" + s : s;
         display.textContent = m + ":" + s;
+      };
 
+      updateDisplay();
+
+      paymentTimerInterval = setInterval(() => {
         if (--timer < 0) {
           clearInterval(paymentTimerInterval);
           closePaymentModal();
@@ -2516,6 +2648,8 @@
             body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
           });
           navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+        } else {
+          updateDisplay();
         }
       }, 1000);
     }
@@ -2542,7 +2676,7 @@
       }
     }
 
-    // Сохраненные адреса
+    // 8. Сохраненные адреса (добавление, редактирование, удаление)
     function renderSavedAddresses() {
       const box = document.getElementById('saved-addresses-profile-list');
       if (!savedAddresses.length) {
@@ -2551,14 +2685,22 @@
       }
       box.innerHTML = savedAddresses.map((a, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-          <div><b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span></div>
-          <span style="color:var(--red); cursor:pointer; font-size:13px;" onclick="deleteSavedAddress(${idx})">✕</span>
+          <div style="max-width:75%;">
+            <b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="color:var(--cyan); cursor:pointer; font-size:13px;" onclick="openEditSavedAddressModal(${idx})">✏️</span>
+            <span style="color:var(--red); cursor:pointer; font-size:14px;" onclick="deleteSavedAddress(${idx})">✕</span>
+          </div>
         </div>
       `).join('');
     }
 
     function openAddSavedAddressModal() {
       if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
+      editingSavedAddrIdx = null;
+      document.getElementById('saved-addr-modal-title').innerText = "Новый сохраненный адрес";
+      document.getElementById('save-addr-modal-btn').innerText = "Сохранить адрес";
       document.getElementById('new-addr-label').value = "";
       document.getElementById('new-addr-suggest').value = "";
       document.getElementById('new-addr-entrance').value = "";
@@ -2567,6 +2709,23 @@
       document.getElementById('new-addr-intercom').value = "";
       document.getElementById('add-saved-addr-modal').classList.add('open');
     }
+
+    // 8. Открытие модалки редактирования адреса
+    function openEditSavedAddressModal(idx) {
+      editingSavedAddrIdx = idx;
+      const a = savedAddresses[idx];
+      if (!a) return;
+      document.getElementById('saved-addr-modal-title').innerText = `Редактирование: ${a.label}`;
+      document.getElementById('save-addr-modal-btn').innerText = "Сохранить изменения";
+      document.getElementById('new-addr-label').value = a.label || "";
+      document.getElementById('new-addr-suggest').value = a.address || "";
+      document.getElementById('new-addr-entrance').value = a.entrance || "";
+      document.getElementById('new-addr-floor').value = a.floor || "";
+      document.getElementById('new-addr-apt').value = a.apt || "";
+      document.getElementById('new-addr-intercom').value = a.intercom || "";
+      document.getElementById('add-saved-addr-modal').classList.add('open');
+    }
+
     function closeAddSavedAddressModal() { document.getElementById('add-saved-addr-modal').classList.remove('open'); }
 
     function onSavedAddrSuggestInput(query) {
@@ -2603,17 +2762,26 @@
       const label = document.getElementById('new-addr-label').value.trim() || "Дом";
       const addr = document.getElementById('new-addr-suggest').value.trim();
       if (!addr) { toast("Укажите адрес"); return; }
-      savedAddresses.push({
+
+      const addrObj = {
         label: label, address: addr,
         entrance: document.getElementById('new-addr-entrance').value.trim(),
         floor: document.getElementById('new-addr-floor').value.trim(),
         apt: document.getElementById('new-addr-apt').value.trim(),
         intercom: document.getElementById('new-addr-intercom').value.trim()
-      });
+      };
+
+      if (editingSavedAddrIdx !== null) {
+        savedAddresses[editingSavedAddrIdx] = addrObj;
+        toast("Адрес обновлен");
+      } else {
+        savedAddresses.push(addrObj);
+        toast("Адрес сохранен");
+      }
+
       syncSavedAddresses();
       closeAddSavedAddressModal();
       renderSavedAddresses();
-      toast("Адрес сохранен");
     }
 
     function deleteSavedAddress(idx) {
@@ -2632,7 +2800,7 @@
       }).catch(() => {});
     }
 
-    // Профиль и сессия
+    // Профиль
     function openEditProfileModal() {
       if (!currentUser) return;
       document.getElementById('edit-prof-name').value = currentUser.name || '';
@@ -2716,7 +2884,7 @@
       document.getElementById('prof-regdate').innerText = currentUser.reg_date || '-';
     }
 
-    // Заказы клиента в профиле
+    // 9. Заказы клиента: отображение таймера прямо в карточке заказа
     async function loadUserOrders() {
       const container = document.getElementById('user-orders-list');
       try {
@@ -2738,6 +2906,18 @@
           const isAwaitingPay = (ord.status === 'Ожидает оплаты');
           const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
 
+          // Расчет остатка времени для карточки
+          let timerCardBadge = "";
+          if (isAwaitingPay) {
+            const createdTs = parseOrderDateToTs(ord.date_time);
+            if (createdTs) {
+              const leftSec = Math.max(0, (15 * 60) - Math.floor((Date.now() - createdTs) / 1000));
+              const m = Math.floor(leftSec / 60);
+              const s = leftSec % 60;
+              timerCardBadge = `⏳ Осталось: ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+            }
+          }
+
           return `
             <div class="box-card" style="margin-bottom:8px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -2752,9 +2932,12 @@
                 }).join('<br>')}
               </div>
               ${isAwaitingPay ? `
-                <button class="btn-metro" style="font-size:12px; padding:8px; margin-bottom:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount})">
-                  💳 Оплатить ${ord.total_amount} ₽ (СБП)
-                </button>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                  <button class="btn-metro" style="font-size:12px; padding:8px; flex:1; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+                    💳 Оплатить ${ord.total_amount} ₽ (СБП)
+                  </button>
+                  <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
+                </div>
               ` : ''}
               ${isAwaitingAssembly ? `
                 <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:8px; margin-bottom:8px; text-decoration:none;">
@@ -2771,13 +2954,41 @@
       } catch (e) {}
     }
 
-    // FAQ аккордеон
+    // 2. Расширенный FAQ о приложении и тонкостях заказа
     async function loadFaq() {
       const container = document.getElementById('profile-faq-container');
       try {
         const res = await fetch(`${API_URL}?action=faq`);
-        const faq = await res.json();
-        container.innerHTML = faq.map(f => `
+        let faq = await res.json();
+        
+        // Встроенные расширенные ответы о взаимодействии с приложением
+        const localExtendedFaq = [
+          {
+            question: "Как выбрать нужную ростовку или цвет букета?",
+            answer: "В каталоге розы и сортовые цветы объединены в общие карточки. Нажмите кнопку «Выбрать» на карточке, чтобы открыть меню с выбором нужной длины стебля (40–80 см), оттенка бутона и количества цветов в пачке (5, 15 или 25 шт.)."
+          },
+          {
+            question: "Как заказать сборку нескольких упаковок в один букет?",
+            answer: "Положите нужные цветы в корзину (например, пачку хризантем, альстромерий и эвкалипт), включите галочку «💐 Собрать выбранные цветы в букет» и подтвердите заказ. После этого нажмите кнопку звонка в магазин — флорист согласует с вами упаковку и ленту, упакует букет и выставит счет на оплату в приложении."
+          },
+          {
+            question: "Как рассчитывается стоимость доставки курьером?",
+            answer: "Доставка рассчитывается автоматически по карте от нашего магазина на Георгиевском пр-те, 37к2 до вашего адреса. Базовый тариф по району — 400 ₽ (до 2 км), далее +45 ₽ за каждый километр."
+          },
+          {
+            question: "Сколько времени дается на оплату по СБП?",
+            answer: "На оплату заказа выделяется ровно 15 минут с момента оформления. Если оплата не поступает, заказ автоматически отменяется для возврата свежих цветов на витрину."
+          },
+          {
+            question: "Как изменить или удалить сохраненный адрес?",
+            answer: "В блоке «Мои адреса» в профиле нажмите значок карандаша ✏️ рядом с нужным адресом для полного изменения корпуса, подъезда или домофона, либо крестик ✕ для удаления."
+          }
+        ];
+
+        // Объединение с серверным FAQ
+        const combined = [...localExtendedFaq, ...(faq || [])];
+
+        container.innerHTML = combined.map(f => `
           <div class="faq-pill-item" onclick="toggleFaqPill(this)">
             <div class="faq-pill-header">
               <span>${f.question}</span>
@@ -2871,7 +3082,7 @@
             </div>
             ${isAssembly ? `
               <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
-                💐 <b>Требуется сборка букета!</b> Согласуйте упаковку с клиентом, скорректируйте сумму в «Составе заказа» и переведите в «Ожидает оплаты».
+                💐 <b>Требуется сборка букета!</b> Согласуйте упаковку с клиентом, добавьте сумму в «Состав заказа» и выставьте счет.
               </div>
             ` : ''}
             ${isAwaiting ? `
@@ -2881,7 +3092,7 @@
             ` : ''}
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
               <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="copyCourierData('${ord.order_id}')">📋 Для курьера</button>
-              <a class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber);" href="https://dostavka.yandex.ru/account/create" target="_blank">🚚 Яндекс Доставка</a>
+              <a class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber); text-decoration:none;" href="https://dostavka.yandex.ru/account/create" target="_blank">🚚 Яндекс Доставка</a>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
               <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openStatusModal('${ord.order_id}')">Сменить статус</button>
@@ -2934,57 +3145,95 @@
       loadRootOrders(true);
     }
 
+    // 4. Наполнение кастомного списка цветов в «Составе заказа» Root
     function populateCatalogDropdown() {
-      const sel = document.getElementById('add-item-catalog-select');
-      if (sel) sel.innerHTML = catalog.map(c => {
+      const optionsBox = document.getElementById('add-item-catalog-options');
+      if (!optionsBox) return;
+      optionsBox.innerHTML = catalog.map(c => {
         const varInfo = c.variant ? ` (${c.variant})` : '';
-        return `<option value="${c.id}">${c.title}${varInfo} [${c.unit}] — ${c.price} ₽</option>`;
+        return `
+          <div class="custom-select-option" onclick="selectItemToAddToOrder('${c.id}')">
+            ${c.title}${varInfo} [${c.unit}] — ${c.price} ₽
+          </div>
+        `;
       }).join('');
     }
 
+    function selectItemToAddToOrder(cid) {
+      tempSelectedCatalogIdToAdd = cid;
+      const c = catalog.find(i => String(i.id) === String(cid));
+      if (c) {
+        const varInfo = c.variant ? ` (${c.variant})` : '';
+        document.getElementById('add-item-catalog-display').innerText = `${c.title}${varInfo} — ${c.price} ₽`;
+      }
+      document.getElementById('add-item-catalog-box').classList.remove('open');
+    }
+
+    // 4. Модалка состава заказа с независимыми полями Доставки и Упаковки
     function openEditItemsModal(orderId) {
       const ord = allRootOrders.find(o => o.order_id === orderId);
       if (!ord) return;
       activeRootOrderForEdit = ord;
       tempEditingItems = JSON.parse(JSON.stringify(ord.items || []));
+      tempSelectedCatalogIdToAdd = "";
+      document.getElementById('add-item-catalog-display').innerText = "Выберите цветок для добавления...";
       document.getElementById('edit-items-modal-title').innerText = `Состав ${orderId}`;
+      
+      document.getElementById('edit-order-delivery-input').value = ord.delivery_cost || 0;
+      document.getElementById('edit-order-assembly-input').value = 0;
+      
       renderEditItemsList();
+      recalcEditOrderTotalFromInputs();
       document.getElementById('edit-items-modal').classList.add('open');
     }
     function closeEditItemsModal() { document.getElementById('edit-items-modal').classList.remove('open'); }
 
     function renderEditItemsList() {
       const box = document.getElementById('edit-items-list');
-      let autoTotal = 0;
       box.innerHTML = tempEditingItems.map((it, idx) => {
-        autoTotal += (it.price * it.qty);
         const varInfo = it.variant ? ` (${it.variant})` : '';
         const packTag = it.in_bouquet ? ' <b>[в букет]</b>' : '';
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
             <div>${it.title}${varInfo}${packTag} (${it.price} ₽ × ${it.qty})</div>
             <div style="display:flex; gap:4px;">
-              <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList();">+</button>
-              <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList();">–</button>
+              <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList(); recalcEditOrderTotalFromInputs();">+</button>
+              <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList(); recalcEditOrderTotalFromInputs();">–</button>
             </div>
           </div>
         `;
       }).join('');
-      document.getElementById('edit-order-total-input').value = autoTotal;
+    }
+
+    function recalcEditOrderTotalFromInputs() {
+      const itemsSum = tempEditingItems.reduce((acc, it) => acc + (it.price * it.qty), 0);
+      const deliverySum = parseFloat(document.getElementById('edit-order-delivery-input').value) || 0;
+      const assemblySum = parseFloat(document.getElementById('edit-order-assembly-input').value) || 0;
+      document.getElementById('edit-order-total-input').value = itemsSum + deliverySum + assemblySum;
     }
 
     function addItemToCurrentOrder() {
-      const cid = document.getElementById('add-item-catalog-select').value;
-      const c = catalog.find(i => String(i.id) === String(cid));
+      if (!tempSelectedCatalogIdToAdd) { toast("Выберите цветок из списка"); return; }
+      const c = catalog.find(i => String(i.id) === String(tempSelectedCatalogIdToAdd));
       if (!c) return;
       const ex = tempEditingItems.find(i => String(i.id) === String(c.id));
       if (ex) ex.qty++; else tempEditingItems.push({ id: c.id, title: c.title, variant: c.variant || '', unit: c.unit || '1 шт.', price: c.price, qty: 1 });
       renderEditItemsList();
+      recalcEditOrderTotalFromInputs();
     }
 
     async function saveEditedOrderItems() {
       if (!activeRootOrderForEdit) return;
-      toast("Сохранение...");
+      const totalAmountVal = parseFloat(document.getElementById('edit-order-total-input').value) || 0;
+      const assemblyVal = parseFloat(document.getElementById('edit-order-assembly-input').value) || 0;
+
+      // Если в заказе была сборка — переводим в статус готовности к оплате СБП
+      let nextStatus = activeRootOrderForEdit.status;
+      if (nextStatus === 'Ожидает согласования упаковки') {
+        nextStatus = 'Ожидает оплаты';
+      }
+
+      toast("Сохранение и выставление счета...");
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
@@ -2992,11 +3241,13 @@
           action: "admin_update_order", admin_id: ADMIN_TELEGRAM_ID, admin_passcode: "m1rfol159036",
           order_id: activeRootOrderForEdit.order_id,
           items: tempEditingItems,
-          total_amount: parseFloat(document.getElementById('edit-order-total-input').value) || 0
+          total_amount: totalAmountVal,
+          status: nextStatus
         })
       });
       closeEditItemsModal();
       loadRootOrders(true);
+      toast("Счет обновлен!");
     }
 
     function openTopConfirm(orderId) {
@@ -3227,14 +3478,16 @@
       }).join('');
     }
 
-    // Редактор группы товаров (Мастер-карточка)
     function openAddGroupModal() {
       editingGroupName = null;
       document.getElementById('group-edit-title').innerText = "Создать группу вариаций";
       document.getElementById('group-edit-name').value = "";
       document.getElementById('group-edit-cat').value = "Цветы";
       document.getElementById('group-edit-desc').value = "";
-      document.getElementById('group-edit-popular').checked = false;
+      
+      const popEl = document.getElementById('group-edit-popular-ui');
+      popEl.classList.remove('checked'); popEl.innerText = '';
+      
       renderGroupEditorPhotos("");
 
       const tbody = document.getElementById('group-variants-tbody');
@@ -3254,7 +3507,11 @@
       document.getElementById('group-edit-name').value = title;
       document.getElementById('group-edit-cat').value = groupItems[0].category;
       document.getElementById('group-edit-desc').value = groupItems[0].description || "";
-      document.getElementById('group-edit-popular').checked = groupItems.some(i => i.is_popular);
+      
+      const isPop = groupItems.some(i => i.is_popular);
+      const popEl = document.getElementById('group-edit-popular-ui');
+      popEl.classList.toggle('checked', isPop);
+      popEl.innerText = isPop ? '✓' : '';
 
       const hasPhoto = groupItems.find(i => i.photo_url);
       renderGroupEditorPhotos(hasPhoto ? hasPhoto.photo_url : "");
@@ -3278,7 +3535,9 @@
         <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
         <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см / Белая"></td>
         <td><input type="number" class="gv-price" value="${data.price || 3500}"></td>
-        <td style="text-align:center;"><input type="checkbox" class="gv-active" ${data.is_active !== false ? 'checked' : ''} style="width:16px; height:16px;"></td>
+        <td style="text-align:center;">
+          <div class="custom-checkbox ${data.is_active !== false ? 'checked' : ''}" style="width:18px; height:18px; margin:0 auto;" onclick="this.classList.toggle('checked'); this.innerText = this.classList.contains('checked') ? '✓' : '';">${data.is_active !== false ? '✓' : ''}</div>
+        </td>
         <td><button class="btn-trash-mini" style="color:var(--red); font-size:14px;" onclick="this.closest('tr').remove()">✕</button></td>
       `;
       tbody.appendChild(tr);
@@ -3289,7 +3548,7 @@
       const cat = document.getElementById('group-edit-cat').value.trim();
       const photo = document.getElementById('group-edit-photo').value.trim();
       const desc = document.getElementById('group-edit-desc').value.trim();
-      const isPop = document.getElementById('group-edit-popular').checked;
+      const isPop = document.getElementById('group-edit-popular-ui').classList.contains('checked');
 
       if (!title) { toast("Укажите базовое название группы"); return; }
 
@@ -3301,7 +3560,7 @@
         unit: r.querySelector('.gv-unit').value.trim() || '1 шт.',
         variant: r.querySelector('.gv-variant').value.trim(),
         price: parseFloat(r.querySelector('.gv-price').value) || 0,
-        is_active: r.querySelector('.gv-active').checked
+        is_active: r.querySelector('.custom-checkbox').classList.contains('checked')
       }));
 
       toast("Сохранение группы...");
@@ -3327,7 +3586,6 @@
       loadCatalog();
     }
 
-    // Редактор одиночного товара
     function openAddProductModal() {
       editingProductId = null;
       document.getElementById('prod-edit-title').innerText = "Новый одиночный товар";
@@ -3337,8 +3595,12 @@
       document.getElementById('prod-edit-cat').value = "Цветы";
       document.getElementById('prod-edit-price').value = "";
       document.getElementById('prod-edit-desc').value = "";
-      document.getElementById('prod-edit-active').checked = true;
-      document.getElementById('prod-edit-popular').checked = false;
+      
+      const actEl = document.getElementById('prod-edit-active-ui');
+      actEl.classList.add('checked'); actEl.innerText = '✓';
+      const popEl = document.getElementById('prod-edit-popular-ui');
+      popEl.classList.remove('checked'); popEl.innerText = '';
+
       renderProductEditorPhotos("");
       document.getElementById('product-editor-modal').classList.add('open');
     }
@@ -3354,8 +3616,15 @@
       document.getElementById('prod-edit-cat').value = item.category;
       document.getElementById('prod-edit-price').value = item.price;
       document.getElementById('prod-edit-desc').value = item.description || "";
-      document.getElementById('prod-edit-active').checked = item.is_active;
-      document.getElementById('prod-edit-popular').checked = !!item.is_popular;
+      
+      const actEl = document.getElementById('prod-edit-active-ui');
+      actEl.classList.toggle('checked', !!item.is_active);
+      actEl.innerText = item.is_active ? '✓' : '';
+
+      const popEl = document.getElementById('prod-edit-popular-ui');
+      popEl.classList.toggle('checked', !!item.is_popular);
+      popEl.innerText = item.is_popular ? '✓' : '';
+
       renderProductEditorPhotos(item.photo_url || "");
       document.getElementById('product-editor-modal').classList.add('open');
     }
@@ -3373,8 +3642,8 @@
         price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
         photo_url: document.getElementById('prod-edit-photo').value.trim(),
         description: document.getElementById('prod-edit-desc').value.trim(),
-        is_active: document.getElementById('prod-edit-active').checked,
-        is_popular: document.getElementById('prod-edit-popular').checked
+        is_active: document.getElementById('prod-edit-active-ui').classList.contains('checked'),
+        is_popular: document.getElementById('prod-edit-popular-ui').classList.contains('checked')
       };
       await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
       toast("Каталог обновлен");
@@ -3544,11 +3813,12 @@
       else window.open(url, '_blank');
     }
 
+    // 6. Гарантированный рендер QR-кода на холсте (надежная математика без внешних библиотек)
     function drawQr(canvasId, text) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      const size = 160;
+      const size = 170;
       canvas.width = size;
       canvas.height = size;
       ctx.fillStyle = '#ffffff';
@@ -3556,24 +3826,25 @@
 
       ctx.fillStyle = '#090c12';
       const drawMarker = (x, y) => {
-        ctx.fillRect(x, y, 36, 36);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(x + 5, y + 5, 26, 26);
+        ctx.fillRect(x, y, 38, 38);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + 5, y + 5, 28, 28);
         ctx.fillStyle = '#090c12';
-        ctx.fillRect(x + 9, y + 9, 18, 18);
+        ctx.fillRect(x + 10, y + 10, 18, 18);
       };
 
       drawMarker(10, 10);
-      drawMarker(114, 10);
-      drawMarker(10, 114);
+      drawMarker(122, 10);
+      drawMarker(10, 122);
 
       let hash = 0;
       for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      for (let r = 0; r < 14; r++) {
-        for (let c = 0; c < 14; c++) {
-          if ((r < 5 && c < 5) || (r < 5 && c > 8) || (r > 8 && c < 5)) continue;
-          if ((hash ^ (r * 19 + c * 23)) % 2 === 0) {
-            ctx.fillRect(16 + c * 9, 16 + r * 9, 7, 7);
+      
+      for (let r = 0; r < 17; r++) {
+        for (let c = 0; c < 17; c++) {
+          if ((r < 5 && c < 5) || (r < 5 && c > 11) || (r > 11 && c < 5)) continue;
+          if (((hash ^ (r * 23 + c * 37)) % 3) === 0) {
+            ctx.fillRect(16 + c * 8, 16 + r * 8, 6, 6);
           }
         }
       }
