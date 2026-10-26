@@ -2885,16 +2885,20 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function onAddressInput(query) {
       clearTimeout(suggestDebounceTimer);
       const box = document.getElementById('ord-suggest-list');
-      if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
-
+      if (!query || query.trim().length < 2) {
+        box.style.display = 'none';
+        return;
+      }
+    
       suggestDebounceTimer = setTimeout(async () => {
         try {
+          const token = SERVER_CONFIG.dadata_token || "";
           const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json",
-              "Authorization": "Token " + (SERVER_CONFIG.dadata_token || "")
+              "Authorization": "Token " + token
             },
             body: JSON.stringify({
               query: query,
@@ -2904,31 +2908,41 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           });
           const data = await res.json();
           const items = data.suggestions || [];
-          if (!items.length) { box.style.display = 'none'; return; }
+          if (!items.length) {
+            box.style.display = 'none';
+            return;
+          }
+          window.lastOrderSuggestions = items;
           box.innerHTML = items.map((s, idx) => `
-            <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
+            <div class="suggest-item" data-idx="${idx}" onclick="selectSuggestion(this.dataset.idx)">${s.value}</div>
           `).join('');
           box.style.display = 'block';
-          window.lastSuggestions = items;
-        } catch (e) {}
+        } catch (e) {
+          box.style.display = 'none';
+        }
       }, 250);
     }
 
-    function selectSuggestion(itemStr) {
-      const s = JSON.parse(decodeURIComponent(itemStr));
+    function selectSuggestion(itemIdx) {
+      const idx = parseInt(itemIdx, 10);
+      const s = (window.lastOrderSuggestions && window.lastOrderSuggestions[idx]) ? window.lastOrderSuggestions[idx] : null;
       const input = document.getElementById('ord-suggest-input');
       const box = document.getElementById('ord-suggest-list');
       const badge = document.getElementById('delivery-calc-badge');
-
+    
+      if (!s) {
+        if (box) box.style.display = 'none';
+        return;
+      }
+    
       input.value = s.value;
       box.style.display = 'none';
-
+    
       const data = s.data || {};
       const hasHouse = Boolean(data.house || data.block || data.flat);
       const lat = data.geo_lat ? parseFloat(data.geo_lat) : null;
       const lon = data.geo_lon ? parseFloat(data.geo_lon) : null;
-
-      // Если дом не выбран или у DaData нет точных координат строения:
+    
       if (!hasHouse || !lat || !lon) {
         currentConfirmedDelivery = null;
         currentDeliveryCost = 0;
@@ -2937,26 +2951,28 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         recalcOrderFinalTotal();
         return;
       }
-
+    
       const storeLat = parseFloat(SERVER_CONFIG.store_lat) || 55.966987;
       const storeLon = parseFloat(SERVER_CONFIG.store_lon) || 37.151059;
-
+    
       const straightDist = calcHaversineDistance(storeLat, storeLon, lat, lon);
       const roadDist = straightDist * 1.25;
-
+    
       if (roadDist <= 2.0) {
         currentDeliveryCost = 350;
       } else {
         currentDeliveryCost = Math.round(350 + ((roadDist - 2.0) * 40));
       }
-
+    
       currentConfirmedDelivery = {
+        confirmed: true,
         lat: lat,
         lon: lon,
         address: s.value,
-        cost: currentDeliveryCost
+        cost: currentDeliveryCost,
+        distanceKm: roadDist
       };
-
+    
       badge.style.display = 'block';
       badge.innerHTML = `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
       recalcOrderFinalTotal();
@@ -3379,8 +3395,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function onSavedAddrSuggestInput(query) {
       clearTimeout(suggestDebounceTimer);
       const box = document.getElementById('new-addr-suggest-list');
-      if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
-
+      if (!query || query.trim().length < 2) {
+        box.style.display = 'none';
+        return;
+      }
+    
       suggestDebounceTimer = setTimeout(async () => {
         try {
           const token = SERVER_CONFIG.dadata_token || "";
@@ -3391,60 +3410,96 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
               "Accept": "application/json",
               "Authorization": "Token " + token
             },
-            body: JSON.stringify({ query: query, locations: [{ region: "Москва" }, { region: "Московская" }], count: 5 })
+            body: JSON.stringify({
+              query: query,
+              locations: [{ region: "Москва" }, { region: "Московская" }],
+              count: 5
+            })
           });
           const data = await res.json();
           const items = data.suggestions || [];
-          if (!items.length) { box.style.display = 'none'; return; }
-          box.innerHTML = items.map(s => `<div class="suggest-item" onclick="selectSavedAddrItem('${encodeURIComponent(s.value)}')">${s.value}</div>`).join('');
-          
-          // Гарантированное отображение поверх модального окна
+          if (!items.length) {
+            box.style.display = 'none';
+            return;
+          }
+          window.lastSavedAddressSuggestions = items;
+          box.innerHTML = items.map((s, idx) => `
+            <div class="suggest-item" data-idx="${idx}" onclick="selectSavedAddrItem(this.dataset.idx)">${s.value}</div>
+          `).join('');
           box.style.zIndex = "300";
           box.style.display = 'block';
-        } catch (e) {}
+        } catch (e) {
+          box.style.display = 'none';
+        }
       }, 250);
     }
-
-    function selectSavedAddrItem(itemStr) {
-      const s = JSON.parse(decodeURIComponent(itemStr));
-      const streetInput = document.getElementById('new-addr-street');
-      streetInput.value = s.value;
-      document.getElementById('new-addr-suggest-list').style.display = 'none';
-
+    
+    function selectSavedAddrItem(itemIdx) {
+      const idx = parseInt(itemIdx, 10);
+      const s = (window.lastSavedAddressSuggestions && window.lastSavedAddressSuggestions[idx]) ? window.lastSavedAddressSuggestions[idx] : null;
+      const suggestInput = document.getElementById('new-addr-suggest');
+      const box = document.getElementById('new-addr-suggest-list');
+    
+      if (!s || !suggestInput) {
+        if (box) box.style.display = 'none';
+        return;
+      }
+    
+      suggestInput.value = s.value;
+      if (box) box.style.display = 'none';
+    
       if (s.data && s.data.geo_lat && s.data.geo_lon) {
-        streetInput.dataset.lat = s.data.geo_lat;
-        streetInput.dataset.lon = s.data.geo_lon;
+        suggestInput.dataset.lat = s.data.geo_lat;
+        suggestInput.dataset.lon = s.data.geo_lon;
       } else {
-        delete streetInput.dataset.lat;
-        delete streetInput.dataset.lon;
+        delete suggestInput.dataset.lat;
+        delete suggestInput.dataset.lon;
       }
     }
 
     function saveNewAddressFromModal() {
-      const streetInput = document.getElementById('new-addr-street');
-      const newObj = {
-        id: Date.now(),
-        label: label,
-        address: streetInput.value.trim(),
-        entrance: document.getElementById('new-addr-entrance').value.trim(),
-        floor: document.getElementById('new-addr-floor').value.trim(),
-        apt: document.getElementById('new-addr-apt').value.trim(),
-        intercom: document.getElementById('new-addr-intercom').value.trim(),
-        lat: streetInput.dataset.lat ? parseFloat(streetInput.dataset.lat) : null,
-        lon: streetInput.dataset.lon ? parseFloat(streetInput.dataset.lon) : null
-      };
-
-      if (!addr) { toast("Укажите улицу и номер дома"); return; }
-      if (!ent || !flr || !apt || !intc) {
-        toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
+      const labelInput = document.getElementById('new-addr-label');
+      const suggestInput = document.getElementById('new-addr-suggest');
+      const entranceInput = document.getElementById('new-addr-entrance');
+      const floorInput = document.getElementById('new-addr-floor');
+      const aptInput = document.getElementById('new-addr-apt');
+      const intercomInput = document.getElementById('new-addr-intercom');
+    
+      const label = labelInput ? labelInput.value.trim() : "";
+      const address = suggestInput ? suggestInput.value.trim() : "";
+      const entrance = entranceInput ? entranceInput.value.trim() : "";
+      const floor = floorInput ? floorInput.value.trim() : "";
+      const apt = aptInput ? aptInput.value.trim() : "";
+      const intercom = intercomInput ? intercomInput.value.trim() : "";
+    
+      if (!label) {
+        toast("Укажите название адреса (например, Дом)");
         return;
       }
-
+      if (!address) {
+        toast("Укажите улицу и номер дома");
+        return;
+      }
+      if (!entrance || !floor || !apt || !intercom) {
+        toast("Заполните все поля: подъезд, этаж, квартиру и домофон");
+        return;
+      }
+    
+      const lat = suggestInput && suggestInput.dataset.lat ? parseFloat(suggestInput.dataset.lat) : null;
+      const lon = suggestInput && suggestInput.dataset.lon ? parseFloat(suggestInput.dataset.lon) : null;
+    
       const addrObj = {
-        label: label, address: addr,
-        entrance: ent, floor: flr, apt: apt, intercom: intc
+        id: editingSavedAddrIdx !== null && savedAddresses[editingSavedAddrIdx]?.id ? savedAddresses[editingSavedAddrIdx].id : Date.now(),
+        label: label,
+        address: address,
+        entrance: entrance,
+        floor: floor,
+        apt: apt,
+        intercom: intercom,
+        lat: lat,
+        lon: lon
       };
-
+    
       if (editingSavedAddrIdx !== null) {
         savedAddresses[editingSavedAddrIdx] = addrObj;
         toast("Адрес обновлен");
@@ -3452,7 +3507,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         savedAddresses.push(addrObj);
         toast("Адрес сохранен");
       }
-
+    
       syncSavedAddresses();
       closeAddSavedAddressModal();
       renderSavedAddresses();
@@ -3764,27 +3819,34 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         const isClosed = ord.status === 'Завершен' || ord.status.startsWith('Отменен');
         return currentRootSubTab === 'active' ? !isClosed : isClosed;
       });
-
+    
       if (!filtered.length) {
         container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:16px 0;">${currentRootSubTab === 'active' ? 'Нет активных заказов' : 'Архив пуст'}</div>`;
         return;
       }
-
+    
       container.innerHTML = filtered.map(ord => {
         const isAwaiting = (ord.status === 'Ожидает оплаты' || ord.status === 'Ожидает подтверждения оплаты');
         const isAssembly = (ord.status === 'Ожидает согласования упаковки');
-        const deliveryCostText = ord.delivery_type === 'delivery' 
-          ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
-          : '0 ₽ (Самовывоз)';
-
+        
+        let deliveryCostText = '0 ₽ (Самовывоз)';
+        if (ord.delivery_type === 'delivery') {
+          if (ord.delivery_cost !== undefined && ord.delivery_cost !== null && !isNaN(Number(ord.delivery_cost))) {
+            const costNum = Number(ord.delivery_cost);
+            deliveryCostText = costNum === 0 ? '0 ₽ (Бесплатно)' : `${costNum} ₽`;
+          } else {
+            deliveryCostText = 'Рассчитана при оформлении';
+          }
+        }
+    
         const itemsListText = (ord.items || []).map(i => {
           const varInfo = i.variant ? ` (${i.variant})` : '';
           const bqTag = i.in_bouquet ? ' [в букет]' : '';
           return `• ${i.title}${varInfo} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
         }).join('<br>');
-
+    
         const safeAddr = (ord.address || "").replace(/'/g, "\\'");
-
+    
         return `
           <div class="box-card" style="margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -3817,7 +3879,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
               <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="copyCourierData('${ord.order_id}')">📋 Для курьера</button>
               <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber);" onclick="openYandexGoDelivery('${safeAddr}')">
-                🚚 Яндекс Go
+                🚖 Яндекс Go
               </button>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
