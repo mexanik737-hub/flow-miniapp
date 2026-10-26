@@ -855,21 +855,25 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
-      max-height: 260px;
+      max-height: 280px;
       overflow-y: auto;
       margin: 10px 0;
+      align-content: start;
     }
     .drive-media-item {
-      aspect-ratio: 1/1;
+      height: 90px;
+      width: 100%;
       border-radius: 8px;
       overflow: hidden;
       border: 1px solid var(--border);
       cursor: pointer;
+      display: flex;
     }
     .drive-media-item img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
     }
 
     .prod-photo-strip {
@@ -1083,14 +1087,21 @@
     <!-- Двойной парящий HUD -->
     <header>
       <div class="header-pills-row">
-        <!-- Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для остальных -->
         <div class="hud-pill" onclick="handleHudRootTap()">
           <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
           <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
         </div>
-        <!-- Правая пилюля: переход в Профиль -->
-        <div class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])">
-          <span id="hud-name">Клиент</span>
+        
+        <div style="display:flex; align-items:center; gap:6px;">
+          <!-- Колокольчик уведомлений -->
+          <div class="hud-pill" onclick="openNotificationsModal()" style="position:relative; padding:6px 10px;">
+            <span style="font-size:14px;">🔔</span>
+            <span id="hud-bell-dot" style="display:none; position:absolute; top:4px; right:4px; width:7px; height:7px; background:var(--red); border-radius:50%; box-shadow:0 0 6px var(--red);"></span>
+          </div>
+
+          <div class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])">
+            <span id="hud-name">Клиент</span>
+          </div>
         </div>
       </div>
     </header>
@@ -1363,7 +1374,12 @@
         <button class="close-btn" onclick="closeProductModal()">✕</button>
       </div>
 
-      <div class="product-gallery-scroll" id="pop-gallery"></div>
+      <div style="position:relative; margin-bottom:12px;">
+        <div class="product-gallery-scroll" id="pop-gallery" onscroll="updateGalleryCounter(this)"></div>
+        <div id="pop-gallery-counter" style="display:none; position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.65); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; pointer-events:none;">
+          1 / 1
+        </div>
+      </div>
       <div class="thumb-placeholder-box" id="pop-placeholder" style="display:none; padding:30px 0;">
         <span class="thumb-placeholder-icon">🌸</span>
         <span class="thumb-placeholder-text">Фото пока не добавили</span>
@@ -1620,8 +1636,11 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Фасовка / Количество: *</label>
       <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. или 1 шт.">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Модификатор (ростовка / оттенок через слэш):</label>
-      <input type="text" id="prod-edit-variant" class="metro-input" placeholder="60 см или Белые / Желтые">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ростовка / Высота (если есть):</label>
+      <input type="text" id="prod-edit-height" class="metro-input" placeholder="50 см, 60 см...">
+
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цвет / Оттенок (если есть):</label>
+      <input type="text" id="prod-edit-color" class="metro-input" placeholder="Белый, Желтый...">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
       <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
@@ -1703,11 +1722,12 @@
         <table class="group-variants-table">
           <thead>
             <tr>
-              <th style="width:25%;">Фасовка</th>
-              <th style="width:30%;">Ростовка/Цвет</th>
-              <th style="width:25%;">Цена (₽)</th>
-              <th style="width:10%;">Нал.</th>
-              <th style="width:10%;"></th>
+              <th style="width:22%;">Фасовка</th>
+              <th style="width:22%;">Высота</th>
+              <th style="width:24%;">Цвет</th>
+              <th style="width:20%;">Цена (₽)</th>
+              <th style="width:6%;">Нал.</th>
+              <th style="width:6%;"></th>
             </tr>
           </thead>
           <tbody id="group-variants-tbody"></tbody>
@@ -2416,10 +2436,10 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
                       <div class="cart-active-stepper" onclick="event.stopPropagation();">
                         <button class="btn-trash-mini" onclick="removeAllOfItemFromCart('${p.id}')">🗑️</button>
                         <span class="cart-active-qty">${inCartQty}</span>
-                        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
+                        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); event.preventDefault(); quickAdd('${p.id}');">+</button>
                       </div>
                     ` : `
-                      <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
+                      <button class="btn-quick-add" onclick="event.stopPropagation(); event.preventDefault(); quickAdd('${p.id}');">+</button>
                     `)}
                   </div>
                 ` : `
@@ -2678,17 +2698,35 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function renderPopGallery(photosStr) {
       const gallery = document.getElementById('pop-gallery');
       const placeholder = document.getElementById('pop-placeholder');
+      const counter = document.getElementById('pop-gallery-counter');
       const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
 
       if (photos.length) {
         gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
         gallery.style.display = 'flex';
         placeholder.style.display = 'none';
+
+        if (photos.length > 1) {
+          counter.style.display = 'block';
+          counter.innerText = `1 / ${photos.length}`;
+        } else {
+          counter.style.display = 'none';
+        }
       } else {
         gallery.innerHTML = '';
         gallery.style.display = 'none';
         placeholder.style.display = 'flex';
+        counter.style.display = 'none';
       }
+    }
+
+    function updateGalleryCounter(el) {
+      const counter = document.getElementById('pop-gallery-counter');
+      if (!counter || counter.style.display === 'none') return;
+      const total = el.children.length;
+      if (total <= 1) return;
+      const cur = Math.min(total, Math.max(1, Math.round(el.scrollLeft / el.clientWidth) + 1));
+      counter.innerText = `${cur} / ${total}`;
     }
 
     function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
@@ -2887,9 +2925,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       currentDistanceKm = roadDist;
 
       if (roadDist <= 2.0) {
-        currentDeliveryCost = 400;
+        currentDeliveryCost = 350;
       } else {
-        currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
+        currentDeliveryCost = Math.round(350 + ((roadDist - 2.0) * 40));
       }
 
       document.getElementById('delivery-calc-badge').innerHTML = 
@@ -3306,12 +3344,13 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
 
       suggestDebounceTimer = setTimeout(async () => {
         try {
+          const token = SERVER_CONFIG.dadata_token || "";
           const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json",
-              "Authorization": "Token " + (SERVER_CONFIG.dadata_token || "")
+              "Authorization": "Token " + token
             },
             body: JSON.stringify({ query: query, locations: [{ region: "Москва" }, { region: "Московская" }], count: 5 })
           });
@@ -3319,6 +3358,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           const items = data.suggestions || [];
           if (!items.length) { box.style.display = 'none'; return; }
           box.innerHTML = items.map(s => `<div class="suggest-item" onclick="selectSavedAddrItem('${encodeURIComponent(s.value)}')">${s.value}</div>`).join('');
+          
+          // Гарантированное отображение поверх модального окна
+          box.style.zIndex = "300";
           box.style.display = 'block';
         } catch (e) {}
       }, 250);
@@ -3695,7 +3737,8 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
               <span class="status-badge st-building">${ord.status}</span>
             </div>
             <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
-              <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
+              <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
+              <b>Получатель:</b> ${ord.recipient_info && ord.recipient_info.trim() ? ord.recipient_info : 'Заказчик'}<br>
               <b>Адрес:</b> ${ord.address}<br>
               <b>Стоимость доставки:</b> ${deliveryCostText}<br>
               <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
@@ -3737,22 +3780,12 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
 
     // Универсальный диплинк вызова Яндекс Go с автокопированием адреса клиента
     function openYandexGoDelivery(orderAddress = "") {
-      const lat = SERVER_CONFIG.store_lat;
-      const lon = SERVER_CONFIG.store_lon;
-
-      if (!lat || !lon) {
-        toast("Загрузка данных салона...");
-        return;
-      }
-
       if (orderAddress && navigator.clipboard) {
         navigator.clipboard.writeText(orderAddress);
         toast("Адрес скопирован в буфер обмена!");
       }
-
-      const url = `https://taxi.yandex.ru/?tariff=express&point=${lat},${lon}`;
-      if (tg && tg.openLink) tg.openLink(url);
-      else window.open(url, '_blank');
+      // Прямой запуск мобильного приложения
+      window.location.href = "yandexgo://";
     }
 
     function copyCourierData(orderId) {
@@ -4234,12 +4267,13 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       tr.dataset.id = data.id || "";
       tr.innerHTML = `
         <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
-        <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см / Белые"></td>
+        <td><input type="text" class="gv-height" value="${data.height || ''}" placeholder="60 см"></td>
+        <td><input type="text" class="gv-color" value="${data.color || ''}" placeholder="Белый"></td>
         <td><input type="number" class="gv-price" value="${data.price || 3500}"></td>
         <td style="text-align:center;">
           <div class="custom-checkbox ${data.is_active !== false ? 'checked' : ''}" style="width:18px; height:18px; margin:0 auto;" onclick="this.classList.toggle('checked'); this.innerText = this.classList.contains('checked') ? '✓' : '';">${data.is_active !== false ? '✓' : ''}</div>
         </td>
-        <td><button class="btn-trash-mini" style="color:var(--red); font-size:14px;" onclick="this.closest('tr').remove()">✕</button></td>
+        <td><button class="btn-trash-mini" style="color:var(--red); font-size:14px;" onclick="this.closest('tr').remove(); toast('Вариант удален');">✕</button></td>
       `;
       tbody.appendChild(tr);
     }
@@ -4576,11 +4610,94 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       else window.open(url, '_blank');
     }
 
+    // === БЛОК УВЕДОМЛЕНИЙ (КОЛОКОЛЬЧИК) ===
+    let activeNotifications = [];
+
+    // Запрос уведомлений с сервера и проверка непрочитанных
+    async function checkNotifications() {
+      try {
+        const res = await fetch(`${API_URL}?action=get_notifications`);
+        activeNotifications = await res.json();
+        
+        // Список уже прочитанных ID из памяти устройства
+        const readIds = JSON.parse(localStorage.getItem('flw_read_notifs') || '[]');
+        
+        // Считаем, есть ли хотя бы одно непрочитанное
+        const hasUnread = activeNotifications.some(n => !readIds.includes(String(n.id)));
+        
+        // Показываем или скрываем красную точку на колокольчике
+        const dot = document.getElementById('hud-bell-dot');
+        if (dot) {
+          dot.style.display = hasUnread ? 'block' : 'none';
+        }
+      } catch (e) {}
+    }
+
+    // Открытие окна уведомлений
+    function openNotificationsModal() {
+      const container = document.getElementById('notifications-list-container');
+      const readIds = JSON.parse(localStorage.getItem('flw_read_notifs') || '[]');
+
+      if (!activeNotifications || !activeNotifications.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:24px 0; font-size:12px;">Новых уведомлений нет</div>';
+      } else {
+        container.innerHTML = activeNotifications.map(n => {
+          const isRead = readIds.includes(String(n.id));
+          return `
+            <div class="box-card" style="margin-bottom:8px; opacity:${isRead ? '0.6' : '1'}; border-left:3px solid ${isRead ? 'var(--border)' : 'var(--cyan)'}; cursor:pointer;" onclick="clickNotificationItem('${n.id}', '${n.target_tab}')">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <b style="font-size:13px; color:var(--text);">${n.title}</b>
+                <span style="font-size:10px; color:var(--text-muted);">${n.date}</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4;">${n.text}</div>
+            </div>
+          `;
+        }).join('');
+      }
+      document.getElementById('notifications-modal').classList.add('open');
+    }
+
+    // Закрытие окна уведомлений
+    function closeNotificationsModal() {
+      document.getElementById('notifications-modal').classList.remove('open');
+    }
+
+    // Клик по конкретному уведомлению (помечает прочитанным и переходит во вкладку)
+    function clickNotificationItem(id, tab) {
+      let readIds = JSON.parse(localStorage.getItem('flw_read_notifs') || '[]');
+      if (!readIds.includes(String(id))) {
+        readIds.push(String(id));
+        localStorage.setItem('flw_read_notifs', JSON.stringify(readIds));
+      }
+      
+      checkNotifications();
+      closeNotificationsModal();
+
+      // Если в уведомлении указана целевая вкладка — сразу переключаем на неё
+      if (tab) {
+        const tabs = ['catalog', 'cart', 'profile', 'about'];
+        const tabIdx = tabs.indexOf(tab);
+        const targetBtn = document.querySelectorAll('.dock-tab')[tabIdx !== -1 ? tabIdx : 0];
+        navigateTab(tab, targetBtn);
+      }
+    }
+
+    // Кнопка «Прочитать все»
+    function markAllNotificationsAsRead() {
+      const allIds = activeNotifications.map(n => String(n.id));
+      localStorage.setItem('flw_read_notifs', JSON.stringify(allIds));
+      checkNotifications();
+      closeNotificationsModal();
+      toast("Все уведомления прочитаны");
+    }
+    
     loadCatalog();
     checkUserSession();
     loadConfig();
+    checkNotifications();
 
     setInterval(() => {
+      checkNotifications();
       const activeScreen = document.querySelector('.screen.active')?.id;
       if (activeScreen === 'screen-profile') {
         loadUserOrders();
@@ -4616,6 +4733,16 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           Вернуться и изменить
         </button>
       </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="notifications-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Уведомления салона</div>
+        <button class="close-btn" onclick="closeNotificationsModal()">✕</button>
+      </div>
+      <div id="notifications-list-container" style="max-height:360px; overflow-y:auto; margin-bottom:12px;"></div>
+      <button class="btn-metro btn-secondary" onclick="markAllNotificationsAsRead()">Прочитать все</button>
     </div>
   </div>
 </body>
