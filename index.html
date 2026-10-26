@@ -853,27 +853,36 @@
 
     .drive-media-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       max-height: 280px;
       overflow-y: auto;
       margin: 10px 0;
       align-content: start;
+      -webkit-overflow-scrolling: touch;
     }
+    
     .drive-media-item {
-      height: 90px;
       width: 100%;
+      aspect-ratio: 1/1;
+      height: auto;
       border-radius: 8px;
       overflow: hidden;
       border: 1px solid var(--border);
       cursor: pointer;
       display: flex;
+      min-width: 0;
+      flex-shrink: 0;
+      box-sizing: border-box;
     }
+    
     .drive-media-item img {
       width: 100%;
       height: 100%;
+      aspect-ratio: 1/1;
       object-fit: cover;
       display: block;
+      flex-shrink: 0;
     }
 
     .prod-photo-strip {
@@ -1197,39 +1206,46 @@
     <!-- Экран 4: О нас -->
     <section id="screen-about" class="screen">
       <!-- Верхний блок салона с оригинальным фото из Google Диска -->
-      <div class="box-card neon-glow" style="text-align:center;">
-        <div class="shop-logo-circle">
-          <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Салон Цветы">
-        </div>
-        <div style="font-size:20px; font-weight:900; color:var(--text); letter-spacing:0.5px;" data-config-key="txt_shop_title">ЦВЕТЫ</div>
-        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:4px 0 12px 0;" data-config-key="txt_shop_subtitle">
-          Мелкооптовый цветочный салон
-        </div>
-        <div style="font-size:12px; color:var(--text-muted); line-height:1.55; margin-bottom:14px;">
-          ⏰ <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
-          🚚 <span data-config-key="txt_delivery_schedule">Доставка с 10:00 до 20:00 (заказы до 19:00)</span>
-        </div>
-        <a class="btn-metro btn-emerald" id="shop-call-btn" href="#" style="text-decoration:none;" data-config-key="txt_btn_call_shop">
-          📞 Позвонить
-        </a>
+    <div class="box-card neon-glow" style="text-align:center;">
+      <div class="shop-logo-circle">
+        <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Цветы">
       </div>
+      <div style="font-size:20px; font-weight:900; color:var(--text); letter-spacing:0.5px;" data-config-key="txt_shop_title">ЦВЕТЫ</div>
+      <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:4px 0 12px 0;" data-config-key="txt_shop_subtitle">
+        Мелкооптовый цветочный склад
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); line-height:1.55; margin-bottom:14px;">
+        ⏰ <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
+        🚚 <span data-config-key="txt_delivery_schedule">Доставка с 10:00 до 20:00 (заказы до 19:00)</span>
+      </div>
+      <a class="btn-metro btn-emerald" id="shop-call-btn" href="#" style="text-decoration:none;" data-config-key="txt_btn_call_shop">
+        📞 Позвонить
+      </a>
+    </div>
 
       <!-- Интерактивная карта со светлой подложкой Яндекса и точными координатами -->
-      <div class="box-card neon-glow" style="padding:10px;">
-        <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;" data-config-key="txt_map_section_title">
-          Мы на карте
-        </div>
-        <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
-          <iframe 
-            id="yandex-map-iframe"
-            src="about:blank" 
-            width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none;">
-          </iframe>
-        </div>
-        <button class="btn-metro" style="margin-top:10px; font-size:12px; padding:10px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openYandexRoute()" data-config-key="txt_btn_route">
-          🗺 Маршрут в Яндекс Картах
-        </button>
+    <div class="box-card neon-glow" style="padding:10px;">
+      <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;" data-config-key="txt_map_section_title">
+        Мы на карте
       </div>
+      <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
+        <iframe 
+          id="yandex-map-iframe"
+          src="about:blank" 
+          width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none; display:block;">
+        </iframe>
+        <a 
+          id="map-org-overlay-link" 
+          href="#" 
+          target="_blank" 
+          style="position:absolute; bottom:0; left:0; width:120px; height:44px; z-index:10; background:transparent; display:block;" 
+          title="Открыть салон в Яндекс Картах">
+        </a>
+      </div>
+      <button class="btn-metro" style="margin-top:10px; font-size:12px; padding:10px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openYandexRoute()" data-config-key="txt_btn_route">
+        🗺️ Маршрут в Яндекс Картах
+      </button>
+    </div>
 
       <!-- FAQ -->
      <div class="box-card neon-glow" style="cursor:pointer;" onclick="toggleAboutFaqAccordion()">
@@ -1264,13 +1280,14 @@
         <div class="custom-checkbox" id="root-toggle-editor-btn" style="width:24px; height:24px; font-size:14px;" onclick="toggleEditorFabVisibility()"></div>
       </div>
 
-      <div class="toggle-grid">
+      <div class="toggle-grid" style="grid-template-columns: repeat(5, 1fr);">
         <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
         <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
         <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
         <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
+        <div class="toggle-btn" id="tab-root-notifs" onclick="switchRootSection('notifs')">Рассылка</div>
       </div>
-
+      
       <!-- Заказы -->
       <div id="root-sec-orders">
         <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
@@ -1279,7 +1296,7 @@
         </div>
         <div id="root-orders-container"></div>
       </div>
-
+      
       <!-- Каталог -->
       <div id="root-sec-catalog" style="display:none;">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px;">
@@ -1288,20 +1305,52 @@
         </div>
         <div id="root-catalog-container"></div>
       </div>
-
+      
       <!-- Клиенты -->
       <div id="root-sec-clients" style="display:none;">
         <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
         <div id="root-clients-container"></div>
       </div>
-
+      
       <!-- FAQ -->
       <div id="root-sec-faq" style="display:none;">
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
         <div id="root-faq-container"></div>
       </div>
-    </section>
-  </div>
+      
+      <!-- Рассылка уведомлений -->
+      <div id="root-sec-notifs" style="display:none;">
+        <div class="box-card">
+          <div style="font-size:13px; font-weight:800; color:var(--cyan); margin-bottom:10px; text-transform:uppercase;">Отправить уведомление клиентам</div>
+          <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Заголовок уведомления: *</label>
+          <input type="text" id="root-notif-title" class="metro-input" placeholder="Например: Свежая поставка пионов!">
+      
+          <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Текст уведомления: *</label>
+          <textarea id="root-notif-text" class="metro-input" style="height:80px; resize:none;" placeholder="Подробное описание акции или новости..."></textarea>
+      
+          <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Целевая вкладка при нажатии:</label>
+          <div class="custom-select-box" id="root-notif-tab-box">
+            <div class="custom-select-trigger" onclick="toggleDropdown('root-notif-tab-box')">
+              <span id="root-notif-tab-display">Каталог</span>
+              <span style="font-size:11px; color:var(--cyan);">▼</span>
+            </div>
+            <div class="custom-select-options" id="root-notif-tab-options">
+              <div class="custom-select-option" onclick="selectRootNotifTab('catalog', 'Каталог')">Каталог</div>
+              <div class="custom-select-option" onclick="selectRootNotifTab('cart', 'Корзина')">Корзина</div>
+              <div class="custom-select-option" onclick="selectRootNotifTab('profile', 'Профиль')">Профиль</div>
+              <div class="custom-select-option" onclick="selectRootNotifTab('about', 'О нас')">О нас</div>
+            </div>
+          </div>
+          <input type="hidden" id="root-notif-tab-value" value="catalog">
+      
+          <div class="custom-checkbox-wrap" onclick="toggleCheckbox('root-notif-send-tg')">
+            <div class="custom-checkbox checked" id="root-notif-send-tg">✓</div>
+            <span style="font-size:12px; font-weight:600; color:var(--text);">Дублировать сообщением в Telegram-бот всем клиентам</span>
+          </div>
+      
+          <button class="btn-metro" onclick="adminSendNotification()">📢 Опубликовать и разослать</button>
+        </div>
+      </div>
 
   <!-- Док навигации -->
   <div class="dock-pill-container">
@@ -1940,11 +1989,21 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     let isTextEditActive = false;
     let isFabVisible = false;
 
+    let toastTimeoutId = null;
+    
     function toast(text) {
       const el = document.getElementById('toast');
+      if (!el) return;
+      if (toastTimeoutId) {
+        clearTimeout(toastTimeoutId);
+        toastTimeoutId = null;
+      }
       el.innerText = text;
       el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 2400);
+      toastTimeoutId = setTimeout(() => {
+        el.classList.remove('show');
+        toastTimeoutId = null;
+      }, 2400);
     }
 
     function toggleDropdown(boxId) {
@@ -2129,51 +2188,56 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     async function loadConfig() {
       try {
         const res = await fetch(`${API_URL}?action=get_config`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const cfg = await res.json();
-        SERVER_CONFIG = cfg;
-
-        // 1. Ссылка на оплату СБП
-        const sbpBtn = document.getElementById('pay-sbp-btn');
-        if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
-
-        // 2. Картинка QR-кода оплаты
-        const qrImg = document.getElementById('sbp-qr-image-tag');
-        if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
-
-        // 3. Динамическая подстановка телефонов в кнопки звонка
-        if (cfg.shop_phone_tel) {
-          const telLink = 'tel:' + cfg.shop_phone_tel;
-          const callBtn = document.getElementById('shop-call-btn');
-          if (callBtn) callBtn.href = telLink;
-
-          const phoneTextBtn = document.getElementById('shop-phone-text-btn');
-          if (phoneTextBtn) {
-            phoneTextBtn.href = telLink;
-            if (cfg.shop_phone) phoneTextBtn.innerText = cfg.shop_phone;
+        if (cfg && typeof cfg === 'object') {
+          SERVER_CONFIG = cfg;
+    
+          const sbpBtn = document.getElementById('pay-sbp-btn');
+          if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
+    
+          const qrImg = document.getElementById('sbp-qr-image-tag');
+          if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
+    
+          if (cfg.shop_phone_tel) {
+            const telLink = 'tel:' + cfg.shop_phone_tel;
+            const callBtn = document.getElementById('shop-call-btn');
+            if (callBtn) callBtn.href = telLink;
+    
+            const phoneTextBtn = document.getElementById('shop-phone-text-btn');
+            if (phoneTextBtn) {
+              phoneTextBtn.href = telLink;
+              if (cfg.shop_phone) phoneTextBtn.innerText = cfg.shop_phone;
+            }
+    
+            const asmBtn = document.getElementById('assembly-call-btn');
+            if (asmBtn) {
+              asmBtn.href = telLink;
+              asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
+            }
           }
-
-          const asmBtn = document.getElementById('assembly-call-btn');
-          if (asmBtn) {
-            asmBtn.href = telLink;
-            asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
+    
+          if (cfg.store_lat && cfg.store_lon) {
+            const mapIframe = document.getElementById('yandex-map-iframe');
+            if (mapIframe) {
+              mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=cfg.storelon%2C{cfg.store_lat}&z=16&pt=cfg.storelon,{cfg.store_lat},pm2rdm`;
+            }
           }
-        }
-
-        // 4. Динамическая загрузка карты по координатам из таблицы
-        if (cfg.store_lat && cfg.store_lon) {
-          const mapIframe = document.getElementById('yandex-map-iframe');
-          if (mapIframe) {
-            mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
+    
+          const orgOverlay = document.getElementById('map-org-overlay-link');
+          if (orgOverlay && cfg.yandex_org_url) {
+            orgOverlay.href = cfg.yandex_org_url;
           }
-        }
-
-        // 5. Тексты витрины
-        Object.keys(cfg).forEach(key => {
-          document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
-            el.innerText = cfg[key];
+    
+          Object.keys(cfg).forEach(key => {
+            document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
+              el.innerText = cfg[key];
+            });
           });
-        });
-      } catch (e) {}
+        }
+      } catch (e) {
+        console.error("Config fetch failed:", e);
+      }
     }
 
     function toggleTextEditingMode(forcedState = null) {
@@ -2397,15 +2461,25 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     async function loadCatalog() {
+      const wrap = document.getElementById('catalog-wrap');
       try {
         const res = await fetch(`${API_URL}?action=catalog`);
-        catalog = await res.json();
-        buildDisplayCatalog();
-        filteredCatalog = [...displayCatalog];
-        setupFilterDropdown();
-        renderCatalog(filteredCatalog);
-        populateCatalogDropdown();
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          catalog = data;
+          buildDisplayCatalog();
+          filteredCatalog = [...displayCatalog];
+          setupFilterDropdown();
+          renderCatalog(filteredCatalog);
+          populateCatalogDropdown();
+        } else {
+          throw new Error("Invalid payload");
+        }
       } catch (e) {
+        if (wrap) {
+          wrap.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:32px 16px; color:var(--text-muted); font-size:13px;">Не удалось загрузить витрину цветов. Потяните вниз или перезапустите вкладку.</div>';
+        }
         toast("Ошибка загрузки каталога");
       }
     }
@@ -3633,43 +3707,45 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     async function checkUserSession() {
-      // 1. Сначала отрисовываем то, что уже есть в локальной памяти (чтобы экран не был пустым)
       if (currentUser) {
         renderProfileUI();
+        renderSavedAddresses();
       }
-
+    
       try {
         const cleanUid = String(userId).trim();
-        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${encodeURIComponent(cleanUid)}`);
+        const res = await fetch(`APIURL?action=getorregisteruser&userid={encodeURIComponent(cleanUid)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const user = await res.json();
-
-        if (user && !user.error) {
+    
+        if (user && !user.error && user.exists) {
           currentUser = user;
           isAdmin = (user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
           localStorage.setItem('flw_user_profile', JSON.stringify(user));
-
-          // Адреса
+    
           if (user.address && String(user.address).startsWith('[')) {
             try {
               savedAddresses = JSON.parse(user.address);
               localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
-            } catch (e) {}
+            } catch (err) {}
           }
-
-          // Принудительно обновляем все текстовые поля профиля
-          renderProfileUI();
-          renderSavedAddresses();
         } else if (!currentUser) {
-          document.getElementById('reg-name').value = tgFirstName;
-          document.getElementById('reg-modal').classList.add('open');
+          const regModal = document.getElementById('reg-modal');
+          const nameInput = document.getElementById('reg-name');
+          if (nameInput) nameInput.value = tgFirstName;
+          if (regModal) regModal.classList.add('open');
         }
       } catch (e) {
-        if (currentUser) {
-          renderProfileUI();
-        } else {
-          document.getElementById('reg-name').value = tgFirstName;
-          document.getElementById('reg-modal').classList.add('open');
+        console.error("Session check failed:", e);
+        if (!currentUser) {
+          const regModal = document.getElementById('reg-modal');
+          const nameInput = document.getElementById('reg-name');
+          if (nameInput) nameInput.value = tgFirstName;
+          if (regModal) regModal.classList.add('open');
         }
+      } finally {
+        renderProfileUI();
+        renderSavedAddresses();
       }
     }
 
@@ -3831,24 +3907,15 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     function openYandexRoute() {
-      const orgUrl = SERVER_CONFIG.yandex_org_url;
-      const lat = SERVER_CONFIG.store_lat;
-      const lon = SERVER_CONFIG.store_lon;
-
-      if (orgUrl) {
-        if (tg && tg.openLink) tg.openLink(orgUrl);
-        else window.open(orgUrl, '_blank');
-        return;
+      const lat = parseFloat(SERVER_CONFIG.store_lat) || 55.966987;
+      const lon = parseFloat(SERVER_CONFIG.store_lon) || 37.151059;
+      const routeUrl = `https://yandex.ru/maps/?rtext=~lat,{lon}&rtt=auto`;
+    
+      if (tg && tg.openLink) {
+        tg.openLink(routeUrl);
+      } else {
+        window.open(routeUrl, '_blank');
       }
-
-      if (lat && lon) {
-        const url = `https://yandex.ru/maps/?rtext=~${lat},${lon}&rtt=auto`;
-        if (tg && tg.openLink) tg.openLink(url);
-        else window.open(url, '_blank');
-        return;
-      }
-
-      toast("Загрузка данных салона...");
     }
 
     function switchRootSection(sec) {
@@ -3856,12 +3923,16 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
       document.getElementById('tab-root-clients').classList.toggle('active', sec === 'clients');
       document.getElementById('tab-root-faq').classList.toggle('active', sec === 'faq');
-
+      const notifTab = document.getElementById('tab-root-notifs');
+      if (notifTab) notifTab.classList.toggle('active', sec === 'notifs');
+    
       document.getElementById('root-sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
       document.getElementById('root-sec-catalog').style.display = sec === 'catalog' ? 'block' : 'none';
       document.getElementById('root-sec-clients').style.display = sec === 'clients' ? 'block' : 'none';
       document.getElementById('root-sec-faq').style.display = sec === 'faq' ? 'block' : 'none';
-
+      const notifSec = document.getElementById('root-sec-notifs');
+      if (notifSec) notifSec.style.display = sec === 'notifs' ? 'block' : 'none';
+    
       if (sec === 'orders') loadRootOrders(true);
       if (sec === 'catalog') loadRootCatalog();
       if (sec === 'clients') loadRootClients();
@@ -4606,9 +4677,14 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     async function loadRootClients() {
       const container = document.getElementById('root-clients-container');
       try {
-        const res = await fetch(`${API_URL}?action=admin_clients&user_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
-        allRootClients = await res.json();
-        renderRootClients(allRootClients);
+        const res = await fetch(`APIURL?action=adminclients&userid={userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          allRootClients = data;
+          renderRootClients(allRootClients);
+        } else {
+          container.innerHTML = `<div style="text-align:center; padding:16px; color:var(--red);">${data.error || 'Ошибка доступа к списку клиентов'}</div>`;
+        }
       } catch (e) {
         container.innerHTML = '<div style="text-align:center; padding:16px; color:var(--red);">Ошибка загрузки клиентов</div>';
       }
@@ -4822,20 +4898,20 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     async function checkNotifications() {
       try {
         const res = await fetch(`${API_URL}?action=get_notifications`);
-        activeNotifications = await res.json();
-        
-        // Список уже прочитанных ID из памяти устройства
-        const readIds = JSON.parse(localStorage.getItem('flw_read_notifs') || '[]');
-        
-        // Считаем, есть ли хотя бы одно непрочитанное
-        const hasUnread = activeNotifications.some(n => !readIds.includes(String(n.id)));
-        
-        // Показываем или скрываем красную точку на колокольчике
-        const dot = document.getElementById('hud-bell-dot');
-        if (dot) {
-          dot.style.display = hasUnread ? 'block' : 'none';
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          activeNotifications = data;
+          const readIds = JSON.parse(localStorage.getItem('flw_read_notifs') || '[]');
+          const hasUnread = activeNotifications.some(n => !readIds.includes(String(n.id)));
+          const dot = document.getElementById('hud-bell-dot');
+          if (dot) {
+            dot.style.display = hasUnread ? 'block' : 'none';
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Notifications fetch failed:", e);
+      }
     }
 
     // Открытие окна уведомлений
@@ -4862,6 +4938,52 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       document.getElementById('notifications-modal').classList.add('open');
     }
 
+    function selectRootNotifTab(val, label) {
+      document.getElementById('root-notif-tab-value').value = val;
+      document.getElementById('root-notif-tab-display').innerText = label;
+      document.getElementById('root-notif-tab-box').classList.remove('open');
+    }
+
+    async function adminSendNotification() {
+      const title = document.getElementById('root-notif-title').value.trim();
+      const text = document.getElementById('root-notif-text').value.trim();
+      const targetTab = document.getElementById('root-notif-tab-value').value.trim();
+      const sendTg = document.getElementById('root-notif-send-tg').classList.contains('checked');
+    
+      if (!title || !text) {
+        toast("Заполните заголовок и текст уведомления");
+        return;
+      }
+    
+      toast("Отправка уведомления...");
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: "admin_send_notification",
+            admin_id: userId,
+            admin_passcode: sessionPasscode,
+            title: title,
+            text: text,
+            target_tab: targetTab,
+            send_tg: sendTg
+          })
+        });
+        const d = await res.json();
+        if (d.success) {
+          document.getElementById('root-notif-title').value = "";
+          document.getElementById('root-notif-text').value = "";
+          toast("Уведомление успешно разослано!");
+          checkNotifications();
+        } else {
+          toast(d.error || "Ошибка рассылки");
+        }
+      } catch (e) {
+        toast("Ошибка связи с сервером");
+      }
+    }
+    
     // Закрытие окна уведомлений
     function closeNotificationsModal() {
       document.getElementById('notifications-modal').classList.remove('open');
