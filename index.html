@@ -1401,9 +1401,13 @@
           <div class="variant-selector-label" id="pop-pack-label">Количество / Фасовка:</div>
           <div class="variant-chips-wrap" id="pop-pack-chips"></div>
         </div>
-        <div class="variant-selector-block" id="pop-variant-block">
-          <div class="variant-selector-label" id="pop-variant-label">Высота / Оттенок:</div>
-          <div class="variant-chips-wrap" id="pop-variant-chips"></div>
+        <div class="variant-selector-block" id="pop-height-block">
+          <div class="variant-selector-label" id="pop-height-label">Ростовка / Высота:</div>
+          <div class="variant-chips-wrap" id="pop-height-chips"></div>
+        </div>
+        <div class="variant-selector-block" id="pop-color-block">
+          <div class="variant-selector-label" id="pop-color-label">Цвет / Оттенок:</div>
+          <div class="variant-chips-wrap" id="pop-color-chips"></div>
         </div>
       </div>
 
@@ -2422,14 +2426,15 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         const isHit = p.is_popular;
         const isAvailable = p.is_active;
         const isGroup = p.is_group;
-
+    
         return `
           <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="openProductModal('${p.id}')">
             <div class="product-thumb">
               ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
+              ${photos.length > 1 ? `<div class="photos-count-badge" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:12px; z-index:3; display:flex; align-items:center; gap:3px;">📷 ${photos.length}</div>` : ''}
               ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
               <div class="thumb-placeholder-box" style="${firstPhoto ? 'display:none;' : ''}">
-                <span class="thumb-placeholder-icon">🌸</span>
+                <span class="thumb-placeholder-icon">💐</span>
                 <span class="thumb-placeholder-text">Фото пока не добавили</span>
               </div>
             </div>
@@ -2468,13 +2473,13 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       const actionEl = document.getElementById(`product-action-${id}`);
       if (!actionEl) return;
       const inCartQty = getCartItemQuantity(id);
-
+    
       if (inCartQty > 0) {
         actionEl.innerHTML = `
           <div class="cart-active-stepper" onclick="event.stopPropagation();">
             <button class="btn-trash-mini" onclick="removeAllOfItemFromCart('${id}')">🗑️</button>
             <span class="cart-active-qty">${inCartQty}</span>
-            <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="openProductModal('${id}')">+</button>
+            <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); event.preventDefault(); quickAdd('${id}');">+</button>
           </div>
         `;
       } else {
@@ -2598,60 +2603,89 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       if (activePopItem) setupSingleItemSlashVariants(activePopItem);
     }
 
-    function setupGroupVariantChips(group, preferredPack = null, preferredVar = null) {
+    function setupGroupVariantChips(group, preferredPack = null, preferredHeight = null, preferredColor = null) {
       const rawPacks = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
       const packs = sortAscendingValues(rawPacks);
-
-      let allRawVars = [];
-      group.variants.forEach(v => {
-        if (v.variant) {
-          if (v.variant.includes('/')) {
-            allRawVars.push(...v.variant.split('/').map(s => s.trim()));
-          } else {
-            allRawVars.push(v.variant.trim());
-          }
-        }
-      });
-      const vars = sortAscendingValues(Array.from(new Set(allRawVars.filter(Boolean))));
-
+    
+      const rawHeights = Array.from(new Set(group.variants.map(v => v.height).filter(Boolean)));
+      const heights = sortAscendingValues(rawHeights);
+    
+      const rawColors = Array.from(new Set(group.variants.map(v => v.color).filter(Boolean)));
+      const colors = sortAscendingValues(rawColors);
+    
       if (preferredPack && packs.includes(preferredPack)) {
         selectedGroupPack = preferredPack;
       } else if (!selectedGroupPack || !packs.includes(selectedGroupPack)) {
         selectedGroupPack = packs[0] || "";
       }
-
-      if (preferredVar && vars.includes(preferredVar)) {
-        selectedGroupVariant = preferredVar;
-      } else if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
-        selectedGroupVariant = vars[0] || "";
+    
+      if (preferredHeight && heights.includes(preferredHeight)) {
+        selectedGroupHeight = preferredHeight;
+      } else if (!selectedGroupHeight || !heights.includes(selectedGroupHeight)) {
+        selectedGroupHeight = heights[0] || "";
       }
-
+    
+      if (preferredColor && colors.includes(preferredColor)) {
+        selectedGroupColor = preferredColor;
+      } else if (!selectedGroupColor || !colors.includes(selectedGroupColor)) {
+        selectedGroupColor = colors[0] || "";
+      }
+    
       const packBlock = document.getElementById('pop-pack-block');
       const packWrap = document.getElementById('pop-pack-chips');
-      if (packs.length > 1 || (packs.length === 1 && vars.length > 0)) {
-        packBlock.style.display = 'block';
-        packWrap.innerHTML = packs.map(p => `
-          <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectGroupPack('${p}')">${p}</div>
-        `).join('');
-      } else {
+      if (packs.length > 1 || (packs.length === 1 && (heights.length > 0 || colors.length > 0))) {
+        if (packBlock && packWrap) {
+          packBlock.style.display = 'block';
+          packWrap.innerHTML = packs.map(p => `
+            <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectGroupPack('${p}')">${p}</div>
+          `).join('');
+        }
+      } else if (packBlock) {
         packBlock.style.display = 'none';
       }
-
-      const varBlock = document.getElementById('pop-variant-block');
-      const varWrap = document.getElementById('pop-variant-chips');
-      if (vars.length > 0) {
-        varBlock.style.display = 'block';
-        varWrap.innerHTML = vars.map(v => `
-          <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectGroupVariant('${v}')">${v}</div>
-        `).join('');
-      } else {
-        varBlock.style.display = 'none';
+    
+      const heightBlock = document.getElementById('pop-height-block');
+      const heightWrap = document.getElementById('pop-height-chips');
+      if (heights.length > 0) {
+        if (heightBlock && heightWrap) {
+          heightBlock.style.display = 'block';
+          heightWrap.innerHTML = heights.map(h => `
+            <div class="variant-chip ${h === selectedGroupHeight ? 'active' : ''}" onclick="selectGroupHeight('${h}')">${h}</div>
+          `).join('');
+        }
+      } else if (heightBlock) {
+        heightBlock.style.display = 'none';
+      }
+    
+      const colorBlock = document.getElementById('pop-color-block');
+      const colorWrap = document.getElementById('pop-color-chips');
+      if (colors.length > 0) {
+        if (colorBlock && colorWrap) {
+          colorBlock.style.display = 'block';
+          colorWrap.innerHTML = colors.map(c => `
+            <div class="variant-chip ${c === selectedGroupColor ? 'active' : ''}" onclick="selectGroupColor('${c}')">${c}</div>
+          `).join('');
+        }
+      } else if (colorBlock) {
+        colorBlock.style.display = 'none';
       }
     }
 
+    function selectGroupColor(c) {
+      selectedGroupColor = c;
+      setupGroupVariantChips(activePopItem, selectedGroupPack, selectedGroupHeight, c);
+      updateSelectedGroupVariantUI();
+    }
+    
+    function selectGroupHeight(h) {
+      selectedGroupHeight = h;
+      setupGroupVariantChips(activePopItem, selectedGroupPack, h, selectedGroupColor);
+      updateSelectedGroupVariantUI();
+    }
+    
     function selectGroupPack(pack) {
       selectedGroupPack = pack;
-      setupGroupVariantChips(activePopItem, pack, selectedGroupVariant);
+      setupGroupVariantChips(activePopItem, pack, selectedGroupHeight, selectedGroupColor);
       updateSelectedGroupVariantUI();
     }
 
@@ -2663,29 +2697,30 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
 
     function updateSelectedGroupVariantUI() {
       if (!activePopItem || !activePopItem.is_group) return;
-
+    
       const variant = activePopItem.variants.find(v => {
-        const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
-        let varMatch = false;
-        if (!selectedGroupVariant) varMatch = true;
-        else if (v.variant.includes('/')) {
-          const parts = v.variant.split('/').map(s => s.trim());
-          varMatch = parts.includes(selectedGroupVariant);
-        } else {
-          varMatch = (v.variant.trim() === selectedGroupVariant.trim());
-        }
-        return packMatch && varMatch;
-      });
-
-      const varText = selectedGroupVariant ? ` (${selectedGroupVariant})` : '';
+        const packMatch = !selectedGroupPack || (v.unit && v.unit.trim() === selectedGroupPack.trim());
+        const heightMatch = !selectedGroupHeight || (v.height && v.height.trim() === selectedGroupHeight.trim());
+        const colorMatch = !selectedGroupColor || (v.color && v.color.trim() === selectedGroupColor.trim());
+        return packMatch && heightMatch && colorMatch;
+      }) || activePopItem.variants.find(v => {
+        const packMatch = !selectedGroupPack || (v.unit && v.unit.trim() === selectedGroupPack.trim());
+        return packMatch;
+      }) || activePopItem.variants[0];
+    
+      const details = [];
+      if (selectedGroupHeight) details.push(selectedGroupHeight);
+      if (selectedGroupColor) details.push(selectedGroupColor);
+      const varText = details.length ? ` (${details.join(', ')})` : '';
       const packText = selectedGroupPack ? ` [${selectedGroupPack}]` : '';
+    
       document.getElementById('pop-title').innerText = `${activePopItem.title}${varText}${packText}`;
       document.getElementById('pop-cat').innerText = activePopItem.category;
-      document.getElementById('pop-unit').innerText = selectedGroupPack || activePopItem.unit;
-
+      document.getElementById('pop-unit').innerText = selectedGroupPack || (variant ? variant.unit : activePopItem.unit);
+    
       const addBtn = document.getElementById('pop-add-cart-btn');
       const qtyBox = document.getElementById('pop-qty-controls');
-
+    
       if (!variant || !variant.is_active) {
         document.getElementById('pop-price').innerText = variant ? `${variant.price} ₽` : "— ₽";
         document.getElementById('pop-desc').innerText = "Данная вариация сейчас отсутствует в наличии.";
@@ -2712,33 +2747,63 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       const placeholder = document.getElementById('pop-placeholder');
       const counter = document.getElementById('pop-gallery-counter');
       const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
-
+    
+      let dotsContainer = document.getElementById('pop-gallery-dots');
+      if (!dotsContainer) {
+        dotsContainer = document.createElement('div');
+        dotsContainer.id = 'pop-gallery-dots';
+        dotsContainer.style.cssText = 'position:absolute; bottom:8px; left:50%; transform:translateX(-50%); display:flex; gap:5px; z-index:3; pointer-events:none;';
+        if (gallery && gallery.parentElement) {
+          gallery.parentElement.appendChild(dotsContainer);
+        }
+      }
+    
       if (photos.length) {
         gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
         gallery.style.display = 'flex';
         placeholder.style.display = 'none';
-
+    
         if (photos.length > 1) {
           counter.style.display = 'block';
           counter.innerText = `1 / ${photos.length}`;
+          dotsContainer.style.display = 'flex';
+          dotsContainer.innerHTML = photos.map((_, idx) => `
+            <span class="pop-dot" style="width:6px; height:6px; border-radius:50%; background:${idx === 0 ? 'var(--cyan)' : 'rgba(255,255,255,0.45)'}; transition:all 0.2s ease;"></span>
+          `).join('');
         } else {
           counter.style.display = 'none';
+          dotsContainer.style.display = 'none';
+          dotsContainer.innerHTML = '';
         }
       } else {
         gallery.innerHTML = '';
         gallery.style.display = 'none';
         placeholder.style.display = 'flex';
         counter.style.display = 'none';
+        if (dotsContainer) {
+          dotsContainer.style.display = 'none';
+          dotsContainer.innerHTML = '';
+        }
       }
     }
 
     function updateGalleryCounter(el) {
       const counter = document.getElementById('pop-gallery-counter');
-      if (!counter || counter.style.display === 'none') return;
       const total = el.children.length;
       if (total <= 1) return;
       const cur = Math.min(total, Math.max(1, Math.round(el.scrollLeft / el.clientWidth) + 1));
-      counter.innerText = `${cur} / ${total}`;
+      if (counter && counter.style.display !== 'none') {
+        counter.innerText = `${cur} / ${total}`;
+      }
+      const dotsContainer = document.getElementById('pop-gallery-dots');
+      if (dotsContainer) {
+        const dots = dotsContainer.querySelectorAll('.pop-dot');
+        dots.forEach((dot, idx) => {
+          const isActive = (idx === cur - 1);
+          dot.style.background = isActive ? 'var(--cyan)' : 'rgba(255,255,255,0.45)';
+          dot.style.transform = isActive ? 'scale(1.25)' : 'scale(1)';
+        });
+      }
     }
 
     function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
@@ -2746,41 +2811,38 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
 
     function addPopToCart() {
       if (!activePopItem) return;
-
-      let targetId = activePopItem.id;
-      let finalVariant = selectedGroupVariant || "";
-
+    
+      let targetItem = activePopItem;
+    
       if (activePopItem.is_group) {
         const variant = activePopItem.variants.find(v => {
-          const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
-          let varMatch = false;
-          if (!selectedGroupVariant) varMatch = true;
-          else if (v.variant.includes('/')) {
-            const parts = v.variant.split('/').map(s => s.trim());
-            varMatch = parts.includes(selectedGroupVariant);
-          } else {
-            varMatch = (v.variant.trim() === selectedGroupVariant.trim());
-          }
-          return packMatch && varMatch;
-        });
+          const packMatch = !selectedGroupPack || (v.unit && v.unit.trim() === selectedGroupPack.trim());
+          const heightMatch = !selectedGroupHeight || (v.height && v.height.trim() === selectedGroupHeight.trim());
+          const colorMatch = !selectedGroupColor || (v.color && v.color.trim() === selectedGroupColor.trim());
+          return packMatch && heightMatch && colorMatch;
+        }) || activePopItem.variants.find(v => !selectedGroupPack || (v.unit && v.unit.trim() === selectedGroupPack.trim()));
+    
         if (!variant || !variant.is_active) {
           toast("Товар отсутствует в наличии");
           return;
         }
-        targetId = variant.id;
+        targetItem = variant;
       } else {
         if (!activePopItem.is_active) {
           toast("Товар отсутствует в наличии");
           return;
         }
       }
-
-      const cartKey = `${targetId}:::${finalVariant}`;
+    
+      const cartKey = `${targetItem.id}:::${targetItem.height || ''}:::${targetItem.color || ''}`;
       cart[cartKey] = (cart[cartKey] || 0) + popQty;
       cartAssemblyItems[cartKey] = true;
-
+    
       updateCartUI();
-      updateProductCardAction(targetId);
+      updateProductCardAction(activePopItem.id);
+      if (targetItem.id !== activePopItem.id) {
+        updateProductCardAction(targetItem.id);
+      }
       closeProductModal();
       toast("Добавлено в заказ");
     }
@@ -3089,24 +3151,27 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     
     async function submitFinalOrder() {
       const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
-
+    
       let orderItems = [];
       Object.entries(cart).forEach(([cartKey, qty]) => {
-        const [id, selectedVar] = cartKey.split(':::');
+        const parts = cartKey.split(':::');
+        const id = parts[0];
         const item = catalog.find(i => String(i.id) === String(id));
         if (item) {
           orderItems.push({
             id: item.id,
             title: item.title,
-            variant: selectedVar || "",
             unit: item.unit || "1 шт.",
+            height: item.height || parts[1] || "",
+            color: item.color || parts[2] || "",
             price: item.price,
             qty: qty,
+            count: qty,
             in_bouquet: needAssembly && !!cartAssemblyItems[cartKey]
           });
         }
       });
-
+    
       let recInfo = "";
       if (orderRecType === 'other') {
         const rName = document.getElementById('ord-rec-name').value.trim();
@@ -3117,7 +3182,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         }
         recInfo = `${rName} (${rPhone})`;
       }
-
+    
       let fullAddr = "";
       let dTime = "";
       if (orderDelType === 'delivery') {
@@ -3127,27 +3192,39 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         const apt = document.getElementById('ord-apt').value.trim();
         const intc = document.getElementById('ord-intercom').value.trim();
         const comm = document.getElementById('ord-comment').value.trim();
-
-        if (!street) { toast("Укажите улицу и номер дома"); return; }
+    
+        if (!street) {
+          toast("Укажите улицу и номер дома");
+          return;
+        }
         if (!ent || !flr || !apt || !intc) {
           toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
           return;
         }
-
-        fullAddr = `${street}, под. ${ent}, эт. ${flr}, кв. ${apt} (домофон: ${intc})${comm ? ' [курьеру: '+comm+']' : ''}`;
+    
+        fullAddr = `${street}, под. ${ent}, эт. ${flr}, кв. ${apt} (домофон: ${intc})${comm ? ' [курьеру: ' + comm + ']' : ''}`;
         dTime = document.getElementById('selected-time-display').innerText;
-
+    
         if (ordSaveAddrChecked && savedAddresses.length < 3) {
-          savedAddresses.push({ label: "Адрес " + (savedAddresses.length + 1), address: street, entrance: ent, floor: flr, apt: apt, intercom: intc });
+          savedAddresses.push({
+            label: "Адрес " + (savedAddresses.length + 1),
+            address: street,
+            entrance: ent,
+            floor: flr,
+            apt: apt,
+            intercom: intc,
+            lat: currentConfirmedDelivery ? currentConfirmedDelivery.lat : null,
+            lon: currentConfirmedDelivery ? currentConfirmedDelivery.lon : null
+          });
           syncSavedAddresses();
         }
       } else {
         fullAddr = "Самовывоз: Георгиевский пр-т, 37к2";
         dTime = "Самовывоз (по готовности)";
       }
-
+    
       const shopComm = document.getElementById('ord-shop-comment').value.trim();
-
+    
       toast("Создание заказа...");
       try {
         const res = await fetch(API_URL, {
@@ -3179,7 +3256,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           updateCartUI();
           renderCatalog(filteredCatalog);
           closeOrderModal();
-
+    
           if (needAssembly) {
             openAssemblyCallModal(data.order_id);
           } else {
@@ -4401,20 +4478,27 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       const photo = document.getElementById('group-edit-photo').value.trim();
       const desc = document.getElementById('group-edit-desc').value.trim();
       const isPop = document.getElementById('group-edit-popular-ui').classList.contains('checked');
-
-      if (!title) { toast("Укажите базовое название группы"); return; }
-
+    
+      if (!title) {
+        toast("Укажите базовое название группы");
+        return;
+      }
+    
       const rows = Array.from(document.querySelectorAll('#group-variants-tbody tr'));
-      if (!rows.length) { toast("Добавьте хотя бы одну вариацию"); return; }
-
+      if (!rows.length) {
+        toast("Добавьте хотя бы одну вариацию");
+        return;
+      }
+    
       const variants = rows.map(r => ({
         id: r.dataset.id || null,
-        unit: r.querySelector('.gv-unit').value.trim() || '1 шт.',
-        variant: r.querySelector('.gv-variant').value.trim(),
-        price: parseFloat(r.querySelector('.gv-price').value) || 0,
-        is_active: r.querySelector('.custom-checkbox').classList.contains('checked')
+        unit: (r.querySelector('.gv-unit')?.value || '1 шт.').trim(),
+        height: (r.querySelector('.gv-height')?.value || '').trim(),
+        color: (r.querySelector('.gv-color')?.value || '').trim(),
+        price: parseFloat(r.querySelector('.gv-price')?.value) || 0,
+        is_active: r.querySelector('.custom-checkbox')?.classList.contains('checked') || false
       }));
-
+    
       toast("Сохранение группы...");
       await fetch(API_URL, {
         method: 'POST',
@@ -4431,7 +4515,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           variants_json: JSON.stringify(variants)
         })
       });
-
+    
       toast("Группа товаров сохранена!");
       closeGroupEditorModal();
       loadRootCatalog();
