@@ -1043,24 +1043,35 @@
       outline-color: var(--amber) !important;
     }
 
-    #toast {
+    .toast {
       position: fixed;
-      top: 16px;
+      top: 20px;
       left: 50%;
-      transform: translateX(-50%) translateY(-50px);
-      background: var(--card-bg);
+      transform: translateX(-50%) translateY(-100px);
+      background: rgba(18, 24, 38, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-accent);
       color: var(--text);
-      padding: 10px 18px;
-      border-radius: 20px;
-      font-size: 12px;
+      padding: 12px 20px;
+      border-radius: 16px;
+      font-size: 13px;
       font-weight: 600;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      line-height: 1.45;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      z-index: 9999;
       opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       pointer-events: none;
-      z-index: 200;
-      transition: all 0.25s ease;
-      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 90vw;
+      width: max-content;
+      box-sizing: border-box;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
     }
     #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
@@ -1903,6 +1914,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     let currentDistanceKm = 0;
     let currentFlowersSubtotal = 0;
     let currentFinalOrderAmount = 0;
+    let currentConfirmedDelivery = null; // { lat, lon, address }
 
     let activePaymentOrderId = null;
     let paymentTimerInterval = null;
@@ -2902,27 +2914,35 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       }, 250);
     }
 
-    function selectSuggestion(idx) {
-      const s = window.lastSuggestions[idx];
-      if (!s) return;
+    function selectSuggestion(itemStr) {
+      const s = JSON.parse(decodeURIComponent(itemStr));
+      const input = document.getElementById('ord-suggest-input');
+      const box = document.getElementById('ord-suggest-list');
+      const badge = document.getElementById('delivery-calc-badge');
 
-      document.getElementById('ord-suggest-input').value = s.value;
-      document.getElementById('ord-suggest-list').style.display = 'none';
-      selectedGeoAddress = s;
+      input.value = s.value;
+      box.style.display = 'none';
 
-      const lat = parseFloat(s.data.geo_lat);
-      const lon = parseFloat(s.data.geo_lon);
+      const data = s.data || {};
+      const hasHouse = Boolean(data.house || data.block || data.flat);
+      const lat = data.geo_lat ? parseFloat(data.geo_lat) : null;
+      const lon = data.geo_lon ? parseFloat(data.geo_lon) : null;
 
-      if (!lat || !lon) {
-        document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома для расчета доставки`;
-        currentDeliveryCost = 400;
+      // Если дом не выбран или у DaData нет точных координат строения:
+      if (!hasHouse || !lat || !lon) {
+        currentConfirmedDelivery = null;
+        currentDeliveryCost = 0;
+        badge.style.display = 'block';
+        badge.innerHTML = `<span style="color:var(--amber);">⚠️ Выберите адрес <b>с точным номером дома</b> из списка подсказок</span>`;
         recalcOrderFinalTotal();
         return;
       }
 
-      const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, lat, lon);
+      const storeLat = parseFloat(SERVER_CONFIG.store_lat) || 55.966987;
+      const storeLon = parseFloat(SERVER_CONFIG.store_lon) || 37.151059;
+
+      const straightDist = calcHaversineDistance(storeLat, storeLon, lat, lon);
       const roadDist = straightDist * 1.25;
-      currentDistanceKm = roadDist;
 
       if (roadDist <= 2.0) {
         currentDeliveryCost = 350;
@@ -2930,9 +2950,15 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         currentDeliveryCost = Math.round(350 + ((roadDist - 2.0) * 40));
       }
 
-      document.getElementById('delivery-calc-badge').innerHTML = 
-        `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
+      currentConfirmedDelivery = {
+        lat: lat,
+        lon: lon,
+        address: s.value,
+        cost: currentDeliveryCost
+      };
 
+      badge.style.display = 'block';
+      badge.innerHTML = `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
       recalcOrderFinalTotal();
     }
 
@@ -3008,16 +3034,29 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         const flr = document.getElementById('ord-floor').value.trim();
         const apt = document.getElementById('ord-apt').value.trim();
         const intc = document.getElementById('ord-intercom').value.trim();
-        if (!street || !ent || !flr || !apt || !intc) {
-          toast("Заполните все поля адреса доставки");
+
+        if (!street) {
+          toast("Укажите адрес доставки");
+          return;
+        }
+
+        // Блокировка: попытка отправить произвольный текст без подтвержденного дома
+        if (!currentConfirmedDelivery || currentDeliveryCost <= 0) {
+          toast("Пожалуйста, выберите ваш дом из выпадающего списка подсказок для точного расчета доставки курьером");
+          document.getElementById('ord-suggest-input').focus();
+          return;
+        }
+
+        if (!ent || !flr || !apt || !intc) {
+          toast("Заполните подъезд, этаж, квартиру и домофон");
           return;
         }
       }
 
       const summaryBox = document.getElementById('order-confirm-summary');
       const delText = orderDelType === 'delivery' 
-        ? `🚚 Доставка: ${document.getElementById('ord-suggest-input').value.trim()}`
-        : `📍 Самовывоз: Георгиевский пр-т, 37к2`;
+        ? `🚚 Доставка: ${document.getElementById('ord-suggest-input').value.trim()} (${currentDeliveryCost} ₽)`
+        : `📍 Самовывоз: Георгиевский пр-т, 37к2 (0 ₽)`;
       const timeText = orderDelType === 'delivery' 
         ? document.getElementById('selected-time-display').innerText 
         : 'По готовности букета';
@@ -3366,18 +3405,34 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       }, 250);
     }
 
-    function selectSavedAddrItem(val) {
-      document.getElementById('new-addr-suggest').value = decodeURIComponent(val);
+    function selectSavedAddrItem(itemStr) {
+      const s = JSON.parse(decodeURIComponent(itemStr));
+      const streetInput = document.getElementById('new-addr-street');
+      streetInput.value = s.value;
       document.getElementById('new-addr-suggest-list').style.display = 'none';
+
+      if (s.data && s.data.geo_lat && s.data.geo_lon) {
+        streetInput.dataset.lat = s.data.geo_lat;
+        streetInput.dataset.lon = s.data.geo_lon;
+      } else {
+        delete streetInput.dataset.lat;
+        delete streetInput.dataset.lon;
+      }
     }
 
     function saveNewAddressFromModal() {
-      const label = document.getElementById('new-addr-label').value.trim() || "Дом";
-      const addr = document.getElementById('new-addr-suggest').value.trim();
-      const ent = document.getElementById('new-addr-entrance').value.trim();
-      const flr = document.getElementById('new-addr-floor').value.trim();
-      const apt = document.getElementById('new-addr-apt').value.trim();
-      const intc = document.getElementById('new-addr-intercom').value.trim();
+      const streetInput = document.getElementById('new-addr-street');
+      const newObj = {
+        id: Date.now(),
+        label: label,
+        address: streetInput.value.trim(),
+        entrance: document.getElementById('new-addr-entrance').value.trim(),
+        floor: document.getElementById('new-addr-floor').value.trim(),
+        apt: document.getElementById('new-addr-apt').value.trim(),
+        intercom: document.getElementById('new-addr-intercom').value.trim(),
+        lat: streetInput.dataset.lat ? parseFloat(streetInput.dataset.lat) : null,
+        lon: streetInput.dataset.lon ? parseFloat(streetInput.dataset.lon) : null
+      };
 
       if (!addr) { toast("Укажите улицу и номер дома"); return; }
       if (!ent || !flr || !apt || !intc) {
@@ -4347,7 +4402,13 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       document.getElementById('prod-edit-title').innerText = `Товар ID: ${item.id}`;
       document.getElementById('prod-edit-name').value = item.title;
       document.getElementById('prod-edit-unit').value = item.unit || "1 шт.";
-      document.getElementById('prod-edit-variant').value = item.variant || "";
+
+      const heightInput = document.getElementById('prod-edit-height');
+      if (heightInput) heightInput.value = item.height || item.variant || "";
+
+      const colorInput = document.getElementById('prod-edit-color');
+      if (colorInput) colorInput.value = item.color || "";
+
       document.getElementById('prod-edit-cat').value = item.category;
       document.getElementById('prod-edit-price').value = item.price;
       document.getElementById('prod-edit-desc').value = item.description || "";
@@ -4367,18 +4428,16 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
 
     async function saveProductEditor() {
       const payload = {
-        action: editingProductId ? "admin_update_product" : "admin_add_product",
-        admin_id: userId, admin_passcode: sessionPasscode,
+        action: "admin_update_product",
         id: editingProductId,
         title: document.getElementById('prod-edit-name').value.trim(),
         unit: document.getElementById('prod-edit-unit').value.trim(),
-        variant: document.getElementById('prod-edit-variant').value.trim(),
+        height: (document.getElementById('prod-edit-height') ? document.getElementById('prod-edit-height').value : '').trim(),
+        color: (document.getElementById('prod-edit-color') ? document.getElementById('prod-edit-color').value : '').trim(),
         category: document.getElementById('prod-edit-cat').value.trim(),
         price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
-        photo_url: document.getElementById('prod-edit-photo').value.trim(),
         description: document.getElementById('prod-edit-desc').value.trim(),
-        is_active: document.getElementById('prod-edit-active-ui').classList.contains('checked'),
-        is_popular: document.getElementById('prod-edit-popular-ui').classList.contains('checked')
+        is_popular: document.getElementById('prod-edit-popular').classList.contains('checked')
       };
       await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
       toast("Каталог обновлен");
@@ -4428,7 +4487,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           ? `https://t.me/${c.username.replace('@','')}`
           : (!c.user_id.startsWith('anon_') ? `tg://user?id=${c.user_id}` : '');
 
-        const isClientAdmin = c.is_admin === true || String(c.is_admin).trim().toUpperCase() === 'TRUE' || String(c.user_id) === ADMIN_TELEGRAM_ID;
+        const isClientAdmin = c.is_admin === true || String(c.is_admin).trim().toUpperCase() === 'TRUE';
 
         return `
           <div class="box-card" style="margin-bottom:8px;">
