@@ -763,11 +763,22 @@
     </div>
   </div>
 
-  <!-- Подключение модулей скриптов -->
-  <script src="js/api.js?v=1.0"></script>
-  <script src="js/catalog.js?v=1.0"></script>
-  <script src="js/cart.js?v=1.0"></script>
-  <script src="js/admin.js?v=1.0"></script>
-  <script src="js/app.js?v=1.0"></script>
+    <!-- 1. Конфигурация, авторизация и транспорт -->
+  <script src="js/config.js?v=1.1"></script>
+
+  <!-- 2. Сервисные утилиты (уведомления, селекты, таймеры, гаверсинусы) -->
+  <script src="js/utils.js?v=1.1"></script>
+
+  <!-- 3. Доменные модули клиентов и каталога -->
+  <script src="js/catalog.js?v=1.1"></script>
+  <script src="js/cart.js?v=1.1"></script>
+  <script src="js/order.js?v=1.1"></script>
+  <script src="js/profile.js?v=1.1"></script>
+
+  <!-- 4. Панель управления и редактор текстов -->
+  <script src="js/admin.js?v=1.1"></script>
+
+  <!-- 5. Точка входа, оркестрация экранов и старт приложения -->
+  <script src="js/app.js?v=1.1"></script>
 </body>
 </html>
