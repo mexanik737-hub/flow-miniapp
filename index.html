@@ -1958,6 +1958,8 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     let popQty = 1;
     let selectedGroupPack = "";
     let selectedGroupVariant = "";
+    let selectedGroupHeight = "";
+    let selectedGroupColor = "";
 
     let orderDelType = 'delivery';
     let orderRecType = 'self';
@@ -2220,7 +2222,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           if (cfg.store_lat && cfg.store_lon) {
             const mapIframe = document.getElementById('yandex-map-iframe');
             if (mapIframe) {
-              mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=cfg.storelon%2C{cfg.store_lat}&z=16&pt=cfg.storelon,{cfg.store_lat},pm2rdm`;
+              mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
             }
           }
     
@@ -2924,16 +2926,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function quickAdd(id) {
       const item = catalog.find(i => String(i.id) === String(id));
       if (!item || !item.is_active) return;
-
-      let chosenVar = item.variant || "";
-      if (chosenVar.includes('/')) {
-        chosenVar = chosenVar.split('/')[0].trim();
-      }
-
-      const cartKey = `${id}:::${chosenVar}`;
+    
+      const cartKey = `${item.id}:::${item.height || ''}:::${item.color || ''}`;
       cart[cartKey] = (cart[cartKey] || 0) + 1;
       cartAssemblyItems[cartKey] = true;
-
+    
       updateCartUI();
       updateProductCardAction(id);
       toast("Добавлено в заказ");
@@ -3714,7 +3711,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     
       try {
         const cleanUid = String(userId).trim();
-        const res = await fetch(`APIURL?action=getorregisteruser&userid={encodeURIComponent(cleanUid)}`);
+        const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${encodeURIComponent(cleanUid)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const user = await res.json();
     
@@ -3752,17 +3749,17 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     async function submitRegistration() {
       const name = document.getElementById('reg-name').value.trim() || tgFirstName;
       const phone = document.getElementById('reg-phone').value.trim();
-
+    
       if (!phone || phone.length < 17) {
         toast("Введите номер полностью: 8 (***) ***-**-**");
         return;
       }
-
+    
       toast("Сохранение профиля...");
       try {
         const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
         currentUser = await res.json();
-        isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser.is_admin === true || String(currentUser.is_admin).toUpperCase() === 'TRUE');
+        isAdmin = (currentUser.is_admin === true || String(currentUser.is_admin).toUpperCase() === 'TRUE');
         localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
         document.getElementById('reg-modal').classList.remove('open');
         renderProfileUI();
@@ -3804,7 +3801,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>';
           return;
         }
-
+    
         container.innerHTML = orders.map(ord => {
           let badgeCls = 'st-await-pay';
           if (ord.status.includes('Собирается')) badgeCls = 'st-building';
@@ -3812,10 +3809,10 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           else if (ord.status.includes('Завершен')) badgeCls = 'st-completed';
           else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
           else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
-
+    
           const isAwaitingPay = (ord.status === 'Ожидает оплаты');
           const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
-
+    
           let timerCardBadge = "";
           if (isAwaitingPay) {
             const createdTs = parseOrderDateToTs(ord.date_time);
@@ -3826,7 +3823,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
               timerCardBadge = `⏳ Осталось: ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
             }
           }
-
+    
           return `
             <div class="box-card" style="margin-bottom:8px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -3834,10 +3831,14 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
                 <span class="status-badge ${badgeCls}">${ord.status}</span>
               </div>
               <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
-                ${ord.items.map(i => {
-                  const varInfo = i.variant ? ` (${i.variant})` : '';
+                ${(ord.items || []).map(i => {
+                  const specParts = [];
+                  if (i.unit) specParts.push(`[${i.unit}]`);
+                  if (i.height) specParts.push(i.height);
+                  if (i.color) specParts.push(i.color);
+                  const specText = specParts.length ? ` ${specParts.join(' ')}` : (i.variant ? ` (${i.variant})` : '');
                   const packTag = i.in_bouquet ? ' <b>[в букет]</b>' : '';
-                  return `• ${i.title}${varInfo} × ${i.qty}${packTag}`;
+                  return `• ${i.title}${specText} × ${i.qty || i.count || 1}${packTag}`;
                 }).join('<br>')}
               </div>
               ${isAwaitingPay ? `
@@ -3909,7 +3910,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function openYandexRoute() {
       const lat = parseFloat(SERVER_CONFIG.store_lat) || 55.966987;
       const lon = parseFloat(SERVER_CONFIG.store_lon) || 37.151059;
-      const routeUrl = `https://yandex.ru/maps/?rtext=~lat,{lon}&rtt=auto`;
+      const routeUrl = `https://yandex.ru/maps/?rtext=~${lat},${lon}&rtt=auto`;
     
       if (tg && tg.openLink) {
         tg.openLink(routeUrl);
@@ -3976,7 +3977,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       container.innerHTML = filtered.map(ord => {
         const isAwaiting = (ord.status === 'Ожидает оплаты' || ord.status === 'Ожидает подтверждения оплаты');
         const isAssembly = (ord.status === 'Ожидает согласования упаковки');
-        
+    
         let deliveryCostText = '0 ₽ (Самовывоз)';
         if (ord.delivery_type === 'delivery') {
           if (ord.delivery_cost !== undefined && ord.delivery_cost !== null && !isNaN(Number(ord.delivery_cost))) {
@@ -3988,9 +3989,13 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         }
     
         const itemsListText = (ord.items || []).map(i => {
-          const varInfo = i.variant ? ` (${i.variant})` : '';
+          const specParts = [];
+          if (i.unit) specParts.push(`[${i.unit}]`);
+          if (i.height) specParts.push(i.height);
+          if (i.color) specParts.push(i.color);
+          const specText = specParts.length ? ` ${specParts.join(' ')}` : (i.variant ? ` (${i.variant})` : '');
           const bqTag = i.in_bouquet ? ' [в букет]' : '';
-          return `• ${i.title}${varInfo} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
+          return `• ${i.title}${specText} × ${i.qty || i.count || 1} шт. = ${i.price * (i.qty || i.count || 1)} ₽${bqTag}`;
         }).join('<br>');
     
         const safeAddr = (ord.address || "").replace(/'/g, "\\'");
@@ -4598,16 +4603,19 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       document.getElementById('prod-edit-title').innerText = "Новый одиночный товар";
       document.getElementById('prod-edit-name').value = "";
       document.getElementById('prod-edit-unit').value = "1 шт.";
-      document.getElementById('prod-edit-variant').value = "";
+      const heightInput = document.getElementById('prod-edit-height');
+      if (heightInput) heightInput.value = "";
+      const colorInput = document.getElementById('prod-edit-color');
+      if (colorInput) colorInput.value = "";
       document.getElementById('prod-edit-cat').value = "Цветы";
       document.getElementById('prod-edit-price').value = "";
       document.getElementById('prod-edit-desc').value = "";
-      
+    
       const actEl = document.getElementById('prod-edit-active-ui');
       actEl.classList.add('checked'); actEl.innerText = '✓';
       const popEl = document.getElementById('prod-edit-popular-ui');
       popEl.classList.remove('checked'); popEl.innerText = '';
-
+    
       renderProductEditorPhotos("");
       document.getElementById('product-editor-modal').classList.add('open');
     }
@@ -4654,7 +4662,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
         category: document.getElementById('prod-edit-cat').value.trim(),
         price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
         description: document.getElementById('prod-edit-desc').value.trim(),
-        is_popular: document.getElementById('prod-edit-popular').classList.contains('checked')
+        is_popular: document.getElementById('prod-edit-popular-ui').classList.contains('checked')
       };
       await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
       toast("Каталог обновлен");
@@ -4677,7 +4685,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     async function loadRootClients() {
       const container = document.getElementById('root-clients-container');
       try {
-        const res = await fetch(`APIURL?action=adminclients&userid={userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+        const res = await fetch(`${API_URL}?action=admin_clients&user_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
         const data = await res.json();
         if (Array.isArray(data)) {
           allRootClients = data;
@@ -5063,14 +5071,18 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     </div>
   </div>
   <div class="modal-overlay" id="notifications-modal">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <div class="modal-title">Уведомления салона</div>
-        <button class="close-btn" onclick="closeNotificationsModal()">✕</button>
-      </div>
-      <div id="notifications-list-container" style="max-height:360px; overflow-y:auto; margin-bottom:12px;"></div>
-      <button class="btn-metro btn-secondary" onclick="markAllNotificationsAsRead()">Прочитать все</button>
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title">Уведомления салона</div>
+      <button class="close-btn" onclick="closeNotificationsModal()">✕</button>
+    </div>
+    <div id="notifications-list-container" style="max-height:360px; overflow-y:auto; margin-bottom:12px;"></div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button class="btn-metro" onclick="markAllNotificationsAsRead()">Прочитать все</button>
+      <button class="btn-metro btn-secondary" onclick="closeNotificationsModal()">Закрыть</button>
     </div>
   </div>
+</div>
+
 </body>
 </html>
