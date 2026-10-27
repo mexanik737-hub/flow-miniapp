@@ -1,52 +1,156 @@
-// Состояние формы оформления заказа
-let orderDelType = 'delivery';
-let orderRecType = 'self';
-let currentDeliveryCost = 400;
-let currentFinalOrderAmount = 0;
-let ordSaveAddrChecked = false;
-let activePaymentOrderId = null;
-let paymentTimerInterval = null;
-let suggestDebounceTimer = null;
+function generateDynamicDeliveryTimeSlots() {
+  const now = new Date();
+  const curHour = now.getHours();
+  const curMin = now.getMinutes();
+  const optionsBox = document.getElementById('time-select-options');
+  const displaySpan = document.getElementById('selected-time-display');
 
-function openOrderModal() {
-  if (!Object.keys(cart).length) {
-    toast("Корзина пуста");
+  let slots = [];
+
+  if (curHour < 19) {
+    if (curHour >= 9 && curHour < 18 || (curHour === 18 && curMin <= 30)) {
+      slots.push({ label: "Как можно скорее (в течение 1–2 часов с учетом сборки)", val: "Как можно скорее (1-2 часа)" });
+    }
+
+    if (curHour < 12) {
+      slots.push({ label: "Сегодня: 14:00 – 17:00", val: "Сегодня 14:00 - 17:00" });
+      slots.push({ label: "Сегодня: 17:00 – 20:00", val: "Сегодня 17:00 - 20:00" });
+    } else if (curHour < 15) {
+      slots.push({ label: "Сегодня: 15:00 – 18:00", val: "Сегодня 15:00 - 18:00" });
+      slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
+    } else if (curHour < 17) {
+      slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
+    }
+  }
+
+  slots.push({ label: "Завтра: 11:00 – 14:00", val: "Завтра 11:00 - 14:00" });
+  slots.push({ label: "Завтра: 14:00 – 17:00", val: "Завтра 14:00 - 17:00" });
+  slots.push({ label: "Завтра: 17:00 – 20:00", val: "Завтра 17:00 - 20:00" });
+  slots.push({ label: "Завтра: в интервале с 10:00 до 20:00", val: "Завтра 10:00 - 20:00" });
+
+  displaySpan.innerText = slots[0].label;
+  optionsBox.innerHTML = slots.map(s => `
+    <div class="custom-select-option" onclick="selectDeliveryTime('${s.label}')">${s.label}</div>
+  `).join('');
+}
+
+function selectDeliveryTime(val) {
+  document.getElementById('selected-time-display').innerText = val;
+  document.getElementById('time-select-box').classList.remove('open');
+}
+
+function onAddressInput(query) {
+  clearTimeout(suggestDebounceTimer);
+  const box = document.getElementById('ord-suggest-list');
+  if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+
+  suggestDebounceTimer = setTimeout(async () => {
+    try {
+      const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Token " + (SERVER_CONFIG.dadata_token || "")
+        },
+        body: JSON.stringify({
+          query: query,
+          locations: [{ region: "Москва" }, { region: "Московская" }],
+          count: 6
+        })
+      });
+      const data = await res.json();
+      const items = data.suggestions || [];
+      if (!items.length) { box.style.display = 'none'; return; }
+      box.innerHTML = items.map((s, idx) => `
+        <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
+      `).join('');
+      box.style.display = 'block';
+      window.lastSuggestions = items;
+    } catch (e) {}
+  }, 250);
+}
+
+function selectSuggestion(idx) {
+  const s = window.lastSuggestions[idx];
+  if (!s) return;
+
+  document.getElementById('ord-suggest-input').value = s.value;
+  document.getElementById('ord-suggest-list').style.display = 'none';
+  selectedGeoAddress = s;
+
+  const lat = parseFloat(s.data.geo_lat);
+  const lon = parseFloat(s.data.geo_lon);
+
+  if (!lat || !lon) {
+    document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома для расчета доставки`;
+    currentDeliveryCost = 400;
+    recalcOrderFinalTotal();
     return;
   }
 
-  setDeliveryType('delivery');
-  setRecipientType('self');
-  generateDynamicDeliveryTimeSlots();
+  const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, lat, lon);
+  const roadDist = straightDist * 1.25;
+  currentDistanceKm = roadDist;
 
-  const savedContainer = document.getElementById('order-saved-address-container');
-  const savedPills = document.getElementById('order-saved-address-pills');
-  if (typeof savedAddresses !== 'undefined' && savedAddresses && savedAddresses.length > 0) {
-    savedContainer.style.display = 'block';
-    savedPills.innerHTML = savedAddresses.map((a, idx) => `
-      <div class="addr-pill" onclick="applySavedAddressToOrder(${idx})">
-        ${a.label || 'Адрес ' + (idx + 1)}: ${a.address.split(',')[0]}
-      </div>
-    `).join('');
+  if (roadDist <= 2.0) {
+    currentDeliveryCost = 400;
   } else {
-    savedContainer.style.display = 'none';
+    currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
   }
 
+  document.getElementById('delivery-calc-badge').innerHTML = 
+    `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
+
+  recalcOrderFinalTotal();
+}
+
+function recalcOrderFinalTotal() {
+  const delivery = orderDelType === 'delivery' ? currentDeliveryCost : 0;
+  currentFinalOrderAmount = currentFlowersSubtotal + delivery;
+
+  document.getElementById('order-subtotal-val').innerText = `${currentFlowersSubtotal} ₽`;
+  document.getElementById('order-delivery-val').innerText = `${delivery} ₽`;
+  document.getElementById('order-final-val').innerText = `${currentFinalOrderAmount} ₽`;
+}
+
+function openOrderModal() {
+  generateDynamicDeliveryTimeSlots();
+  const savedBox = document.getElementById('order-saved-address-container');
+  const pillsBox = document.getElementById('order-saved-address-pills');
+  if (savedAddresses && savedAddresses.length > 0) {
+    pillsBox.innerHTML = savedAddresses.map((a, idx) => `
+      <div class="addr-pill" onclick="applySavedAddressToOrder(${idx}, this)">🏠 ${a.label}</div>
+    `).join('');
+    savedBox.style.display = 'block';
+  } else {
+    savedBox.style.display = 'none';
+  }
   recalcOrderFinalTotal();
   document.getElementById('order-modal').classList.add('open');
 }
 
-function closeOrderModal() {
-  document.getElementById('order-modal').classList.remove('open');
+function closeOrderModal() { document.getElementById('order-modal').classList.remove('open'); }
+
+function applySavedAddressToOrder(idx, btn) {
+  document.querySelectorAll('.addr-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+
+  const a = savedAddresses[idx];
+  document.getElementById('ord-suggest-input').value = a.address;
+  document.getElementById('ord-entrance').value = a.entrance || '';
+  document.getElementById('ord-floor').value = a.floor || '';
+  document.getElementById('ord-apt').value = a.apt || '';
+  document.getElementById('ord-intercom').value = a.intercom || '';
+  onAddressInput(a.address);
 }
 
 function setDeliveryType(type) {
   orderDelType = type;
   document.getElementById('btn-del').classList.toggle('active', type === 'delivery');
   document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
-
-  document.getElementById('delivery-extra-fields').style.display = (type === 'delivery') ? 'block' : 'none';
-  document.getElementById('pickup-extra-fields').style.display = (type === 'pickup') ? 'block' : 'none';
-
+  document.getElementById('delivery-extra-fields').style.display = type === 'delivery' ? 'block' : 'none';
+  document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
   recalcOrderFinalTotal();
 }
 
@@ -54,236 +158,110 @@ function setRecipientType(type) {
   orderRecType = type;
   document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
   document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
-  document.getElementById('other-rec-fields').style.display = (type === 'other') ? 'block' : 'none';
-}
-
-function toggleOrderSaveAddressCheckbox() {
-  ordSaveAddrChecked = !ordSaveAddrChecked;
-  const ui = document.getElementById('ord-save-addr-checkbox-ui');
-  if (ui) {
-    ui.classList.toggle('checked', ordSaveAddrChecked);
-    ui.innerText = ordSaveAddrChecked ? '✓' : '';
-  }
-}
-
-function generateDynamicDeliveryTimeSlots() {
-  const optionsBox = document.getElementById('time-select-options');
-  const display = document.getElementById('selected-time-display');
-  if (!optionsBox) return;
-
-  const now = new Date();
-  const currentHour = now.getHours();
-  const slots = [];
-
-  for (let h = 10; h <= 19; h++) {
-    if (h >= currentHour + 1) {
-      slots.push(`Сегодня, ${h}:00 – ${h + 1}:00`);
-    }
-  }
-
-  slots.push("Завтра, 10:00 – 12:00");
-  slots.push("Завтра, 12:00 – 15:00");
-  slots.push("Завтра, 15:00 – 18:00");
-  slots.push("Завтра, 18:00 – 20:00");
-
-  display.innerText = slots[0];
-
-  optionsBox.innerHTML = slots.map(slot => `
-    <div class="custom-select-option" onclick="selectDeliveryTime('${slot}')">${slot}</div>
-  `).join('');
-}
-
-function selectDeliveryTime(slot) {
-  document.getElementById('selected-time-display').innerText = slot;
-  document.getElementById('time-select-box').classList.remove('open');
-}
-
-function onAddressInput(val) {
-  clearTimeout(suggestDebounceTimer);
-  const listEl = document.getElementById('ord-suggest-list');
-
-  if (!val || val.trim().length < 2) {
-    listEl.style.display = 'none';
-    return;
-  }
-
-  suggestDebounceTimer = setTimeout(async () => {
-    try {
-      const token = SERVER_CONFIG.dadata_token;
-      if (!token) return;
-
-      const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": "Token " + token
-        },
-        body: JSON.stringify({
-          query: val,
-          locations: [
-            { kladr_id: "77000000000" },
-            { region: "Московская" }
-          ],
-          count: 5
-        })
-      });
-
-      const data = await res.json();
-      if (!data.suggestions || !data.suggestions.length) {
-        listEl.style.display = 'none';
-        return;
-      }
-
-      listEl.innerHTML = data.suggestions.map((s, idx) => `
-        <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
-      `).join('');
-      listEl.style.display = 'block';
-      window._curOrderSuggestions = data.suggestions;
-    } catch (e) {
-      listEl.style.display = 'none';
-    }
-  }, 250);
-}
-
-function selectSuggestion(idx) {
-  const item = window._curOrderSuggestions?.[idx];
-  if (!item) return;
-
-  const listEl = document.getElementById('ord-suggest-list');
-  const inputEl = document.getElementById('ord-suggest-input');
-  inputEl.value = item.value;
-  listEl.style.display = 'none';
-
-  const lat = item.data?.geo_lat ? parseFloat(item.data.geo_lat) : null;
-  const lon = item.data?.geo_lon ? parseFloat(item.data.geo_lon) : null;
-
-  if (lat && lon) {
-    const storeLat = SERVER_CONFIG.store_lat || 55.966987;
-    const storeLon = SERVER_CONFIG.store_lon || 37.151059;
-    const straightDist = calcHaversineDistance(storeLat, storeLon, lat, lon);
-    const roadDist = straightDist * 1.25;
-
-    let cost = 400;
-    if (roadDist > 2) {
-      cost = 400 + Math.ceil(roadDist - 2) * 45;
-    }
-    cost = Math.min(cost, 1800);
-
-    currentDeliveryCost = cost;
-    const badge = document.getElementById('delivery-calc-badge');
-    if (badge) {
-      badge.innerHTML = `📍 Расстояние: <b>~${roadDist.toFixed(1)} км</b> | Доставка: <b>${cost} ₽</b>`;
-    }
-  }
-
-  recalcOrderFinalTotal();
-}
-
-function recalcOrderFinalTotal() {
-  const delCost = (orderDelType === 'delivery') ? currentDeliveryCost : 0;
-  currentFinalOrderAmount = currentFlowersSubtotal + delCost;
-
-  const subTotalEl = document.getElementById('order-subtotal-val');
-  const delValEl = document.getElementById('order-delivery-val');
-  const finalValEl = document.getElementById('order-final-val');
-
-  if (subTotalEl) subTotalEl.innerText = `${currentFlowersSubtotal} ₽`;
-  if (delValEl) delValEl.innerText = (orderDelType === 'delivery') ? `${delCost} ₽` : '0 ₽ (самовывоз)';
-  if (finalValEl) finalValEl.innerText = `${currentFinalOrderAmount} ₽`;
+  document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
 }
 
 async function submitFinalOrder() {
-  const subtotal = currentFlowersSubtotal;
-  if (subtotal <= 0) {
-    toast("Корзина пуста");
-    return;
-  }
+  const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
 
-  let fullAddress = "";
-  if (orderDelType === 'delivery') {
-    const street = document.getElementById('ord-suggest-input').value.trim();
-    const entrance = document.getElementById('ord-entrance').value.trim();
-    const floor = document.getElementById('ord-floor').value.trim();
-    const apt = document.getElementById('ord-apt').value.trim();
-    const intercom = document.getElementById('ord-intercom').value.trim();
-
-    if (!street || !entrance || !apt) {
-      toast("Заполните адрес: улицу, подъезд и квартиру");
-      return;
-    }
-
-    fullAddress = `${street}, под. ${entrance}, эт. ${floor || '-'}, кв. ${apt}, дом. ${intercom || '-'}`;
-
-    if (ordSaveAddrChecked && typeof syncSavedAddresses === 'function') {
-      syncSavedAddresses({
-        label: "Адрес доставки",
-        address: street,
-        entrance, floor, apt, intercom
+  let orderItems = [];
+  Object.entries(cart).forEach(([cartKey, qty]) => {
+    const [id, selectedVar] = cartKey.split(':::');
+    const item = catalog.find(i => String(i.id) === String(id));
+    if (item) {
+      orderItems.push({
+        id: item.id,
+        title: item.title,
+        variant: selectedVar || "",
+        unit: item.unit || "1 шт.",
+        price: item.price,
+        qty: qty,
+        in_bouquet: needAssembly && !!cartAssemblyItems[cartKey]
       });
     }
-  } else {
-    fullAddress = "Самовывоз: Георгиевский пр-т, 37к2";
-  }
+  });
 
-  let recipientInfo = "Заказчик лично";
+  let recInfo = "";
   if (orderRecType === 'other') {
     const rName = document.getElementById('ord-rec-name').value.trim();
     const rPhone = document.getElementById('ord-rec-phone').value.trim();
-    if (!rName || !rPhone) {
-      toast("Укажите имя и телефон получателя");
+    if (!rName || rPhone.length < 17) {
+      toast("Укажите имя и телефон получателя полностью");
       return;
     }
-    recipientInfo = `${rName} (${rPhone})`;
+    recInfo = `${rName} (${rPhone})`;
   }
 
-  const items = Object.keys(cart).map(k => ({
-    id: cart[k].id,
-    title: cart[k].title,
-    variant: cart[k].variant,
-    unit: cart[k].unit,
-    price: cart[k].price,
-    qty: cart[k].qty,
-    in_bouquet: cartAssemblyItems.has(k)
-  }));
+  let fullAddr = "";
+  let dTime = "";
+  if (orderDelType === 'delivery') {
+    const street = document.getElementById('ord-suggest-input').value.trim();
+    const ent = document.getElementById('ord-entrance').value.trim();
+    const flr = document.getElementById('ord-floor').value.trim();
+    const apt = document.getElementById('ord-apt').value.trim();
+    const intc = document.getElementById('ord-intercom').value.trim();
+    const comm = document.getElementById('ord-comment').value.trim();
 
-  const payload = {
-    action: "create_order",
-    user_id: userId,
-    user_name: currentUser?.name || tgFirstName || "Клиент",
-    user_phone: currentUser?.phone || "",
-    delivery_type: orderDelType,
-    recipient_info: recipientInfo,
-    address: fullAddress,
-    delivery_time: document.getElementById('selected-time-display')?.innerText || "Как можно скорее",
-    shop_comment: document.getElementById('ord-shop-comment')?.value.trim() || "",
-    delivery_cost: (orderDelType === 'delivery') ? currentDeliveryCost : 0,
-    items_json: JSON.stringify(items),
-    total_amount: currentFinalOrderAmount,
-    need_assembly: isAssemblyMode
-  };
+    if (!street) { toast("Укажите улицу и номер дома"); return; }
+    if (!ent || !flr || !apt || !intc) {
+      toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
+      return;
+    }
 
+    fullAddr = `${street}, под. ${ent}, эт. ${flr}, кв. ${apt} (домофон: ${intc})${comm ? ' [курьеру: '+comm+']' : ''}`;
+    dTime = document.getElementById('selected-time-display').innerText;
+
+    if (ordSaveAddrChecked && savedAddresses.length < 3) {
+      savedAddresses.push({ label: "Адрес " + (savedAddresses.length + 1), address: street, entrance: ent, floor: flr, apt: apt, intercom: intc });
+      syncSavedAddresses();
+    }
+  } else {
+    fullAddr = "Самовывоз: Георгиевский пр-т, 37к2";
+    dTime = "Самовывоз (по готовности)";
+  }
+
+  const shopComm = document.getElementById('ord-shop-comment').value.trim();
+
+  toast("Создание заказа...");
   try {
-    toast("Оформление заказа...");
-    const res = await apiPost(payload);
-
-    if (res && res.success) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "create_order",
+        user_id: userId,
+        user_name: currentUser.name,
+        user_phone: currentUser.phone,
+        delivery_type: orderDelType,
+        recipient_info: recInfo,
+        address: fullAddr,
+        delivery_time: dTime,
+        shop_comment: shopComm,
+        delivery_cost: orderDelType === 'delivery' ? currentDeliveryCost : 0,
+        items_json: JSON.stringify(orderItems),
+        total_amount: currentFinalOrderAmount,
+        need_assembly: needAssembly
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
       cart = {};
-      cartAssemblyItems.clear();
+      cartAssemblyItems = {};
       isAssemblyMode = false;
+      document.getElementById('cart-assembly-checkbox-ui').classList.remove('checked');
+      document.getElementById('cart-assembly-checkbox-ui').innerText = '';
       updateCartUI();
+      renderCatalog(filteredCatalog);
       closeOrderModal();
 
-      if (isAssemblyMode || res.status === "Ожидает согласования упаковки") {
-        openAssemblyCallModal(res.order_id);
+      if (needAssembly) {
+        openAssemblyCallModal(data.order_id);
       } else {
-        openPaymentModal(res.order_id, res.total_amount);
+        openPaymentModal(data.order_id, currentFinalOrderAmount, new Date().toISOString());
       }
-    } else {
-      toast("Сбой оформления заказа. Попробуйте снова");
     }
   } catch (e) {
-    toast("Ошибка сети при отправке заказа");
+    toast("Ошибка связи");
   }
 }
 
@@ -297,19 +275,27 @@ function closeAssemblyModal() {
   navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
 }
 
-function openPaymentModal(orderId, amount) {
+function openPaymentModal(orderId, amount, createdAtStr = null) {
   activePaymentOrderId = orderId;
-  document.getElementById('pay-modal-order-id').innerText = `Оплата заказа: ${orderId}`;
+  document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
   document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
-  setPaymentActiveState(true);
-  startPaymentTimer(15 * 60, orderId);
+
+  let durationSec = 15 * 60;
+  if (createdAtStr) {
+    const createdTs = parseOrderDateToTs(createdAtStr);
+    if (createdTs) {
+      const elapsedSec = Math.floor((Date.now() - createdTs) / 1000);
+      durationSec = Math.max(0, (15 * 60) - elapsedSec);
+    }
+  }
+
+  startPaymentTimer(durationSec, orderId);
   document.getElementById('payment-modal').classList.add('open');
 }
 
 function closePaymentModal() {
   clearInterval(paymentTimerInterval);
   document.getElementById('payment-modal').classList.remove('open');
-  navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
 }
 
 function setPaymentActiveState(isActive) {
@@ -355,7 +341,11 @@ function startPaymentTimer(durationSec, orderId) {
     if (display) display.textContent = "00:00";
     setPaymentActiveState(false);
     toast("Время оплаты истекло. Заказ отменен");
-    apiPost({ action: "cancel_order_timeout", order_id: orderId }).catch(() => {});
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
+    }).catch(() => {});
     return;
   }
 
@@ -366,7 +356,7 @@ function startPaymentTimer(durationSec, orderId) {
     let s = parseInt(timer % 60, 10);
     m = m < 10 ? "0" + m : m;
     s = s < 10 ? "0" + s : s;
-    if (display) display.textContent = `${m}:${s}`;
+    if (display) display.textContent = m + ":" + s;
   };
 
   updateDisplay();
@@ -377,8 +367,12 @@ function startPaymentTimer(durationSec, orderId) {
       if (display) display.textContent = "00:00";
       setPaymentActiveState(false);
       toast("Время оплаты истекло. Заказ отменен");
-      apiPost({ action: "cancel_order_timeout", order_id: orderId }).catch(() => {});
-      if (typeof loadUserOrders === 'function') loadUserOrders();
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
+      }).catch(() => {});
+      loadUserOrders();
     } else {
       updateDisplay();
     }
@@ -386,32 +380,23 @@ function startPaymentTimer(durationSec, orderId) {
 }
 
 function copyPaymentAmount() {
-  const txt = document.getElementById('pay-modal-amount').innerText.replace(/[^\d]/g, '');
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(txt);
-    toast(`Сумма ${txt} ₽ скопирована!`);
-  }
+  const txt = String(currentFinalOrderAmount);
+  if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast(`Сумма ${txt} скопирована`); }
 }
 
 async function confirmPaymentByClient() {
   if (!activePaymentOrderId) return;
+  toast("Отправка подтверждения...");
   try {
-    toast("Отправка подтверждения...");
-    const res = await apiPost({ action: "client_paid", order_id: activePaymentOrderId });
-    if (res && res.success) {
-      toast("Уведомление отправлено флористу!");
-      closePaymentModal();
-      if (typeof loadUserOrders === 'function') loadUserOrders();
-    }
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: "client_paid", order_id: activePaymentOrderId })
+    });
+    toast("Оплата отправлена на проверку!");
+    closePaymentModal();
+    navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
   } catch (e) {
-    toast("Ошибка подтверждения оплаты");
+    toast("Сбой отправки");
   }
-}
-
-function openYandexRoute() {
-  const lat = SERVER_CONFIG.store_lat || 55.966987;
-  const lon = SERVER_CONFIG.store_lon || 37.151059;
-  const url = `https://yandex.ru/maps/?rtext=~${lat},${lon}&rtt=auto`;
-  if (tg && tg.openLink) tg.openLink(url);
-  else window.open(url, '_blank');
 }
