@@ -1025,6 +1025,7 @@ body.in-text-edit-mode [data-config-key]:hover {
   outline-color: var(--amber) !important;
 }
 
+/* --- Адаптивный тост без обрезки букв --- */
 #toast {
   position: fixed;
   top: 16px;
@@ -1040,8 +1041,147 @@ body.in-text-edit-mode [data-config-key]:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   opacity: 0;
   pointer-events: none;
-  z-index: 200;
+  z-index: 250;
   transition: all 0.25s ease;
-  white-space: nowrap;
+  width: max-content;
+  max-width: 88vw;
+  word-break: break-word;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
 }
-#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* --- Колокольчик уведомлений в HUD --- */
+.hud-notif-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  padding-right: 4px;
+}
+
+.hud-notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  background: var(--red);
+  border: 1.5px solid var(--card-bg);
+  border-radius: 50%;
+  display: none;
+}
+.hud-notif-badge.active {
+  display: block;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
+}
+
+/* --- Галерея на iOS: исключение вертикального схлопывания + слайдер --- */
+.product-gallery-scroll {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 8px;
+  scrollbar-width: none;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  position: relative;
+  width: 100%;
+}
+.product-gallery-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-slide-img {
+  flex: 0 0 100% !important;
+  width: 100% !important;
+  max-height: 270px;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  scroll-snap-align: start;
+}
+
+/* Бейдж-счетчик текущего фото (например, 2 / 3) */
+.gallery-counter-pill {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  z-index: 5;
+  pointer-events: none;
+  display: none;
+}
+
+/* Карточки в списке уведомлений */
+.notice-card {
+  background: var(--card-inner);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.notice-card:active {
+  transform: scale(0.98);
+}
+.notice-card.unread {
+  border-color: var(--cyan);
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.18);
+}
+
+/* Модалка курьера: изолированные блоки копирования */
+.courier-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-inner);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+.courier-info-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.35;
+  word-break: break-word;
+  flex: 1;
+}
+.courier-copy-btn {
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid var(--border-accent);
+  color: var(--cyan);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.courier-copy-btn:active {
+  transform: scale(0.92);
+}
