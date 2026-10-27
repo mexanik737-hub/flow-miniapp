@@ -1,35 +1,3 @@
-// Состояние каталога и витрины
-let catalog = [];
-let displayCatalog = [];
-let filteredCatalog = [];
-
-let activePopItem = null;
-let popQty = 1;
-let selectedGroupPack = "";
-let selectedGroupVariant = "";
-let selectedFilterCategoryValue = 'Все';
-
-/**
- * Загрузка каталога из Google Таблицы
- */
-async function loadCatalog() {
-  try {
-    catalog = await apiGet('catalog');
-    buildDisplayCatalog();
-    filteredCatalog = [...displayCatalog];
-    setupFilterDropdown();
-    renderCatalog(filteredCatalog);
-    if (typeof populateCatalogDropdown === 'function') {
-      populateCatalogDropdown();
-    }
-  } catch (e) {
-    toast("Ошибка загрузки каталога");
-  }
-}
-
-/**
- * Группировка товаров с одинаковым названием в мастер-карточки
- */
 function buildDisplayCatalog() {
   const groupsMap = {};
   const orderTracker = [];
@@ -72,16 +40,93 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
-/**
- * Отрисовка карточек каталога в сетке
- */
+function setupFilterDropdown() {
+  const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
+  const optionsBox = document.getElementById('filter-cat-options');
+  optionsBox.innerHTML = `
+    <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
+  ` + cats.map(c => `
+    <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
+  `).join('');
+
+  const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
+  const minP = prices.length ? Math.min(...prices) : 100;
+  const maxP = prices.length ? Math.max(...prices) : 10000;
+
+  const rangeEl = document.getElementById('filter-price-range');
+  const numEl = document.getElementById('filter-price-input');
+  rangeEl.min = minP;
+  rangeEl.max = maxP;
+  rangeEl.value = maxP;
+  numEl.value = maxP;
+  document.getElementById('filter-min-label').innerText = `${minP} ₽`;
+  document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
+}
+
+function selectFilterCategory(cat) {
+  selectedFilterCategoryValue = cat;
+  document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
+  document.getElementById('filter-cat-box').classList.remove('open');
+}
+
+function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
+function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
+
+function applyFilters() {
+  const cat = selectedFilterCategoryValue;
+  const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
+
+  filteredCatalog = displayCatalog.filter(item => {
+    const catMatch = (cat === 'Все' || item.category === cat);
+    const priceMatch = (item.price <= maxPrice);
+    return catMatch && priceMatch;
+  });
+
+  renderCatalog(filteredCatalog);
+  document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
+  closeFilterModal();
+  toast(`Найдено позиций: ${filteredCatalog.length}`);
+}
+
+function resetFilters() {
+  selectFilterCategory('Все');
+  const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
+  const maxP = prices.length ? Math.max(...prices) : 10000;
+  document.getElementById('filter-price-range').value = maxP;
+  document.getElementById('filter-price-input').value = maxP;
+  filteredCatalog = [...displayCatalog];
+  renderCatalog(filteredCatalog);
+  document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
+  closeFilterModal();
+}
+
+async function loadCatalog() {
+  try {
+    const res = await fetch(`${API_URL}?action=catalog`);
+    catalog = await res.json();
+    buildDisplayCatalog();
+    filteredCatalog = [...displayCatalog];
+    setupFilterDropdown();
+    renderCatalog(filteredCatalog);
+    if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
+  } catch (e) {
+    toast("Ошибка загрузки каталога");
+  }
+}
+
+function getCartItemQuantity(id) {
+  return Object.entries(cart).reduce((sum, [key, qty]) => {
+    const [itemId] = key.split(':::');
+    return String(itemId) === String(id) ? sum + qty : sum;
+  }, 0);
+}
+
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
-  if (!el) return;
   el.innerHTML = items.map(p => {
     const photos = (p.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
     const firstPhoto = photos[0] || "";
-    const inCartQty = typeof getCartItemQuantity === 'function' ? getCartItemQuantity(p.id) : 0;
+    const inCartQty = getCartItemQuantity(p.id);
     const isHit = p.is_popular;
     const isAvailable = p.is_active;
     const isGroup = p.is_group;
@@ -127,13 +172,10 @@ function renderCatalog(items) {
   }).join('');
 }
 
-/**
- * Обновление кнопок добавления на карточке товара
- */
 function updateProductCardAction(id) {
   const actionEl = document.getElementById(`product-action-${id}`);
   if (!actionEl) return;
-  const inCartQty = typeof getCartItemQuantity === 'function' ? getCartItemQuantity(id) : 0;
+  const inCartQty = getCartItemQuantity(id);
 
   if (inCartQty > 0) {
     actionEl.innerHTML = `
@@ -148,9 +190,6 @@ function updateProductCardAction(id) {
   }
 }
 
-/**
- * Открытие модалки карточки товара / букета
- */
 function openProductModal(id, targetVariant = null, targetUnit = null) {
   let item = null;
   let matchedInGroup = false;
@@ -196,9 +235,6 @@ function openProductModal(id, targetVariant = null, targetUnit = null) {
   document.getElementById('product-modal').classList.add('open');
 }
 
-/**
- * Настройка модалки для одиночного товара без вариаций
- */
 function setupSingleItemPopUI(item) {
   document.getElementById('pop-title').innerText = item.title;
   document.getElementById('pop-cat').innerText = item.category;
@@ -226,9 +262,6 @@ function setupSingleItemPopUI(item) {
   }
 }
 
-/**
- * Настройка модалки для товаров с вариантами через слэш (например: Белые / Желтые)
- */
 function setupSingleItemSlashVariants(item) {
   document.getElementById('pop-pack-block').style.display = 'none';
   const varBlock = document.getElementById('pop-variant-block');
@@ -260,9 +293,6 @@ function selectSingleSlashVariant(v) {
   if (activePopItem) setupSingleItemSlashVariants(activePopItem);
 }
 
-/**
- * Настройка чипсов выбора фасовки и ростовки/оттенка в группе
- */
 function setupGroupVariantChips(group, preferredPack = null, preferredVar = null) {
   const rawPacks = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
   const packs = sortAscendingValues(rawPacks);
@@ -326,9 +356,6 @@ function selectGroupVariant(v) {
   updateSelectedGroupVariantUI();
 }
 
-/**
- * Обновление цены, наличия и фото при клике на чипсы вариаций
- */
 function updateSelectedGroupVariantUI() {
   if (!activePopItem || !activePopItem.is_group) return;
 
@@ -375,9 +402,6 @@ function updateSelectedGroupVariantUI() {
   }
 }
 
-/**
- * Рендеринг горизонтальной ленты фотографий букета
- */
 function renderPopGallery(photosStr) {
   const gallery = document.getElementById('pop-gallery');
   const placeholder = document.getElementById('pop-placeholder');
@@ -394,91 +418,5 @@ function renderPopGallery(photosStr) {
   }
 }
 
-function closeProductModal() {
-  document.getElementById('product-modal').classList.remove('open');
-}
-
-function adjustPopQty(delta) {
-  popQty = Math.max(1, popQty + delta);
-  document.getElementById('pop-qty').innerText = popQty;
-}
-
-/**
- * Инициализация выпадающего меню фильтра категорий
- */
-function setupFilterDropdown() {
-  const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
-  const optionsBox = document.getElementById('filter-cat-options');
-  if (!optionsBox) return;
-
-  optionsBox.innerHTML = `
-    <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
-  ` + cats.map(c => `
-    <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
-  `).join('');
-
-  const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
-  const minP = prices.length ? Math.min(...prices) : 100;
-  const maxP = prices.length ? Math.max(...prices) : 10000;
-
-  const rangeEl = document.getElementById('filter-price-range');
-  const numEl = document.getElementById('filter-price-input');
-  if (rangeEl && numEl) {
-    rangeEl.min = minP;
-    rangeEl.max = maxP;
-    rangeEl.value = maxP;
-    numEl.value = maxP;
-  }
-  const minLbl = document.getElementById('filter-min-label');
-  const maxLbl = document.getElementById('filter-max-label');
-  if (minLbl && maxLbl) {
-    minLbl.innerText = `${minP} ₽`;
-    maxLbl.innerText = `${maxP} ₽`;
-  }
-}
-
-function selectFilterCategory(cat) {
-  selectedFilterCategoryValue = cat;
-  document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
-  document.getElementById('filter-cat-box').classList.remove('open');
-}
-
-function openFilterModal() {
-  document.getElementById('filter-modal').classList.add('open');
-}
-
-function closeFilterModal() {
-  document.getElementById('filter-modal').classList.remove('open');
-}
-
-function applyFilters() {
-  const cat = selectedFilterCategoryValue;
-  const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
-
-  filteredCatalog = displayCatalog.filter(item => {
-    const catMatch = (cat === 'Все' || item.category === cat);
-    const priceMatch = (item.price <= maxPrice);
-    return catMatch && priceMatch;
-  });
-
-  renderCatalog(filteredCatalog);
-  document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
-  closeFilterModal();
-  toast(`Найдено позиций: ${filteredCatalog.length}`);
-}
-
-function resetFilters() {
-  selectFilterCategory('Все');
-  const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
-  const maxP = prices.length ? Math.max(...prices) : 10000;
-  const rangeEl = document.getElementById('filter-price-range');
-  const numEl = document.getElementById('filter-price-input');
-  if (rangeEl && numEl) {
-    rangeEl.value = maxP;
-    numEl.value = maxP;
-  }
-  filteredCatalog = [...displayCatalog];
-  renderCatalog(filteredCatalog);
-  document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
-  closeFilterModal();
-}
+function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
+function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
