@@ -2546,6 +2546,10 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     function updateProductCardAction(id) {
+      if (String(id).startsWith('group_')) {
+        return;
+      }
+    
       const actionEl = document.getElementById(`product-action-${id}`);
       if (!actionEl) return;
       const inCartQty = getCartItemQuantity(id);
@@ -4137,20 +4141,26 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       const optionsBox = document.getElementById('add-item-catalog-options');
       if (!optionsBox) return;
       optionsBox.innerHTML = catalog.map(c => {
-        const varInfo = c.variant ? ` (${c.variant})` : '';
+        const specParts = [];
+        if (c.height) specParts.push(c.height);
+        if (c.color) specParts.push(c.color);
+        const varInfo = specParts.length ? ` (${specParts.join(', ')})` : '';
         return `
           <div class="custom-select-option" onclick="selectItemToAddToOrder('${c.id}')">
-            ${c.title}${varInfo} [${c.unit}] — ${c.price} ₽
+            ${c.title}${varInfo} [${c.unit || '1 шт.'}] — ${c.price} ₽
           </div>
         `;
       }).join('');
     }
-
+    
     function selectItemToAddToOrder(cid) {
       tempSelectedCatalogIdToAdd = cid;
       const c = catalog.find(i => String(i.id) === String(cid));
       if (c) {
-        const varInfo = c.variant ? ` (${c.variant})` : '';
+        const specParts = [];
+        if (c.height) specParts.push(c.height);
+        if (c.color) specParts.push(c.color);
+        const varInfo = specParts.length ? ` (${specParts.join(', ')})` : '';
         document.getElementById('add-item-catalog-display').innerText = `${c.title}${varInfo} — ${c.price} ₽`;
       }
       document.getElementById('add-item-catalog-box').classList.remove('open');
@@ -4676,23 +4686,48 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function closeProductEditorModal() { document.getElementById('product-editor-modal').classList.remove('open'); }
     
     async function saveProductEditor() {
+      const isNew = !editingProductId;
       const payload = {
-        action: "admin_update_product",
+        action: isNew ? "admin_add_product" : "admin_update_product",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
         id: editingProductId,
         title: document.getElementById('prod-edit-name').value.trim(),
-        unit: document.getElementById('prod-edit-unit').value.trim(),
+        unit: document.getElementById('prod-edit-unit').value.trim() || '1 шт.',
         height: (document.getElementById('prod-edit-height') ? document.getElementById('prod-edit-height').value : '').trim(),
         color: (document.getElementById('prod-edit-color') ? document.getElementById('prod-edit-color').value : '').trim(),
-        category: document.getElementById('prod-edit-cat').value.trim(),
+        category: document.getElementById('prod-edit-cat').value.trim() || 'Цветы',
         price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
+        photo_url: (document.getElementById('prod-edit-photo') ? document.getElementById('prod-edit-photo').value : '').trim(),
+        is_active: document.getElementById('prod-edit-active-ui').classList.contains('checked'),
         description: document.getElementById('prod-edit-desc').value.trim(),
         is_popular: document.getElementById('prod-edit-popular-ui').classList.contains('checked')
       };
-      await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-      toast("Каталог обновлен");
-      closeProductEditorModal();
-      loadRootCatalog();
-      loadCatalog();
+    
+      if (!payload.title) {
+        toast("Укажите название товара");
+        return;
+      }
+    
+      toast("Сохранение товара...");
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        if (d.success) {
+          toast(isNew ? "Товар добавлен!" : "Каталог обновлен");
+          closeProductEditorModal();
+          loadRootCatalog();
+          loadCatalog();
+        } else {
+          toast(d.error || "Ошибка сохранения");
+        }
+      } catch (e) {
+        toast("Ошибка связи с сервером");
+      }
     }
 
     async function deleteProductRoot(id) {
