@@ -2576,10 +2576,10 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       toast("Удалено из корзины");
     }
 
-    function openProductModal(id, targetVariant = null, targetUnit = null) {
+    function openProductModal(id, targetHeight = null, targetColor = null, targetUnit = null) {
       let item = null;
       let matchedInGroup = false;
-
+    
       const directItem = catalog.find(i => String(i.id) === String(id));
       if (directItem) {
         const titleKey = directItem.title.trim();
@@ -2588,36 +2588,37 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           item = groupParent;
           matchedInGroup = true;
           selectedGroupPack = targetUnit || directItem.unit;
-          selectedGroupVariant = targetVariant || directItem.variant;
+          selectedGroupHeight = targetHeight || directItem.height || "";
+          selectedGroupColor = targetColor || directItem.color || "";
         } else {
           item = directItem;
         }
       } else {
         item = displayCatalog.find(i => String(i.id) === String(id));
       }
-
+    
       if (!item) return;
-
+    
       activePopItem = item;
       popQty = 1;
-
+    
       const variantBox = document.getElementById('pop-variant-box');
       if (item.is_group) {
         variantBox.style.display = 'block';
-        setupGroupVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null);
+        setupGroupVariantChips(
+          item,
+          matchedInGroup ? selectedGroupPack : null,
+          matchedInGroup ? selectedGroupHeight : null,
+          matchedInGroup ? selectedGroupColor : null
+        );
         updateSelectedGroupVariantUI();
       } else {
-        const hasSlashVariants = item.variant && item.variant.includes('/');
-        if (hasSlashVariants) {
-          variantBox.style.display = 'block';
-          setupSingleItemSlashVariants(item);
-        } else {
-          variantBox.style.display = 'none';
-          selectedGroupVariant = item.variant || "";
-          setupSingleItemPopUI(item);
-        }
+        variantBox.style.display = 'none';
+        selectedGroupHeight = item.height || "";
+        selectedGroupColor = item.color || "";
+        setupSingleItemPopUI(item);
       }
-
+    
       document.getElementById('product-modal').classList.add('open');
     }
 
@@ -2628,9 +2629,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
       document.getElementById('pop-price').innerText = item.price + ' ₽';
       document.getElementById('pop-qty').innerText = '1';
-
+    
       renderPopGallery(item.photo_url);
-
+    
       const addBtn = document.getElementById('pop-add-cart-btn');
       const qtyBox = document.getElementById('pop-qty-controls');
       if (!item.is_active) {
@@ -2974,27 +2975,31 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       const container = document.getElementById('cart-items-container');
       let subtotal = 0;
       const entries = Object.entries(cart);
-
+    
       container.innerHTML = entries.map(([cartKey, qty]) => {
-        const [id, selectedVar] = cartKey.split(':::');
+        const [id, height, color] = cartKey.split(':::');
         const item = catalog.find(i => String(i.id) === String(id));
         if (!item) return '';
-
+    
         subtotal += item.price * qty;
         const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
         const thumb = photos[0] || "";
-        const varInfo = selectedVar ? ` (${selectedVar})` : '';
+    
+        const details = [];
+        if (height) details.push(height);
+        if (color) details.push(color);
+        const varInfo = details.length ? ` (${details.join(' • ')})` : '';
         const isChecked = !!cartAssemblyItems[cartKey];
-
+    
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
             <div style="display:flex; align-items:center; gap:8px; max-width:68%;">
               ${isAssemblyMode ? `
                 <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
               ` : ''}
-              <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${selectedVar || ''}', '${item.unit || ''}')">
+              <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal('${item.id}', '${height || ''}', '${color || ''}', '${item.unit || ''}')">
                 <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
-                  ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
+                  ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">💐</div>'}
                 </div>
                 <div>
                   <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}${varInfo}</div>
@@ -3010,7 +3015,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           </div>
         `;
       }).join('');
-
+    
       currentFlowersSubtotal = subtotal;
       document.getElementById('cart-total').innerText = subtotal + ' ₽';
     }
@@ -4172,11 +4177,15 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function renderEditItemsList() {
       const box = document.getElementById('edit-items-list');
       box.innerHTML = tempEditingItems.map((it, idx) => {
-        const varInfo = it.variant ? ` (${it.variant})` : '';
+        const specParts = [];
+        if (it.unit) specParts.push(`[${it.unit}]`);
+        if (it.height) specParts.push(it.height);
+        if (it.color) specParts.push(it.color);
+        const specText = specParts.length ? ` (${specParts.join(', ')})` : '';
         const packTag = it.in_bouquet ? ' <b>[в букет]</b>' : '';
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-            <div>${it.title}${varInfo}${packTag} (${it.price} ₽ × ${it.qty})</div>
+            <div>${it.title}${specText}${packTag} (${it.price} ₽ × ${it.qty})</div>
             <div style="display:flex; gap:4px;">
               <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList(); recalcEditOrderTotalFromInputs();">+</button>
               <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList(); recalcEditOrderTotalFromInputs();">–</button>
@@ -4194,11 +4203,26 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     }
 
     function addItemToCurrentOrder() {
-      if (!tempSelectedCatalogIdToAdd) { toast("Выберите цветок из списка"); return; }
+      if (!tempSelectedCatalogIdToAdd) {
+        toast("Выберите цветок из списка");
+        return;
+      }
       const c = catalog.find(i => String(i.id) === String(tempSelectedCatalogIdToAdd));
       if (!c) return;
       const ex = tempEditingItems.find(i => String(i.id) === String(c.id));
-      if (ex) ex.qty++; else tempEditingItems.push({ id: c.id, title: c.title, variant: c.variant || '', unit: c.unit || '1 шт.', price: c.price, qty: 1 });
+      if (ex) {
+        ex.qty++;
+      } else {
+        tempEditingItems.push({
+          id: c.id,
+          title: c.title,
+          unit: c.unit || '1 шт.',
+          height: c.height || '',
+          color: c.color || '',
+          price: c.price,
+          qty: 1
+        });
+      }
       renderEditItemsList();
       recalcEditOrderTotalFromInputs();
     }
@@ -4393,14 +4417,14 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       const container = document.getElementById('root-catalog-container');
       const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
       allRootCatalog = await res.json();
-
+    
       const groups = {};
       allRootCatalog.forEach(item => {
         const titleKey = item.title.trim();
         if (!groups[titleKey]) groups[titleKey] = [];
         groups[titleKey].push(item);
       });
-
+    
       const rootCards = [];
       Object.keys(groups).forEach(key => {
         const list = groups[key];
@@ -4410,7 +4434,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           rootCards.push({ is_group: false, item: list[0] });
         }
       });
-
+    
       container.innerHTML = rootCards.map(c => {
         if (c.is_group) {
           const activeCount = c.items.filter(i => i.is_active).length;
@@ -4418,7 +4442,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
           const minP = Math.min(...prices);
           const maxP = Math.max(...prices);
           const photoCount = (c.items[0].photo_url ? c.items[0].photo_url.split(',').length : 0);
-
+    
           return `
             <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--cyan);">
               <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -4444,7 +4468,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
                 <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
                 <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
               </div>
-              <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Модификатор: ${it.variant || '—'}</div>
+              <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Ростовка: ${it.height || '—'} | Цвет: ${it.color || '—'}</div>
               <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
               <div style="display:flex; gap:6px;">
                 <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
@@ -4460,24 +4484,24 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
     function convertProductToGroup(id) {
       const it = allRootCatalog.find(i => String(i.id) === String(id));
       if (!it) return;
-
+    
       editingGroupName = it.title;
       document.getElementById('group-edit-title').innerText = `Группа: ${it.title}`;
       document.getElementById('group-edit-name').value = it.title;
       document.getElementById('group-edit-cat').value = it.category;
       document.getElementById('group-edit-desc').value = it.description || "";
-      
+    
       const popEl = document.getElementById('group-edit-popular-ui');
       popEl.classList.toggle('checked', !!it.is_popular);
       popEl.innerText = it.is_popular ? '✓' : '';
-
+    
       renderGroupEditorPhotos(it.photo_url || "");
-
+    
       const tbody = document.getElementById('group-variants-tbody');
       tbody.innerHTML = "";
-      addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", price: it.price, is_active: it.is_active });
-      addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", price: it.price, is_active: true });
-
+      addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", height: it.height || "", color: it.color || "", price: it.price, is_active: it.is_active });
+      addGroupVariantRow({ unit: it.unit || "1 шт.", height: "", color: "", price: it.price, is_active: true });
+    
       document.getElementById('group-editor-modal').classList.add('open');
       toast("Создание группы на базе цветка");
     }
@@ -4488,16 +4512,16 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       document.getElementById('group-edit-name').value = "";
       document.getElementById('group-edit-cat').value = "Цветы";
       document.getElementById('group-edit-desc').value = "";
-      
+    
       const popEl = document.getElementById('group-edit-popular-ui');
       popEl.classList.remove('checked'); popEl.innerText = '';
-      
+    
       renderGroupEditorPhotos("");
-
+    
       const tbody = document.getElementById('group-variants-tbody');
       tbody.innerHTML = "";
-      addGroupVariantRow({ unit: "15 шт.", variant: "50 см", price: 3500, is_active: true });
-      addGroupVariantRow({ unit: "15 шт.", variant: "60 см", price: 4000, is_active: true });
+      addGroupVariantRow({ unit: "15 шт.", height: "50 см", color: "Красный", price: 3500, is_active: true });
+      addGroupVariantRow({ unit: "15 шт.", height: "60 см", color: "Красный", price: 4000, is_active: true });
       document.getElementById('group-editor-modal').classList.add('open');
     }
 
@@ -4650,7 +4674,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBg
       document.getElementById('product-editor-modal').classList.add('open');
     }
     function closeProductEditorModal() { document.getElementById('product-editor-modal').classList.remove('open'); }
-
+    
     async function saveProductEditor() {
       const payload = {
         action: "admin_update_product",
