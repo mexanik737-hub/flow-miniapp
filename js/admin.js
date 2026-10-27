@@ -282,7 +282,7 @@ function openEditItemsModal(orderId) {
   document.getElementById('edit-order-total-input').value = order.total_amount;
 
   renderEditItemsList();
-  populateCatalogDropdown();
+  if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
   document.getElementById('edit-items-modal').classList.add('open');
 }
 
@@ -418,10 +418,6 @@ function openYandexGoDelivery(orderAddress = "") {
   else window.open(url, '_blank');
 }
 
-// ----------------------------------------------------
-// КАТАЛОГ ROOT (ТОВАРЫ И ГРУППЫ)
-// ----------------------------------------------------
-
 async function loadRootCatalog() {
   try {
     toast("Загрузка каталога...");
@@ -517,7 +513,7 @@ async function saveProductEditor() {
     await apiPost(payload);
     closeProductEditorModal();
     loadRootCatalog();
-    loadCatalog();
+    if (typeof loadCatalog === 'function') loadCatalog();
   } catch (e) {
     toast("Ошибка сохранения");
   }
@@ -529,7 +525,7 @@ async function deleteProductRoot(id) {
     toast("Удаление...");
     await apiPost({ action: "admin_delete_product", user_id: userId, admin_passcode: sessionPasscode, id: id });
     loadRootCatalog();
-    loadCatalog();
+    if (typeof loadCatalog === 'function') loadCatalog();
   } catch (e) {
     toast("Ошибка удаления");
   }
@@ -606,13 +602,12 @@ async function saveGroupEditor() {
     await apiPost(payload);
     closeGroupEditorModal();
     loadRootCatalog();
-    loadCatalog();
+    if (typeof loadCatalog === 'function') loadCatalog();
   } catch (e) {
     toast("Ошибка сохранения группы");
   }
 }
 
-// Управление фотографиями в модалках товаров
 function renderProductEditorPhotos() {
   const strip = document.getElementById('prod-photo-strip');
   const input = document.getElementById('prod-edit-photo');
@@ -713,7 +708,6 @@ async function openDriveMediaModal(ctx) {
 }
 
 function closeDriveMediaModal() {
-  document.getElementById('drive-media-modal').classList.remove('remove');
   document.getElementById('drive-media-modal').classList.remove('open');
 }
 
@@ -730,10 +724,6 @@ function selectDrivePhoto(url) {
   closeDriveMediaModal();
   toast("Фото прикреплено");
 }
-
-// ----------------------------------------------------
-// КЛИЕНТЫ И FAQ ROOT
-// ----------------------------------------------------
 
 async function loadRootClients() {
   try {
