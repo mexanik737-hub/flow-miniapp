@@ -1,48 +1,46 @@
-function generateDynamicDeliveryTimeSlots() {
-  const now = new Date();
-  const curHour = now.getHours();
-  const curMin = now.getMinutes();
-  const optionsBox = document.getElementById('time-select-options');
-  const displaySpan = document.getElementById('selected-time-display');
+let orderDelType = 'delivery';
+let orderRecType = 'self';
+let ordSaveAddrChecked = false;
 
-  let slots = [];
+let selectedGeoAddress = null;
+let currentDeliveryCost = 0;
+let currentFinalOrderAmount = 0;
+let activePaymentOrderId = null;
+let paymentTimerInterval = null;
+let suggestDebounceTimer = null;
 
-  if (curHour < 19) {
-    if (curHour >= 9 && curHour < 18 || (curHour === 18 && curMin <= 30)) {
-      slots.push({ label: "Как можно скорее (в течение 1–2 часов с учетом сборки)", val: "Как можно скорее (1-2 часа)" });
-    }
-
-    if (curHour < 12) {
-      slots.push({ label: "Сегодня: 14:00 – 17:00", val: "Сегодня 14:00 - 17:00" });
-      slots.push({ label: "Сегодня: 17:00 – 20:00", val: "Сегодня 17:00 - 20:00" });
-    } else if (curHour < 15) {
-      slots.push({ label: "Сегодня: 15:00 – 18:00", val: "Сегодня 15:00 - 18:00" });
-      slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
-    } else if (curHour < 17) {
-      slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
-    }
-  }
-
-  slots.push({ label: "Завтра: 11:00 – 14:00", val: "Завтра 11:00 - 14:00" });
-  slots.push({ label: "Завтра: 14:00 – 17:00", val: "Завтра 14:00 - 17:00" });
-  slots.push({ label: "Завтра: 17:00 – 20:00", val: "Завтра 17:00 - 20:00" });
-  slots.push({ label: "Завтра: в интервале с 10:00 до 20:00", val: "Завтра 10:00 - 20:00" });
-
-  displaySpan.innerText = slots[0].label;
-  optionsBox.innerHTML = slots.map(s => `
-    <div class="custom-select-option" onclick="selectDeliveryTime('${s.label}')">${s.label}</div>
-  `).join('');
+function toggleOrderSaveAddressCheckbox() {
+  ordSaveAddrChecked = !ordSaveAddrChecked;
+  const el = document.getElementById('ord-save-addr-checkbox-ui');
+  el.classList.toggle('checked', ordSaveAddrChecked);
+  el.innerText = ordSaveAddrChecked ? '✓' : '';
 }
 
-function selectDeliveryTime(val) {
-  document.getElementById('selected-time-display').innerText = val;
-  document.getElementById('time-select-box').classList.remove('open');
+function setDeliveryType(type) {
+  orderDelType = type;
+  document.getElementById('btn-del').classList.toggle('active', type === 'delivery');
+  document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
+  document.getElementById('delivery-extra-fields').style.display = type === 'delivery' ? 'block' : 'none';
+  document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
+  recalcOrderFinalTotal();
+}
+
+function setRecipientType(type) {
+  orderRecType = type;
+  document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
+  document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
+  document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
 }
 
 function onAddressInput(query) {
   clearTimeout(suggestDebounceTimer);
   const box = document.getElementById('ord-suggest-list');
-  if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+  selectedGeoAddress = null; // Сбрасываем выбранную точку при ручном вводе
+
+  if (!query || query.trim().length < 2) {
+    box.style.display = 'none';
+    return;
+  }
 
   suggestDebounceTimer = setTimeout(async () => {
     try {
@@ -71,36 +69,51 @@ function onAddressInput(query) {
   }, 250);
 }
 
+// Выбор подсказки: строгий расчет геопозиции по тарифу 350 ₽ (до 2 км) + 40 ₽/км
 function selectSuggestion(idx) {
   const s = window.lastSuggestions[idx];
   if (!s) return;
 
   document.getElementById('ord-suggest-input').value = s.value;
   document.getElementById('ord-suggest-list').style.display = 'none';
-  selectedGeoAddress = s;
 
   const lat = parseFloat(s.data.geo_lat);
   const lon = parseFloat(s.data.geo_lon);
+  const house = s.data.house;
 
-  if (!lat || !lon) {
-    document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома для расчета доставки`;
-    currentDeliveryCost = 400;
+  // Строгая проверка: выбран ли точный дом
+  if (!house || !lat || !lon) {
+    selectedGeoAddress = null;
+    document.getElementById('delivery-calc-badge').innerHTML = `⚠️ <b>Выберите точный номер дома из списка подсказок</b>`;
+    document.getElementById('delivery-calc-badge').style.borderColor = 'var(--red)';
+    document.getElementById('delivery-calc-badge').style.color = 'var(--red)';
+    currentDeliveryCost = 0;
     recalcOrderFinalTotal();
     return;
   }
 
-  const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, lat, lon);
-  const roadDist = straightDist * 1.25;
-  currentDistanceKm = roadDist;
+  selectedGeoAddress = {
+    value: s.value,
+    lat: lat,
+    lon: lon
+  };
 
+  const storeLat = SERVER_CONFIG.store_lat || 55.966987;
+  const storeLon = SERVER_CONFIG.store_lon || 37.151059;
+  const straightDist = calcHaversineDistance(storeLat, storeLon, lat, lon);
+  const roadDist = straightDist * 1.25;
+
+  // Новый тариф: 350 ₽ базовый (до 2 км) + 40 ₽ за каждый последующий километр
   if (roadDist <= 2.0) {
-    currentDeliveryCost = 400;
+    currentDeliveryCost = 350;
   } else {
-    currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
+    currentDeliveryCost = Math.round(350 + ((roadDist - 2.0) * 40));
   }
 
-  document.getElementById('delivery-calc-badge').innerHTML = 
-    `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
+  const badge = document.getElementById('delivery-calc-badge');
+  badge.style.borderColor = 'var(--border-accent)';
+  badge.style.color = 'var(--cyan)';
+  badge.innerHTML = `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
 
   recalcOrderFinalTotal();
 }
@@ -130,7 +143,9 @@ function openOrderModal() {
   document.getElementById('order-modal').classList.add('open');
 }
 
-function closeOrderModal() { document.getElementById('order-modal').classList.remove('open'); }
+function closeOrderModal() {
+  document.getElementById('order-modal').classList.remove('open');
+}
 
 function applySavedAddressToOrder(idx, btn) {
   document.querySelectorAll('.addr-pill').forEach(p => p.classList.remove('active'));
@@ -142,38 +157,40 @@ function applySavedAddressToOrder(idx, btn) {
   document.getElementById('ord-floor').value = a.floor || '';
   document.getElementById('ord-apt').value = a.apt || '';
   document.getElementById('ord-intercom').value = a.intercom || '';
-  onAddressInput(a.address);
+
+  if (a.lat && a.lon) {
+    selectedGeoAddress = { value: a.address, lat: a.lat, lon: a.lon };
+    const storeLat = SERVER_CONFIG.store_lat || 55.966987;
+    const storeLon = SERVER_CONFIG.store_lon || 37.151059;
+    const straightDist = calcHaversineDistance(storeLat, storeLon, a.lat, a.lon);
+    const roadDist = straightDist * 1.25;
+
+    currentDeliveryCost = (roadDist <= 2.0) ? 350 : Math.round(350 + ((roadDist - 2.0) * 40));
+    const badge = document.getElementById('delivery-calc-badge');
+    badge.style.borderColor = 'var(--border-accent)';
+    badge.style.color = 'var(--cyan)';
+    badge.innerHTML = `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
+    recalcOrderFinalTotal();
+  } else {
+    onAddressInput(a.address);
+  }
 }
 
-function setDeliveryType(type) {
-  orderDelType = type;
-  document.getElementById('btn-del').classList.toggle('active', type === 'delivery');
-  document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
-  document.getElementById('delivery-extra-fields').style.display = type === 'delivery' ? 'block' : 'none';
-  document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
-  recalcOrderFinalTotal();
-}
-
-function setRecipientType(type) {
-  orderRecType = type;
-  document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
-  document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
-  document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
-}
-
+// Оформление заказа со строгой геовалидацией
 async function submitFinalOrder() {
   const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
 
   let orderItems = [];
   Object.entries(cart).forEach(([cartKey, qty]) => {
-    const [id, selectedVar] = cartKey.split(':::');
+    const [id, unit, variant, color] = cartKey.split(':::');
     const item = catalog.find(i => String(i.id) === String(id));
     if (item) {
       orderItems.push({
         id: item.id,
         title: item.title,
-        variant: selectedVar || "",
-        unit: item.unit || "1 шт.",
+        unit: unit || item.unit || "1 шт.",
+        variant: variant || "",
+        color: color || "",
         price: item.price,
         qty: qty,
         in_bouquet: needAssembly && !!cartAssemblyItems[cartKey]
@@ -202,9 +219,13 @@ async function submitFinalOrder() {
     const intc = document.getElementById('ord-intercom').value.trim();
     const comm = document.getElementById('ord-comment').value.trim();
 
-    if (!street) { toast("Укажите улицу и номер дома"); return; }
+    if (!street) { toast("Укажите адрес доставки"); return; }
+    if (!selectedGeoAddress || !selectedGeoAddress.lat || !selectedGeoAddress.lon) {
+      toast("Выберите точный номер дома из выпадающего списка подсказок");
+      return;
+    }
     if (!ent || !flr || !apt || !intc) {
-      toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
+      toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон");
       return;
     }
 
@@ -212,7 +233,16 @@ async function submitFinalOrder() {
     dTime = document.getElementById('selected-time-display').innerText;
 
     if (ordSaveAddrChecked && savedAddresses.length < 3) {
-      savedAddresses.push({ label: "Адрес " + (savedAddresses.length + 1), address: street, entrance: ent, floor: flr, apt: apt, intercom: intc });
+      savedAddresses.push({
+        label: "Адрес " + (savedAddresses.length + 1),
+        address: street,
+        entrance: ent,
+        floor: flr,
+        apt: apt,
+        intercom: intc,
+        lat: selectedGeoAddress.lat,
+        lon: selectedGeoAddress.lon
+      });
       syncSavedAddresses();
     }
   } else {
@@ -230,8 +260,8 @@ async function submitFinalOrder() {
       body: JSON.stringify({
         action: "create_order",
         user_id: userId,
-        user_name: currentUser.name,
-        user_phone: currentUser.phone,
+        user_name: currentUser ? currentUser.name : "Клиент",
+        user_phone: currentUser ? currentUser.phone : "",
         delivery_type: orderDelType,
         recipient_info: recInfo,
         address: fullAddr,
@@ -265,14 +295,14 @@ async function submitFinalOrder() {
   }
 }
 
-function openAssemblyCallModal(orderId) {
-  document.getElementById('asm-modal-order-id').innerText = orderId;
-  document.getElementById('assembly-call-modal').classList.add('open');
-}
-
-function closeAssemblyModal() {
-  document.getElementById('assembly-call-modal').classList.remove('open');
-  navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+// Окно оплаты СБП: копирование фактической суммы, отображаемой в модалке
+function copyPaymentAmount() {
+  const amountEl = document.getElementById('pay-modal-amount');
+  const txt = amountEl ? amountEl.innerText.replace(/[^\d]/g, '') : "";
+  if (txt && navigator.clipboard) {
+    navigator.clipboard.writeText(txt);
+    toast(`Сумма ${txt} скопирована`);
+  }
 }
 
 function openPaymentModal(orderId, amount, createdAtStr = null) {
@@ -298,92 +328,6 @@ function closePaymentModal() {
   document.getElementById('payment-modal').classList.remove('open');
 }
 
-function setPaymentActiveState(isActive) {
-  const sbpBtn = document.getElementById('pay-sbp-btn');
-  const confirmBtn = document.querySelector('#payment-modal button.btn-metro[onclick*="confirmPaymentByClient"]');
-  const timerBox = document.getElementById('pay-timer-box');
-
-  if (!isActive) {
-    if (sbpBtn) {
-      sbpBtn.style.pointerEvents = 'none';
-      sbpBtn.style.opacity = '0.4';
-      sbpBtn.innerText = 'Срок оплаты истёк';
-    }
-    if (confirmBtn) {
-      confirmBtn.disabled = true;
-      confirmBtn.style.opacity = '0.4';
-      confirmBtn.style.cursor = 'not-allowed';
-    }
-    if (timerBox) {
-      timerBox.style.background = 'rgba(239,68,68,0.25)';
-      timerBox.innerHTML = '❌ <b>Заказ отменён (время вышло)</b>';
-    }
-  } else {
-    if (sbpBtn) {
-      sbpBtn.style.pointerEvents = 'auto';
-      sbpBtn.style.opacity = '1';
-      sbpBtn.innerText = '💳 Оплатить через СБП';
-    }
-    if (confirmBtn) {
-      confirmBtn.disabled = false;
-      confirmBtn.style.opacity = '1';
-      confirmBtn.style.cursor = 'pointer';
-    }
-  }
-}
-
-function startPaymentTimer(durationSec, orderId) {
-  clearInterval(paymentTimerInterval);
-  let timer = durationSec;
-  const display = document.getElementById('pay-timer-val');
-
-  if (timer <= 0) {
-    if (display) display.textContent = "00:00";
-    setPaymentActiveState(false);
-    toast("Время оплаты истекло. Заказ отменен");
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
-    }).catch(() => {});
-    return;
-  }
-
-  setPaymentActiveState(true);
-
-  const updateDisplay = () => {
-    let m = parseInt(timer / 60, 10);
-    let s = parseInt(timer % 60, 10);
-    m = m < 10 ? "0" + m : m;
-    s = s < 10 ? "0" + s : s;
-    if (display) display.textContent = m + ":" + s;
-  };
-
-  updateDisplay();
-
-  paymentTimerInterval = setInterval(() => {
-    if (--timer <= 0) {
-      clearInterval(paymentTimerInterval);
-      if (display) display.textContent = "00:00";
-      setPaymentActiveState(false);
-      toast("Время оплаты истекло. Заказ отменен");
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
-      }).catch(() => {});
-      loadUserOrders();
-    } else {
-      updateDisplay();
-    }
-  }, 1000);
-}
-
-function copyPaymentAmount() {
-  const txt = String(currentFinalOrderAmount);
-  if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast(`Сумма ${txt} скопирована`); }
-}
-
 async function confirmPaymentByClient() {
   if (!activePaymentOrderId) return;
   toast("Отправка подтверждения...");
@@ -399,4 +343,40 @@ async function confirmPaymentByClient() {
   } catch (e) {
     toast("Сбой отправки");
   }
+}
+
+function openAssemblyCallModal(orderId) {
+  document.getElementById('asm-modal-order-id').innerText = orderId;
+  document.getElementById('assembly-call-modal').classList.add('open');
+}
+
+function closeAssemblyModal() {
+  document.getElementById('assembly-call-modal').classList.remove('open');
+  navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+}
+
+// Прямой вызов приложения Яндекс Go
+function openYandexGoDelivery(orderAddress = "") {
+  if (orderAddress && navigator.clipboard) {
+    navigator.clipboard.writeText(orderAddress);
+    toast("Адрес скопирован! Открываем Яндекс Go");
+  }
+  const lat = SERVER_CONFIG.store_lat || 55.966987;
+  const lon = SERVER_CONFIG.store_lon || 37.151059;
+  const directAppUrl = `yandexgo://route?start-lat=${lat}&start-lon=${lon}`;
+  const webRedirectUrl = `https://3.redirect.appmetrica.yandex.com/route?start-lat=${lat}&start-lon=${lon}&appmetrica_tracking_id=1178268795219780156`;
+
+  // Попытка открыть нативное приложение, затем переход на редирект
+  window.location.href = directAppUrl;
+  setTimeout(() => {
+    if (tg && tg.openLink) tg.openLink(webRedirectUrl);
+    else window.open(webRedirectUrl, '_blank');
+  }, 400);
+}
+
+// Карточка организации в Яндекс Картах
+function openYandexOrgCard() {
+  const url = SERVER_CONFIG.org_maps_url || "https://yandex.ru/maps/";
+  if (tg && tg.openLink) tg.openLink(url);
+  else window.open(url, '_blank');
 }
