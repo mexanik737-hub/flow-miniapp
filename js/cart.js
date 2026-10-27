@@ -1,61 +1,11 @@
-// Состояние корзины
-let cart = {}; // Ключ: `${id}:::${variant}`
-let isAssemblyMode = false;
-let cartAssemblyItems = new Set();
-let currentFlowersSubtotal = 0;
-
-function getCartItemQuantity(id) {
-  let count = 0;
-  Object.keys(cart).forEach(key => {
-    if (key.split(':::')[0] === String(id)) {
-      count += cart[key].qty;
-    }
-  });
-  return count;
-}
-
-function quickAdd(id) {
-  const item = catalog.find(i => String(i.id) === String(id));
-  if (!item) return;
-
-  const titleKey = item.title.trim();
-  const isPartOfGroup = displayCatalog.some(g => g.is_group && g.title.trim() === titleKey);
-  const hasSlashVariants = item.variant && item.variant.includes('/');
-
-  if (isPartOfGroup || hasSlashVariants) {
-    openProductModal(id);
-    return;
-  }
-
-  const key = `${item.id}:::${item.variant || ''}`;
-  if (!cart[key]) {
-    cart[key] = {
-      id: item.id,
-      title: item.title,
-      price: item.price,
-      unit: item.unit || '1 шт.',
-      variant: item.variant || '',
-      photo_url: item.photo_url || '',
-      qty: 1
-    };
-  } else {
-    cart[key].qty += 1;
-  }
-
-  updateCartUI();
-  updateProductCardAction(item.id);
-  toast(`Добавлено: ${item.title}`);
-}
-
 function addPopToCart() {
   if (!activePopItem) return;
 
-  let targetItem = null;
-  let finalVariant = selectedGroupVariant;
-  let finalUnit = selectedGroupPack;
+  let targetId = activePopItem.id;
+  let finalVariant = selectedGroupVariant || "";
 
   if (activePopItem.is_group) {
-    targetItem = activePopItem.variants.find(v => {
+    const variant = activePopItem.variants.find(v => {
       const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
       let varMatch = false;
       if (!selectedGroupVariant) varMatch = true;
@@ -67,161 +17,134 @@ function addPopToCart() {
       }
       return packMatch && varMatch;
     });
-
-    if (!targetItem) {
-      toast("Выбранная вариация недоступна");
+    if (!variant || !variant.is_active) {
+      toast("Товар отсутствует в наличии");
       return;
     }
+    targetId = variant.id;
   } else {
-    targetItem = activePopItem;
-    finalUnit = targetItem.unit || '1 шт.';
-    if (!finalVariant) finalVariant = targetItem.variant || '';
+    if (!activePopItem.is_active) {
+      toast("Товар отсутствует в наличии");
+      return;
+    }
   }
 
-  const key = `${targetItem.id}:::${finalVariant || ''}`;
-  if (!cart[key]) {
-    cart[key] = {
-      id: targetItem.id,
-      title: targetItem.title,
-      price: targetItem.price,
-      unit: finalUnit,
-      variant: finalVariant,
-      photo_url: targetItem.photo_url || activePopItem.photo_url || '',
-      qty: popQty
-    };
-  } else {
-    cart[key].qty += popQty;
-  }
+  const cartKey = `${targetId}:::${finalVariant}`;
+  cart[cartKey] = (cart[cartKey] || 0) + popQty;
+  cartAssemblyItems[cartKey] = true;
 
   updateCartUI();
-  updateProductCardAction(activePopItem.id);
+  updateProductCardAction(targetId);
   closeProductModal();
-  toast(`Добавлено: ${targetItem.title} (${popQty} шт.)`);
+  toast("Добавлено в заказ");
 }
 
-function modifyCartByKey(key, delta) {
-  if (!cart[key]) return;
-  cart[key].qty += delta;
-  if (cart[key].qty <= 0) {
-    delete cart[key];
-    cartAssemblyItems.delete(key);
+function quickAdd(id) {
+  const item = catalog.find(i => String(i.id) === String(id));
+  if (!item || !item.is_active) return;
+
+  let chosenVar = item.variant || "";
+  if (chosenVar.includes('/')) {
+    chosenVar = chosenVar.split('/')[0].trim();
+  }
+
+  const cartKey = `${id}:::${chosenVar}`;
+  cart[cartKey] = (cart[cartKey] || 0) + 1;
+  cartAssemblyItems[cartKey] = true;
+
+  updateCartUI();
+  updateProductCardAction(id);
+  toast("Добавлено в заказ");
+}
+
+function modifyCartByKey(cartKey, delta) {
+  cart[cartKey] = (cart[cartKey] || 0) + delta;
+  const [itemId] = cartKey.split(':::');
+  if (cart[cartKey] <= 0) {
+    delete cart[cartKey];
+    delete cartAssemblyItems[cartKey];
   }
   updateCartUI();
-  if (typeof renderCatalog === 'function' && filteredCatalog.length) {
-    renderCatalog(filteredCatalog);
-  }
+  updateProductCardAction(itemId);
 }
 
 function removeAllOfItemFromCart(id) {
   Object.keys(cart).forEach(key => {
-    if (key.split(':::')[0] === String(id)) {
+    const [itemId] = key.split(':::');
+    if (String(itemId) === String(id)) {
       delete cart[key];
-      cartAssemblyItems.delete(key);
+      delete cartAssemblyItems[key];
     }
   });
   updateCartUI();
   updateProductCardAction(id);
+  toast("Удалено из корзины");
 }
 
-function toggleCartAssemblyMode() {
-  isAssemblyMode = !isAssemblyMode;
-  const ui = document.getElementById('cart-assembly-checkbox-ui');
-  if (ui) {
-    ui.classList.toggle('checked', isAssemblyMode);
-    ui.innerText = isAssemblyMode ? '✓' : '';
-  }
-
-  if (isAssemblyMode) {
-    Object.keys(cart).forEach(k => cartAssemblyItems.add(k));
-  } else {
-    cartAssemblyItems.clear();
-  }
-  renderCartItems();
-}
-
-function toggleItemAssemblySelection(key) {
-  if (cartAssemblyItems.has(key)) {
-    cartAssemblyItems.delete(key);
-  } else {
-    cartAssemblyItems.add(key);
-  }
+function toggleItemAssemblySelection(cartKey) {
+  cartAssemblyItems[cartKey] = !cartAssemblyItems[cartKey];
   renderCartItems();
 }
 
 function updateCartUI() {
-  const keys = Object.keys(cart);
-  let totalQty = 0;
-  let subtotal = 0;
-
-  keys.forEach(k => {
-    totalQty += cart[k].qty;
-    subtotal += cart[k].price * cart[k].qty;
-  });
-
-  currentFlowersSubtotal = subtotal;
-
-  const counter = document.getElementById('cart-counter');
-  if (counter) counter.innerText = totalQty;
+  const count = Object.values(cart).reduce((a, b) => a + b, 0);
+  document.getElementById('cart-counter').innerText = count;
 
   const checkoutCard = document.getElementById('cart-checkout-card');
-  const cartTotalEl = document.getElementById('cart-total');
+  const entries = Object.entries(cart);
 
-  if (keys.length > 0) {
-    if (checkoutCard) checkoutCard.style.display = 'block';
-    if (cartTotalEl) cartTotalEl.innerText = `${subtotal} ₽`;
-  } else {
-    if (checkoutCard) checkoutCard.style.display = 'none';
-    isAssemblyMode = false;
-    cartAssemblyItems.clear();
-    const ui = document.getElementById('cart-assembly-checkbox-ui');
-    if (ui) {
-      ui.classList.remove('checked');
-      ui.innerText = '';
-    }
+  if (!entries.length) {
+    document.getElementById('cart-items-container').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
+    checkoutCard.style.display = 'none';
+    currentFlowersSubtotal = 0;
+    return;
   }
 
+  checkoutCard.style.display = 'block';
   renderCartItems();
 }
 
 function renderCartItems() {
   const container = document.getElementById('cart-items-container');
-  if (!container) return;
+  let subtotal = 0;
+  const entries = Object.entries(cart);
 
-  const keys = Object.keys(cart);
-  if (!keys.length) {
-    container.innerHTML = `
-      <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;" data-config-key="txt_cart_empty">
-        Корзина пуста
-      </div>
-    `;
-    return;
-  }
+  container.innerHTML = entries.map(([cartKey, qty]) => {
+    const [id, selectedVar] = cartKey.split(':::');
+    const item = catalog.find(i => String(i.id) === String(id));
+    if (!item) return '';
 
-  container.innerHTML = keys.map(k => {
-    const item = cart[k];
-    const isChecked = cartAssemblyItems.has(k);
-    const varText = item.variant ? ` (${item.variant})` : '';
+    subtotal += item.price * qty;
+    const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+    const thumb = photos[0] || "";
+    const varInfo = selectedVar ? ` (${selectedVar})` : '';
+    const isChecked = !!cartAssemblyItems[cartKey];
 
     return `
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
-        ${isAssemblyMode ? `
-          <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:20px; height:20px; font-size:11px;" onclick="toggleItemAssemblySelection('${k}')">
-            ${isChecked ? '✓' : ''}
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:8px; max-width:68%;">
+          ${isAssemblyMode ? `
+            <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
+          ` : ''}
+          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${selectedVar || ''}', '${item.unit || ''}')">
+            <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
+              ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${item.title}${varInfo}</div>
+              <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit || ''} · ${item.price} ₽ × ${qty}</div>
+            </div>
           </div>
-        ` : ''}
-        <div style="flex:1;">
-          <div style="font-size:13px; font-weight:700; color:var(--text);">${item.title}${varText}</div>
-          <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.unit} • ${item.price} ₽/уп.</div>
         </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <button class="qty-btn" onclick="modifyCartByKey('${k}', -1)">–</button>
-          <span style="font-size:14px; font-weight:700; min-width:20px; text-align:center;">${item.qty}</span>
-          <button class="qty-btn" onclick="modifyCartByKey('${k}', 1)">+</button>
-        </div>
-        <div style="font-size:14px; font-weight:800; min-width:60px; text-align:right;">
-          ${item.price * item.qty} ₽
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', -1)">–</button>
+          <span style="font-size:14px; font-weight:700; min-width:18px; text-align:center;">${qty}</span>
+          <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', 1)">+</button>
         </div>
       </div>
     `;
   }).join('');
+
+  currentFlowersSubtotal = subtotal;
+  document.getElementById('cart-total').innerText = subtotal + ' ₽';
 }
