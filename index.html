@@ -32,25 +32,27 @@
  <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
  <div class="app-wrapper">
- <!-- Двойной парящий HUD -->
- <header>
- <div class="header-pills-row">
- <!-- Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для остальных -->
- <div class="hud-pill" onclick="handleHudRootTap()">
- <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
- <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
- </div>
- <!-- Правая пилюля: колокольчик уведомлений + переход в Профиль -->
- <div class="hud-pill hud-user-btn">
-   <div class="hud-notif-btn" onclick="openNotificationsModal(); event.stopPropagation();">
-     <span>🔔</span>
-     <span class="hud-notif-badge" id="hud-notif-badge"></span>
-   </div>
-   <span onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])" id="hud-name">Клиент</span>
- </div>
-
- <!-- Экран 1: Каталог -->
- <section id="screen-catalog" class="screen active">
+  <!-- Двойной парящий HUD -->
+  <header>
+    <div class="header-pills-row">
+      <!-- Левая пилюля: Скрытый вход в Root -->
+      <div class="hud-pill" onclick="handleHudRootTap()">
+        <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
+        <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
+      </div>
+      <!-- Правая пилюля: колокольчик уведомлений + переход в Профиль -->
+      <div class="hud-pill hud-user-btn">
+        <div class="hud-notif-btn" onclick="openNotificationsModal(); event.stopPropagation();">
+          <span>🔔</span>
+          <span class="hud-notif-badge" id="hud-notif-badge"></span>
+        </div>
+        <span onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])" id="hud-name">Клиент</span>
+      </div>
+    </div>
+  </header>
+ 
+  <!-- Экран 1: Каталог -->
+  <section id="screen-catalog" class="screen active">
  <div class="catalog-top-bar">
  <div class="catalog-active-filter-label" id="catalog-filter-summary">Показано: <b>Все</b></div>
  <button class="filter-btn-pill" onclick="openFilterModal()" data-config-key="txt_btn_filters">Фильтры</button>
