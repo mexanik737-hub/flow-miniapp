@@ -1,4 +1,3 @@
-// Функция форматирования названия товара со свойствами: Товар [штук] [см] [цвет]
 function formatFullItemTitle(title, unit, variant, color) {
   const parts = [];
   if (unit && String(unit).trim() && String(unit).trim() !== "1 шт.") {
@@ -13,7 +12,6 @@ function formatFullItemTitle(title, unit, variant, color) {
   return parts.length ? `${title} ${parts.join(' ')}` : title;
 }
 
-// Проверка наличия товаров группы в корзине (для красной точки на кнопке «Выбрать»)
 function isGroupInCart(groupIdOrTitle) {
   const group = displayCatalog.find(g => String(g.id) === String(groupIdOrTitle) || g.title.trim() === String(groupIdOrTitle).trim());
   if (!group || !group.variants) return false;
@@ -89,10 +87,18 @@ function selectFilterCategory(cat) {
   selectedFilterCategoryValue = cat;
   document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
   document.getElementById('filter-cat-box').classList.remove('open');
+  hapticSelection();
 }
 
-function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
-function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
+function openFilterModal() {
+  hapticImpact('light');
+  document.getElementById('filter-modal').classList.add('open');
+}
+
+function closeFilterModal() {
+  hapticImpact('light');
+  document.getElementById('filter-modal').classList.remove('open');
+}
 
 function applyFilters() {
   const cat = selectedFilterCategoryValue;
@@ -104,6 +110,7 @@ function applyFilters() {
     return catMatch && priceMatch;
   });
 
+  hapticImpact('medium');
   renderCatalog(filteredCatalog);
   document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
   closeFilterModal();
@@ -117,6 +124,7 @@ function resetFilters() {
   document.getElementById('filter-price-range').value = maxP;
   document.getElementById('filter-price-input').value = maxP;
   filteredCatalog = [...displayCatalog];
+  hapticImpact('light');
   renderCatalog(filteredCatalog);
   document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
   closeFilterModal();
@@ -130,8 +138,6 @@ async function loadCatalog() {
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
     renderCatalog(filteredCatalog);
-    
-    // Синхронизация сохраненной корзины сразу после появления актуального каталога
     updateCartUI();
 
     if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
@@ -147,7 +153,6 @@ function getCartItemQuantity(id) {
   }, 0);
 }
 
-// Отрисовка каталога с заменой корзинки на «–» при количестве > 1
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
   el.innerHTML = items.map(p => {
@@ -203,9 +208,7 @@ function renderCatalog(items) {
   }).join('');
 }
 
-// Пошаговое уменьшение единицы товара в каталоге
 function quickDecrease(id) {
-  // Находим ключ товара в корзине
   const targetKey = Object.keys(cart).find(k => {
     const [itemId] = k.split(':::');
     return String(itemId) === String(id);
@@ -216,7 +219,6 @@ function quickDecrease(id) {
   }
 }
 
-// Обновление состояния кнопки в карточке товара каталога
 function updateProductCardAction(id) {
   const directItem = catalog.find(i => String(i.id) === String(id));
   if (directItem) {
@@ -258,7 +260,6 @@ function updateProductCardAction(id) {
   }
 }
 
-// Открытие модалки карточки букета со сбором статистики просмотров
 function openProductModal(id, targetVariant = null, targetUnit = null, targetColor = null) {
   let item = null;
   let matchedInGroup = false;
@@ -285,7 +286,8 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   activePopItem = item;
   popQty = 1;
 
-  // Фиксация просмотра товара в статистике
+  hapticImpact('light');
+
   const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
   fetch(API_URL, {
     method: 'POST',
@@ -374,6 +376,7 @@ function selectProductChip(type, value) {
   if (type === 'variant') selectedGroupVariant = value;
   if (type === 'color') selectedGroupColor = value;
 
+  hapticSelection();
   setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
   updateSelectedGroupVariantUI();
 }
@@ -420,7 +423,7 @@ function updateSelectedGroupVariantUI() {
     document.getElementById('pop-price').innerText = `${matchedVariant.price} ₽`;
     document.getElementById('pop-desc').innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
     addBtn.innerText = "Добавить в заказ";
-    addBtn.style.background = "var(--green)";
+    addBtn.style.background = "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)";
     addBtn.style.color = "#fff";
     addBtn.disabled = false;
     qtyBox.style.display = 'flex';
@@ -466,6 +469,7 @@ function renderPopGallery(photosStr) {
 }
 
 function closeProductModal() {
+  hapticImpact('light');
   document.getElementById('product-modal').classList.remove('open');
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
@@ -474,4 +478,5 @@ function closeProductModal() {
 function adjustPopQty(delta) { 
   popQty = Math.max(1, popQty + delta); 
   document.getElementById('pop-qty').innerText = popQty; 
+  hapticImpact('light');
 }
