@@ -764,8 +764,17 @@ header {
   gap: 6px;
   margin-bottom: 14px;
 }
+
+/* Фикс для 6 вкладок Root на смартфонах */
+.root-tabs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
 .toggle-btn {
-  padding: 10px;
+  padding: 10px 4px;
   border-radius: var(--radius-sm);
   background: var(--card-inner);
   border: 1px solid var(--border);
@@ -774,11 +783,12 @@ header {
   font-weight: 700;
   cursor: pointer;
   text-align: center;
+  transition: all 0.15s ease;
 }
 .toggle-btn.active {
-  background: rgba(56, 189, 248, 0.14);
-  border-color: var(--cyan);
-  color: var(--cyan);
+  background: rgba(56, 189, 248, 0.14) !important;
+  border-color: var(--cyan) !important;
+  color: var(--cyan) !important;
 }
 
 .variant-selector-block {
