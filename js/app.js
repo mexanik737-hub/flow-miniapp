@@ -3,10 +3,21 @@ let cachedFaqData = null;
 function navigateTab(screenId, btn) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.dock-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('screen-' + screenId).classList.add('active');
-  if (btn) btn.classList.add('active');
+  
+  const targetScreen = document.getElementById('screen-' + screenId);
+  if (targetScreen) targetScreen.classList.add('active');
+
+  // Если кнопка не передана явно (переход из уведомления/HUD), находим её по индексу
+  if (!btn) {
+    const tabs = document.querySelectorAll('.dock-tab');
+    if (screenId === 'catalog' && tabs[0]) btn = tabs[0];
+    if (screenId === 'cart' && tabs[1]) btn = tabs[1];
+    if (screenId === 'profile' && tabs[2]) btn = tabs[2];
+    if (screenId === 'about' && tabs[3]) btn = tabs[3];
+  }
 
   if (btn) {
+    btn.classList.add('active');
     btn.classList.add('spinning');
     setTimeout(() => btn.classList.remove('spinning'), 450);
   }
@@ -284,7 +295,6 @@ function toggleFaqPill(el) {
   if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 
-// Открытие карточки организации в Яндекс Картах
 function openYandexRoute() {
   const url = SERVER_CONFIG.yandex_org_url || `https://yandex.ru/maps/org/tsvety/18169538769?si=w0t417tmmfzn5zadubrew3uker`;
   if (tg && tg.openLink) tg.openLink(url);
@@ -297,11 +307,107 @@ function contactSupport() {
   else window.open(url, '_blank');
 }
 
-// Инициализация приложения
+// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
+
+async function loadNotifications() {
+  try {
+    const res = await fetch(`${API_URL}?action=get_notifications`);
+    clientNotifications = await res.json();
+    updateNotificationsBadge();
+  } catch (e) {}
+}
+
+function openNotificationsModal() {
+  const container = document.getElementById('notifications-list');
+  if (!container) return;
+
+  if (!clientNotifications.length) {
+    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px 0; font-size:12px;">Новых уведомлений нет</div>';
+  } else {
+    container.innerHTML = clientNotifications.map(n => {
+      const isUnread = !readNotificationIds.includes(String(n.id));
+      const targetTitle = getTabDisplayTitle(n.target_tab);
+
+      return `
+        <div class="notif-card-item ${isUnread ? 'unread' : ''}" onclick="clickNotificationItem('${n.id}', '${n.target_tab}')">
+          <div class="notif-card-header">
+            <span class="notif-card-title">${n.title}</span>
+            <span class="notif-card-time">${n.created_at || ''}</span>
+          </div>
+          <div class="notif-card-text">${n.text}</div>
+          <div class="notif-card-target-pill">Перейти ➔ ${targetTitle}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Фиксация просмотра списка уведомлений в статистику
+    clientNotifications.forEach(n => {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "track_stat", type: "notif_view", ref_id: String(n.id) })
+      }).catch(() => {});
+    });
+  }
+
+  document.getElementById('notifications-modal').classList.add('open');
+}
+
+function closeNotificationsModal() {
+  document.getElementById('notifications-modal').classList.remove('open');
+}
+
+function clickNotificationItem(id, targetTab) {
+  const strId = String(id);
+  if (!readNotificationIds.includes(strId)) {
+    readNotificationIds.push(strId);
+    localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
+    updateNotificationsBadge();
+
+    // Фиксация прочтения в статистике
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId })
+    }).catch(() => {});
+  }
+
+  // Фиксация клика / перехода по уведомлению
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "track_stat", type: "notif_click", ref_id: strId })
+  }).catch(() => {});
+
+  closeNotificationsModal();
+  navigateTab(targetTab || 'catalog', null);
+}
+
+function markAllNotificationsAsRead() {
+  clientNotifications.forEach(n => {
+    const strId = String(n.id);
+    if (!readNotificationIds.includes(strId)) {
+      readNotificationIds.push(strId);
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId })
+      }).catch(() => {});
+    }
+  });
+
+  localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
+  updateNotificationsBadge();
+  openNotificationsModal(); // Перерисовка модалки без синих рамок
+  toast("Все уведомления прочитаны");
+}
+
+// Запуск приложения
 loadCatalog();
 checkUserSession();
 loadConfig();
-updateCartUI(); // Восстановление UI корзины из localStorage
+loadNotifications();
+updateCartUI();
 
 // Фоновое обновление и автопроверка таймаута заказов каждые 3 минуты (180 000 мс)
 setInterval(() => {
@@ -313,4 +419,5 @@ setInterval(() => {
     const secOrders = document.getElementById('root-sec-orders')?.style.display !== 'none';
     if (secOrders) loadRootOrders(false);
   }
+  loadNotifications();
 }, 180000);
