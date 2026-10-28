@@ -1,7 +1,28 @@
+// Функция форматирования названия товара со свойствами: Товар [штук] [см] [цвет]
+function formatFullItemTitle(title, unit, variant, color) {
+  const parts = [];
+  if (unit && String(unit).trim() && String(unit).trim() !== "1 шт.") {
+    parts.push(`[${String(unit).trim()}]`);
+  }
+  if (variant && String(variant).trim()) {
+    parts.push(`[${String(variant).trim()}]`);
+  }
+  if (color && String(color).trim()) {
+    parts.push(`[${String(color).trim()}]`);
+  }
+  return parts.length ? `${title} ${parts.join(' ')}` : title;
+}
+
+// Проверка наличия товаров группы в корзине (для отображения красной точки)
+function isGroupInCart(groupIdOrTitle) {
+  const group = displayCatalog.find(g => String(g.id) === String(groupIdOrTitle) || g.title.trim() === String(groupIdOrTitle).trim());
+  if (!group || !group.variants) return false;
+  return group.variants.some(v => getCartItemQuantity(v.id) > 0);
+}
+
 function buildDisplayCatalog() {
   const groupsMap = {};
   const orderTracker = [];
-
 
   catalog.forEach(item => {
     const titleKey = item.title.trim();
@@ -12,19 +33,16 @@ function buildDisplayCatalog() {
     groupsMap[titleKey].push(item);
   });
 
-
   const rawDisplay = orderTracker.map(titleKey => {
     const items = groupsMap[titleKey];
     if (items.length === 1) {
       return { ...items[0], is_group: false };
     }
 
-
     const activeVariants = items.filter(v => v.is_active);
     const prices = (activeVariants.length ? activeVariants : items).map(v => v.price);
     const minPrice = Math.min(...prices);
     const hasPhoto = items.find(v => v.photo_url);
-
 
     return {
       is_group: true,
@@ -41,10 +59,8 @@ function buildDisplayCatalog() {
     };
   });
 
-
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
-
 
 function setupFilterDropdown() {
   const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
@@ -55,11 +71,9 @@ function setupFilterDropdown() {
     <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
   `).join('');
 
-
   const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
   const minP = prices.length ? Math.min(...prices) : 100;
   const maxP = prices.length ? Math.max(...prices) : 10000;
-
 
   const rangeEl = document.getElementById('filter-price-range');
   const numEl = document.getElementById('filter-price-input');
@@ -71,22 +85,18 @@ function setupFilterDropdown() {
   document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
 }
 
-
 function selectFilterCategory(cat) {
   selectedFilterCategoryValue = cat;
   document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
   document.getElementById('filter-cat-box').classList.remove('open');
 }
 
-
 function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
 function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
-
 
 function applyFilters() {
   const cat = selectedFilterCategoryValue;
   const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
-
 
   filteredCatalog = displayCatalog.filter(item => {
     const catMatch = (cat === 'Все' || item.category === cat);
@@ -94,13 +104,11 @@ function applyFilters() {
     return catMatch && priceMatch;
   });
 
-
   renderCatalog(filteredCatalog);
   document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
   closeFilterModal();
   toast(`Найдено позиций: ${filteredCatalog.length}`);
 }
-
 
 function resetFilters() {
   selectFilterCategory('Все');
@@ -114,7 +122,6 @@ function resetFilters() {
   closeFilterModal();
 }
 
-
 async function loadCatalog() {
   try {
     const res = await fetch(`${API_URL}?action=catalog`);
@@ -123,13 +130,11 @@ async function loadCatalog() {
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
     renderCatalog(filteredCatalog);
-    updateCartUI(); // Восстанавливает индикаторы и корзину из localStorage
     if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
   } catch (e) {
     toast("Ошибка загрузки каталога");
   }
 }
-
 
 function getCartItemQuantity(id) {
   return Object.entries(cart).reduce((sum, [key, qty]) => {
@@ -138,18 +143,7 @@ function getCartItemQuantity(id) {
   }, 0);
 }
 
-
-// Проверка наличия в корзине хотя бы одного элемента из группы
-function isGroupInCart(group) {
-  if (!group || !group.variants) return false;
-  const groupIds = new Set(group.variants.map(v => String(v.id)));
-  return Object.keys(cart).some(key => {
-    const [itemId] = key.split(':::');
-    return groupIds.has(String(itemId));
-  });
-}
-
-
+// Отрисовка каталога с красной точкой на кнопке «Выбрать» для групп
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
   el.innerHTML = items.map(p => {
@@ -159,8 +153,6 @@ function renderCatalog(items) {
     const isHit = p.is_popular;
     const isAvailable = p.is_active;
     const isGroup = p.is_group;
-    const groupHasCartItems = isGroup && isGroupInCart(p);
-
 
     return `
       <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="openProductModal('${p.id}')">
@@ -182,10 +174,7 @@ function renderCatalog(items) {
               <span class="product-price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
               <div id="product-action-${p.id}">
                 ${isGroup ? `
-                  <button class="btn-select-variant" onclick="event.stopPropagation(); openProductModal('${p.id}')">
-                    Выбрать
-                    <span class="group-cart-dot" id="group-dot-${p.id}" style="${groupHasCartItems ? 'display:block;' : 'display:none;'}"></span>
-                  </button>
+                  <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
                 ` : (inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
                     <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${p.id}')">🗑️</button>
@@ -206,23 +195,31 @@ function renderCatalog(items) {
   }).join('');
 }
 
-
+// Обновление состояния кнопки карточки товара (сохраняет «Выбрать» у групп и управляет красной точкой)
 function updateProductCardAction(id) {
-  // Если передан ID группы
-  const group = displayCatalog.find(g => String(g.id) === String(id) || (g.is_group && g.variants?.some(v => String(v.id) === String(id))));
-  if (group && group.is_group) {
-    const dotEl = document.getElementById(`group-dot-${group.id}`);
-    if (dotEl) {
-      dotEl.style.display = isGroupInCart(group) ? 'block' : 'none';
+  const directItem = catalog.find(i => String(i.id) === String(id));
+  if (directItem) {
+    const groupParent = displayCatalog.find(g => g.is_group && g.title.trim() === directItem.title.trim());
+    if (groupParent) {
+      const groupActionEl = document.getElementById(`product-action-${groupParent.id}`);
+      if (groupActionEl) {
+        const hasItems = isGroupInCart(groupParent.id);
+        groupActionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${groupParent.id}')">Выбрать</button>`;
+      }
     }
   }
 
-
   const actionEl = document.getElementById(`product-action-${id}`);
   if (!actionEl) return;
+
+  const groupParent = displayCatalog.find(g => String(g.id) === String(id));
+  if (groupParent && groupParent.is_group) {
+    const hasItems = isGroupInCart(groupParent.id);
+    actionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${groupParent.id}')">Выбрать</button>`;
+    return;
+  }
+
   const inCartQty = getCartItemQuantity(id);
-
-
   if (inCartQty > 0) {
     actionEl.innerHTML = `
       <div class="cart-active-stepper" onclick="event.stopPropagation();">
@@ -236,12 +233,10 @@ function updateProductCardAction(id) {
   }
 }
 
-
-// Открытие модалки карточки товара с поддержкой 3 независимых селекторов
-function openProductModal(id, targetUnit = null, targetVariant = null, targetColor = null) {
+// Открытие модалки карточки с 3 независимыми характеристиками (фасовка, высота, цвет)
+function openProductModal(id, targetVariant = null, targetUnit = null, targetColor = null) {
   let item = null;
   let matchedInGroup = false;
-
 
   const directItem = catalog.find(i => String(i.id) === String(id));
   if (directItem) {
@@ -260,168 +255,129 @@ function openProductModal(id, targetUnit = null, targetVariant = null, targetCol
     item = displayCatalog.find(i => String(i.id) === String(id));
   }
 
-
   if (!item) return;
-
 
   activePopItem = item;
   popQty = 1;
 
-
-  const variantBox = document.getElementById('pop-variant-box');
-  if (item.is_group) {
-    variantBox.style.display = 'block';
-    setupGroupIndependentChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
-    updateSelectedGroupUI();
-  } else {
-    setupSingleItemIndependentChips(item);
-  }
-
+  setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
+  updateSelectedGroupVariantUI();
 
   document.getElementById('product-modal').classList.add('open');
 }
 
-
-// Селекторы для одиночного товара (поддержка слэшей в unit, variant, color)
-function setupSingleItemIndependentChips(item) {
+// Универсальный сбор и рендеринг чипсов фасовки, высоты и цвета (для групп и одиночных товаров со слэшами /)
+function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefColor = null) {
   const variantBox = document.getElementById('pop-variant-box');
-  const packBlock = document.getElementById('pop-pack-block');
-  const varBlock = document.getElementById('pop-variant-block');
-  const colBlock = document.getElementById('pop-color-block');
+  const sourceItems = item.is_group ? item.variants : [item];
 
+  let rawPacks = [];
+  let rawVars = [];
+  let rawColors = [];
 
-  const packs = item.unit && item.unit.includes('/') ? sortAscendingValues(item.unit.split('/').map(s => s.trim()).filter(Boolean)) : (item.unit ? [item.unit.trim()] : []);
-  const vars = item.variant && item.variant.includes('/') ? sortAscendingValues(item.variant.split('/').map(s => s.trim()).filter(Boolean)) : (item.variant ? [item.variant.trim()] : []);
-  const cols = item.color && item.color.includes('/') ? sortAscendingValues(item.color.split('/').map(s => s.trim()).filter(Boolean)) : (item.color ? [item.color.trim()] : []);
-
-
-  const hasMultipleOptions = (packs.length > 1) || (vars.length > 1) || (cols.length > 1);
-  variantBox.style.display = hasMultipleOptions ? 'block' : 'none';
-
-
-  selectedGroupPack = packs[0] || item.unit || "";
-  selectedGroupVariant = vars[0] || item.variant || "";
-  selectedGroupColor = cols[0] || item.color || "";
-
-
-  renderChipBlock(packBlock, 'pop-pack-chips', packs, selectedGroupPack, v => { selectedGroupPack = v; updateSingleItemTitleUI(item); });
-  renderChipBlock(varBlock, 'pop-variant-chips', vars, selectedGroupVariant, v => { selectedGroupVariant = v; updateSingleItemTitleUI(item); });
-  renderChipBlock(colBlock, 'pop-color-chips', cols, selectedGroupColor, v => { selectedGroupColor = v; updateSingleItemTitleUI(item); });
-
-
-  updateSingleItemTitleUI(item);
-  renderPopGallery(item.photo_url);
-
-
-  const addBtn = document.getElementById('pop-add-cart-btn');
-  const qtyBox = document.getElementById('pop-qty-controls');
-  if (!item.is_active) {
-    addBtn.innerText = "Нет в наличии";
-    addBtn.style.background = "var(--card-inner)";
-    addBtn.style.color = "var(--text-muted)";
-    addBtn.disabled = true;
-    qtyBox.style.display = 'none';
-  } else {
-    addBtn.innerText = "Добавить в заказ";
-    addBtn.style.background = "var(--green)";
-    addBtn.style.color = "#fff";
-    addBtn.disabled = false;
-    qtyBox.style.display = 'flex';
-  }
-}
-
-
-function updateSingleItemTitleUI(item) {
-  document.getElementById('pop-title').innerText = formatItemFullName(item.title, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
-  document.getElementById('pop-cat').innerText = item.category;
-  document.getElementById('pop-unit').innerText = selectedGroupPack || item.unit || '1 шт.';
-  document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
-  document.getElementById('pop-price').innerText = item.price + ' ₽';
-  document.getElementById('pop-qty').innerText = '1';
-}
-
-
-// Селекторы для группы товаров
-function setupGroupIndependentChips(group, prefPack, prefVar, prefColor) {
-  const packBlock = document.getElementById('pop-pack-block');
-  const varBlock = document.getElementById('pop-variant-block');
-  const colBlock = document.getElementById('pop-color-block');
-
-
-  let allPacks = [];
-  let allVars = [];
-  let allColors = [];
-
-
-  group.variants.forEach(v => {
-    if (v.unit) allPacks.push(...v.unit.split('/').map(s => s.trim()));
-    if (v.variant) allVars.push(...v.variant.split('/').map(s => s.trim()));
-    if (v.color) allColors.push(...v.color.split('/').map(s => s.trim()));
+  sourceItems.forEach(v => {
+    if (v.unit) {
+      v.unit.split('/').forEach(s => { if (s.trim()) rawPacks.push(s.trim()); });
+    }
+    if (v.variant) {
+      v.variant.split('/').forEach(s => { if (s.trim()) rawVars.push(s.trim()); });
+    }
+    if (v.color) {
+      v.color.split('/').forEach(s => { if (s.trim()) rawColors.push(s.trim()); });
+    }
   });
 
+  const packs = sortAscendingValues(Array.from(new Set(rawPacks)));
+  const vars = sortAscendingValues(Array.from(new Set(rawVars)));
+  const colors = sortAscendingValues(Array.from(new Set(rawColors)));
 
-  const packs = sortAscendingValues(Array.from(new Set(allPacks.filter(Boolean))));
-  const vars = sortAscendingValues(Array.from(new Set(allVars.filter(Boolean))));
-  const cols = sortAscendingValues(Array.from(new Set(allColors.filter(Boolean))));
+  if (prefPack && packs.includes(prefPack)) selectedGroupPack = prefPack;
+  else selectedGroupPack = packs[0] || "";
 
+  if (prefVar && vars.includes(prefVar)) selectedGroupVariant = prefVar;
+  else selectedGroupVariant = vars[0] || "";
 
-  selectedGroupPack = (prefPack && packs.includes(prefPack)) ? prefPack : (packs[0] || "");
-  selectedGroupVariant = (prefVar && vars.includes(prefVar)) ? prefVar : (vars[0] || "");
-  selectedGroupColor = (prefColor && cols.includes(prefColor)) ? prefColor : (cols[0] || "");
+  if (prefColor && colors.includes(prefColor)) selectedGroupColor = prefColor;
+  else selectedGroupColor = colors[0] || "";
 
+  const packBlock = document.getElementById('pop-pack-block');
+  const packWrap = document.getElementById('pop-pack-chips');
+  if (packs.length > 1 || (item.is_group && packs.length >= 1 && packs[0] !== "1 шт.")) {
+    packBlock.style.display = 'block';
+    packWrap.innerHTML = packs.map(p => `
+      <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectProductChip('pack', '${p}')">${p}</div>
+    `).join('');
+  } else {
+    packBlock.style.display = 'none';
+  }
 
-  renderChipBlock(packBlock, 'pop-pack-chips', packs, selectedGroupPack, v => { selectedGroupPack = v; updateSelectedGroupUI(); });
-  renderChipBlock(varBlock, 'pop-variant-chips', vars, selectedGroupVariant, v => { selectedGroupVariant = v; updateSelectedGroupUI(); });
-  renderChipBlock(colBlock, 'pop-color-chips', cols, selectedGroupColor, v => { selectedGroupColor = v; updateSelectedGroupUI(); });
+  const varBlock = document.getElementById('pop-variant-block');
+  const varWrap = document.getElementById('pop-variant-chips');
+  if (vars.length > 0) {
+    varBlock.style.display = 'block';
+    varWrap.innerHTML = vars.map(v => `
+      <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectProductChip('variant', '${v}')">${v}</div>
+    `).join('');
+  } else {
+    varBlock.style.display = 'none';
+  }
+
+  const colorBlock = document.getElementById('pop-color-block');
+  const colorWrap = document.getElementById('pop-color-chips');
+  if (colors.length > 0) {
+    colorBlock.style.display = 'block';
+    colorWrap.innerHTML = colors.map(c => `
+      <div class="variant-chip ${c === selectedGroupColor ? 'active' : ''}" onclick="selectProductChip('color', '${c}')">${c}</div>
+    `).join('');
+  } else {
+    colorBlock.style.display = 'none';
+  }
+
+  const hasAnySelector = (packBlock.style.display === 'block') || (varBlock.style.display === 'block') || (colorBlock.style.display === 'block');
+  variantBox.style.display = hasAnySelector ? 'block' : 'none';
 }
 
+function selectProductChip(type, value) {
+  if (type === 'pack') selectedGroupPack = value;
+  if (type === 'variant') selectedGroupVariant = value;
+  if (type === 'color') selectedGroupColor = value;
 
-function renderChipBlock(blockEl, wrapId, values, selectedVal, onSelect) {
-  if (values.length > 0) {
-    blockEl.style.display = 'block';
-    const wrap = document.getElementById(wrapId);
-    wrap.innerHTML = values.map(val => `
-      <div class="variant-chip ${val === selectedVal ? 'active' : ''}">${val}</div>
-    `).join('');
-    Array.from(wrap.children).forEach((chip, idx) => {
-      chip.onclick = () => {
-        Array.from(wrap.children).forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        onSelect(values[idx]);
-      };
+  setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
+  updateSelectedGroupVariantUI();
+}
+
+// Обновление цены, наличия и описания в модалке товара
+function updateSelectedGroupVariantUI() {
+  if (!activePopItem) return;
+
+  let matchedVariant = null;
+
+  if (activePopItem.is_group) {
+    matchedVariant = activePopItem.variants.find(v => {
+      const packParts = (v.unit || '').split('/').map(s => s.trim());
+      const varParts = (v.variant || '').split('/').map(s => s.trim());
+      const colorParts = (v.color || '').split('/').map(s => s.trim());
+
+      const packMatch = !selectedGroupPack || packParts.includes(selectedGroupPack) || v.unit.trim() === selectedGroupPack.trim();
+      const varMatch = !selectedGroupVariant || varParts.includes(selectedGroupVariant) || v.variant.trim() === selectedGroupVariant.trim();
+      const colorMatch = !selectedGroupColor || colorParts.includes(selectedGroupColor) || v.color.trim() === selectedGroupColor.trim();
+
+      return packMatch && varMatch && colorMatch;
     });
   } else {
-    blockEl.style.display = 'none';
+    matchedVariant = activePopItem;
   }
-}
 
-
-function updateSelectedGroupUI() {
-  if (!activePopItem || !activePopItem.is_group) return;
-
-
-  const variant = activePopItem.variants.find(v => {
-    const packMatch = !selectedGroupPack || v.unit.split('/').map(s => s.trim()).includes(selectedGroupPack);
-    const varMatch = !selectedGroupVariant || v.variant.split('/').map(s => s.trim()).includes(selectedGroupVariant);
-    const colMatch = !selectedGroupColor || (v.color && v.color.split('/').map(s => s.trim()).includes(selectedGroupColor));
-    return packMatch && varMatch && colMatch;
-  }) || activePopItem.variants.find(v => {
-    const packMatch = !selectedGroupPack || v.unit.split('/').map(s => s.trim()).includes(selectedGroupPack);
-    return packMatch;
-  }) || activePopItem.variants[0];
-
-
-  document.getElementById('pop-title').innerText = formatItemFullName(activePopItem.title, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
+  document.getElementById('pop-title').innerText = activePopItem.title;
   document.getElementById('pop-cat').innerText = activePopItem.category;
-  document.getElementById('pop-unit').innerText = selectedGroupPack || activePopItem.unit;
-
+  document.getElementById('pop-unit').innerText = selectedGroupPack || matchedVariant?.unit || activePopItem.unit || '1 шт.';
+  document.getElementById('pop-qty').innerText = popQty;
 
   const addBtn = document.getElementById('pop-add-cart-btn');
   const qtyBox = document.getElementById('pop-qty-controls');
 
-
-  if (!variant || !variant.is_active) {
-    document.getElementById('pop-price').innerText = variant ? `${variant.price} ₽` : "— ₽";
+  if (!matchedVariant || !matchedVariant.is_active) {
+    document.getElementById('pop-price').innerText = matchedVariant ? `${matchedVariant.price} ₽` : "— ₽";
     document.getElementById('pop-desc').innerText = "Данная вариация сейчас отсутствует в наличии.";
     addBtn.innerText = "Нет в наличии";
     addBtn.style.background = "var(--card-inner)";
@@ -430,31 +386,29 @@ function updateSelectedGroupUI() {
     qtyBox.style.display = 'none';
     renderPopGallery(activePopItem.photo_url);
   } else {
-    document.getElementById('pop-price').innerText = `${variant.price} ₽`;
-    document.getElementById('pop-desc').innerText = variant.description || activePopItem.description;
+    document.getElementById('pop-price').innerText = `${matchedVariant.price} ₽`;
+    document.getElementById('pop-desc').innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
     addBtn.innerText = "Добавить в заказ";
     addBtn.style.background = "var(--green)";
     addBtn.style.color = "#fff";
     addBtn.disabled = false;
     qtyBox.style.display = 'flex';
-    renderPopGallery(variant.photo_url || activePopItem.photo_url);
+    renderPopGallery(matchedVariant.photo_url || activePopItem.photo_url);
   }
 }
 
-
+// Счетчик фото галереи с обновлением при скролле
 function renderPopGallery(photosStr) {
   const gallery = document.getElementById('pop-gallery');
   const placeholder = document.getElementById('pop-placeholder');
   const counter = document.getElementById('pop-gallery-counter');
   const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
 
-
   if (photos.length) {
     gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
     gallery.style.display = 'flex';
     gallery.scrollLeft = 0;
     placeholder.style.display = 'none';
-
 
     if (photos.length > 1) {
       if (counter) {
@@ -481,12 +435,13 @@ function renderPopGallery(photosStr) {
   }
 }
 
-
 function closeProductModal() {
   document.getElementById('product-modal').classList.remove('open');
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
 }
 
-
-function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
+function adjustPopQty(delta) { 
+  popQty = Math.max(1, popQty + delta); 
+  document.getElementById('pop-qty').innerText = popQty; 
+}
