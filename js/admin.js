@@ -2,16 +2,22 @@ function switchRootSection(sec) {
   document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
   document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
   document.getElementById('tab-root-clients').classList.toggle('active', sec === 'clients');
+  document.getElementById('tab-root-notifs').classList.toggle('active', sec === 'notifs');
+  document.getElementById('tab-root-stats').classList.toggle('active', sec === 'stats');
   document.getElementById('tab-root-faq').classList.toggle('active', sec === 'faq');
 
   document.getElementById('root-sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
   document.getElementById('root-sec-catalog').style.display = sec === 'catalog' ? 'block' : 'none';
   document.getElementById('root-sec-clients').style.display = sec === 'clients' ? 'block' : 'none';
+  document.getElementById('root-sec-notifs').style.display = sec === 'notifs' ? 'block' : 'none';
+  document.getElementById('root-sec-stats').style.display = sec === 'stats' ? 'block' : 'none';
   document.getElementById('root-sec-faq').style.display = sec === 'faq' ? 'block' : 'none';
 
   if (sec === 'orders') loadRootOrders(true);
   if (sec === 'catalog') loadRootCatalog();
   if (sec === 'clients') loadRootClients();
+  if (sec === 'notifs') loadRootNotifications();
+  if (sec === 'stats') loadRootStats(currentStatsPeriod);
   if (sec === 'faq') loadRootFaq();
 }
 
@@ -113,7 +119,6 @@ function renderRootOrders() {
   }).join('');
 }
 
-// Прямой вызов мобильного приложения Яндекс Go без блокировки внутри Telegram
 function openYandexGoDelivery(orderAddress = "") {
   if (orderAddress && navigator.clipboard) {
     navigator.clipboard.writeText(orderAddress);
@@ -859,6 +864,258 @@ async function deleteUserRoot(uid) {
   });
   loadRootClients();
 }
+
+// ----------------- УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ В ROOT -----------------
+
+function selectRootNotifTab(val, label) {
+  document.getElementById('root-notif-tab').value = val;
+  document.getElementById('root-notif-tab-display').innerText = label;
+  document.getElementById('root-notif-tab-box').classList.remove('open');
+}
+
+async function loadRootNotifications() {
+  const container = document.getElementById('root-notifs-container');
+  try {
+    const res = await fetch(`${API_URL}?action=admin_notifications&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootNotifs = await res.json();
+    renderRootNotifications();
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px 0;">Ошибка загрузки уведомлений</div>';
+  }
+}
+
+function renderRootNotifications() {
+  const container = document.getElementById('root-notifs-container');
+  if (!container) return;
+
+  if (!allRootNotifs.length) {
+    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Рассылок пока нет</div>';
+    return;
+  }
+
+  container.innerHTML = allRootNotifs.map(n => {
+    const targetTitle = getTabDisplayTitle(n.target_tab);
+    return `
+      <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--cyan)' : 'var(--border)'};">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+          <div>
+            <b style="font-size:13px; color:var(--text);">${n.title}</b>
+            <span style="font-size:10px; margin-left:6px; color:${n.is_active ? 'var(--cyan)' : 'var(--text-muted)'}; font-weight:700;">
+              ${n.is_active ? 'АКТИВНО' : 'В АРХИВЕ'}
+            </span>
+          </div>
+          <span style="font-size:10px; color:var(--text-muted);">${n.created_at || ''}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:6px;">${n.text}</div>
+        <div style="font-size:11px; color:var(--cyan); margin-bottom:8px;">Целевой экран: <b>${targetTitle}</b></div>
+
+        <div style="display:flex; gap:6px;">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="toggleNotificationActiveRoot('${n.id}')">
+            ${n.is_active ? 'В архив' : 'Восстановить'}
+          </button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--cyan);" onclick="repeatNotificationRoot('${n.id}')">
+            Повторить TG
+          </button>
+          <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteNotificationRoot('${n.id}')">
+            Удалить
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function submitCreateNotification() {
+  const title = document.getElementById('root-notif-title').value.trim();
+  const text = document.getElementById('root-notif-text').value.trim();
+  const targetTab = document.getElementById('root-notif-tab').value.trim() || 'catalog';
+  const sendTg = document.getElementById('root-notif-tg-ui').classList.contains('checked');
+
+  if (!title || !text) {
+    toast("Заполните заголовок и текст");
+    return;
+  }
+
+  toast("Создание и отправка...");
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_create_notification",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        title: title,
+        text: text,
+        target_tab: targetTab,
+        tg_broadcast: sendTg
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('root-notif-title').value = '';
+      document.getElementById('root-notif-text').value = '';
+      toast(sendTg ? "Уведомление отправлено всем клиентам!" : "Уведомление добавлено в приложение!");
+      loadRootNotifications();
+    }
+  } catch (e) {
+    toast("Ошибка создания уведомления");
+  }
+}
+
+async function toggleNotificationActiveRoot(id) {
+  toast("Обновление...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_toggle_notification",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id
+    })
+  });
+  loadRootNotifications();
+}
+
+async function repeatNotificationRoot(id) {
+  if (!confirm("Повторно отправить это оповещение в Telegram всем покупателям?")) return;
+  toast("Рассылка...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_repeat_notification",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id
+    })
+  });
+  toast("Сообщение отправлено!");
+}
+
+async function deleteNotificationRoot(id) {
+  if (!confirm("Удалить это уведомление и очистить его статистику?")) return;
+  toast("Удаление...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_delete_notification",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id
+    })
+  });
+  loadRootNotifications();
+}
+
+// ----------------- СТАТИСТИКА И ДАШБОРД В ROOT -----------------
+
+function switchStatsPeriod(period) {
+  currentStatsPeriod = period;
+  document.getElementById('tab-stat-today').classList.toggle('active', period === 'today');
+  document.getElementById('tab-stat-7days').classList.toggle('active', period === '7days');
+  document.getElementById('tab-stat-month').classList.toggle('active', period === 'month');
+  renderRootStats();
+}
+
+async function loadRootStats(period = 'today') {
+  currentStatsPeriod = period;
+  try {
+    const res = await fetch(`${API_URL}?action=admin_stats&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    cachedStatsData = await res.json();
+    renderRootStats();
+  } catch (e) {
+    toast("Ошибка загрузки аналитики");
+  }
+}
+
+function renderRootStats() {
+  if (!cachedStatsData) return;
+
+  let totalVisits = 0;
+  let totalOrdersCount = 0;
+  let totalRevenue = 0;
+  let totalCompleted = 0;
+
+  const breakdownBox = document.getElementById('stats-daily-breakdown');
+  const breakdownTbody = document.getElementById('stats-daily-tbody');
+
+  if (currentStatsPeriod === 'today') {
+    breakdownBox.style.display = 'none';
+    totalVisits = cachedStatsData.today?.visits || 0;
+    totalOrdersCount = cachedStatsData.today?.orders?.count || 0;
+    totalRevenue = cachedStatsData.today?.orders?.total || 0;
+    totalCompleted = cachedStatsData.today?.orders?.completed || 0;
+  } else if (currentStatsPeriod === '7days') {
+    breakdownBox.style.display = 'block';
+    const list = cachedStatsData.past7days || [];
+    list.forEach(d => {
+      totalVisits += d.visits;
+      totalOrdersCount += d.orders_count;
+      totalRevenue += d.orders_total;
+      totalCompleted += d.completed_count;
+    });
+
+    breakdownTbody.innerHTML = list.map(d => `
+      <tr>
+        <td><b>${d.date}</b></td>
+        <td>${d.visits}</td>
+        <td>${d.orders_count} (${d.completed_count})</td>
+        <td style="color:var(--green); font-weight:700;">${d.orders_total} ₽</td>
+      </tr>
+    `).join('');
+  } else if (currentStatsPeriod === 'month') {
+    breakdownBox.style.display = 'none';
+    const list = cachedStatsData.past7days || [];
+    list.forEach(d => {
+      totalVisits += d.visits;
+      totalOrdersCount += d.orders_count;
+      totalRevenue += d.orders_total;
+      totalCompleted += d.completed_count;
+    });
+  }
+
+  document.getElementById('stat-val-visits').innerText = totalVisits;
+  document.getElementById('stat-val-orders').innerText = totalOrdersCount;
+  document.getElementById('stat-val-revenue').innerText = `${totalRevenue} ₽`;
+  document.getElementById('stat-val-completed').innerText = totalCompleted;
+
+  // Рендер просмотров букетов
+  const pList = document.getElementById('stats-products-list');
+  const products = cachedStatsData.products_views || [];
+  if (!products.length) {
+    pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о просмотрах</div>';
+  } else {
+    pList.innerHTML = products.slice(0, 15).map((p, idx) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+        <div><b>${idx + 1}.</b> ${p.title}</div>
+        <div style="color:var(--cyan); font-weight:800;">${p.views} просм.</div>
+      </div>
+    `).join('');
+  }
+
+  // Рендер статистики уведомлений
+  const nList = document.getElementById('stats-notifs-list');
+  const notifs = cachedStatsData.notifications_stats || [];
+  if (!notifs.length) {
+    nList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о рассылках</div>';
+  } else {
+    nList.innerHTML = notifs.map(n => `
+      <div style="background:var(--card-inner); border-radius:6px; padding:8px 10px; margin-bottom:6px; border:1px solid var(--border); font-size:12px;">
+        <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${n.title}</div>
+        <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
+          <span>Показов: <b style="color:var(--text);">${n.views}</b></span>
+          <span>Прочтений: <b style="color:var(--cyan);">${n.reads}</b></span>
+          <span>Переходов: <b style="color:var(--green);">${n.clicks}</b></span>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+// ----------------- FAQ (ROOT) -----------------
 
 async function loadRootFaq() {
   const container = document.getElementById('root-faq-container');
