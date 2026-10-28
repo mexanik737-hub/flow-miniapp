@@ -1,9 +1,12 @@
+let selectedSavedAddrSuggestion = null;
+
 function renderSavedAddresses() {
   const box = document.getElementById('saved-addresses-profile-list');
   if (!savedAddresses.length) {
     box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
     return;
   }
+  // Координаты lat/lon скрытно присутствуют в объектах и не отображаются
   box.innerHTML = savedAddresses.map((a, idx) => `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
       <div style="max-width:75%;">
@@ -20,6 +23,7 @@ function renderSavedAddresses() {
 function openAddSavedAddressModal() {
   if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
   editingSavedAddrIdx = null;
+  selectedSavedAddrSuggestion = null;
   document.getElementById('saved-addr-modal-title').innerText = "Новый сохраненный адрес";
   document.getElementById('save-addr-modal-btn').innerText = "Сохранить адрес";
   document.getElementById('new-addr-label').value = "";
@@ -35,6 +39,11 @@ function openEditSavedAddressModal(idx) {
   editingSavedAddrIdx = idx;
   const a = savedAddresses[idx];
   if (!a) return;
+  selectedSavedAddrSuggestion = a.lat && a.lon ? {
+    value: a.address,
+    data: { house: "1", geo_lat: a.lat, geo_lon: a.lon }
+  } : null;
+
   document.getElementById('saved-addr-modal-title').innerText = `Редактирование: ${a.label}`;
   document.getElementById('save-addr-modal-btn').innerText = "Сохранить изменения";
   document.getElementById('new-addr-label').value = a.label || "";
@@ -51,6 +60,8 @@ function closeAddSavedAddressModal() { document.getElementById('add-saved-addr-m
 function onSavedAddrSuggestInput(query) {
   clearTimeout(suggestDebounceTimer);
   const box = document.getElementById('new-addr-suggest-list');
+  selectedSavedAddrSuggestion = null;
+
   if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
 
   suggestDebounceTimer = setTimeout(async () => {
@@ -67,17 +78,25 @@ function onSavedAddrSuggestInput(query) {
       const data = await res.json();
       const items = data.suggestions || [];
       if (!items.length) { box.style.display = 'none'; return; }
-      box.innerHTML = items.map(s => `<div class="suggest-item" onclick="selectSavedAddrItem('${encodeURIComponent(s.value)}')">${s.value}</div>`).join('');
+      box.innerHTML = items.map((s, idx) => `
+        <div class="suggest-item" onclick="selectSavedAddrItem(${idx})">${s.value}</div>
+      `).join('');
       box.style.display = 'block';
+      window.savedAddrSuggestions = items;
     } catch (e) {}
   }, 250);
 }
 
-function selectSavedAddrItem(val) {
-  document.getElementById('new-addr-suggest').value = decodeURIComponent(val);
+// Правка 16: захват данных дома и координат
+function selectSavedAddrItem(idx) {
+  const s = window.savedAddrSuggestions?.[idx];
+  if (!s) return;
+  document.getElementById('new-addr-suggest').value = s.value;
   document.getElementById('new-addr-suggest-list').style.display = 'none';
+  selectedSavedAddrSuggestion = s;
 }
 
+// Правка 16: валидация наличия номера дома и скрытое сохранение координат
 function saveNewAddressFromModal() {
   const label = document.getElementById('new-addr-label').value.trim() || "Дом";
   const addr = document.getElementById('new-addr-suggest').value.trim();
@@ -87,14 +106,26 @@ function saveNewAddressFromModal() {
   const intc = document.getElementById('new-addr-intercom').value.trim();
 
   if (!addr) { toast("Укажите улицу и номер дома"); return; }
+
+  if (!selectedSavedAddrSuggestion || !selectedSavedAddrSuggestion.data?.house || !selectedSavedAddrSuggestion.data?.geo_lat || !selectedSavedAddrSuggestion.data?.geo_lon) {
+    toast("Выберите точный адрес с номером дома из подсказок DaData");
+    return;
+  }
+
   if (!ent || !flr || !apt || !intc) {
     toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
     return;
   }
 
   const addrObj = {
-    label: label, address: addr,
-    entrance: ent, floor: flr, apt: apt, intercom: intc
+    label: label,
+    address: addr,
+    entrance: ent,
+    floor: flr,
+    apt: apt,
+    intercom: intc,
+    lat: selectedSavedAddrSuggestion.data.geo_lat,
+    lon: selectedSavedAddrSuggestion.data.geo_lon
   };
 
   if (editingSavedAddrIdx !== null) {
@@ -132,7 +163,6 @@ function openEditProfileModal() {
   document.getElementById('edit-prof-phone').value = currentUser.phone || '';
   document.getElementById('edit-profile-modal').classList.add('open');
 }
-
 function closeEditProfileModal() { document.getElementById('edit-profile-modal').classList.remove('open'); }
 
 async function saveUserProfileChanges() {
