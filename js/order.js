@@ -42,7 +42,12 @@ function selectDeliveryTime(val) {
 function onAddressInput(query) {
   clearTimeout(suggestDebounceTimer);
   const box = document.getElementById('ord-suggest-list');
-  if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+  selectedGeoAddress = null; // Сбрасываем выбранный проверенный гео-объект при ручном вводе
+
+  if (!query || query.trim().length < 2) { 
+    box.style.display = 'none'; 
+    return; 
+  }
 
   suggestDebounceTimer = setTimeout(async () => {
     try {
@@ -71,32 +76,38 @@ function onAddressInput(query) {
   }, 250);
 }
 
+// Правка 15 и 16: строгая валидация дома и новая формула (350 ₽ до 2 км + 40 ₽/км)
 function selectSuggestion(idx) {
   const s = window.lastSuggestions[idx];
   if (!s) return;
 
   document.getElementById('ord-suggest-input').value = s.value;
   document.getElementById('ord-suggest-list').style.display = 'none';
-  selectedGeoAddress = s;
 
-  const lat = parseFloat(s.data.geo_lat);
-  const lon = parseFloat(s.data.geo_lon);
+  const lat = parseFloat(s.data?.geo_lat);
+  const lon = parseFloat(s.data?.geo_lon);
+  const hasHouse = !!s.data?.house;
 
-  if (!lat || !lon) {
-    document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Уточните номер дома для расчета доставки`;
-    currentDeliveryCost = 400;
+  if (!hasHouse || !lat || !lon) {
+    selectedGeoAddress = null;
+    document.getElementById('delivery-calc-badge').innerHTML = `⚠️ Выберите вариант с точным номером дома из подсказок`;
+    currentDeliveryCost = 0;
     recalcOrderFinalTotal();
+    toast("Выберите точный адрес с номером дома");
     return;
   }
+
+  selectedGeoAddress = s;
 
   const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, lat, lon);
   const roadDist = straightDist * 1.25;
   currentDistanceKm = roadDist;
 
+  // Формула: 350 ₽ до 2 км + 40 ₽ за каждый последующий км
   if (roadDist <= 2.0) {
-    currentDeliveryCost = 400;
+    currentDeliveryCost = 350;
   } else {
-    currentDeliveryCost = Math.round(400 + ((roadDist - 2.0) * 45));
+    currentDeliveryCost = Math.round(350 + ((roadDist - 2.0) * 40));
   }
 
   document.getElementById('delivery-calc-badge').innerHTML = 
@@ -132,6 +143,7 @@ function openOrderModal() {
 
 function closeOrderModal() { document.getElementById('order-modal').classList.remove('open'); }
 
+// Правка 16: мгновенный расчет доставки по скрытым координатам сохраненного адреса
 function applySavedAddressToOrder(idx, btn) {
   document.querySelectorAll('.addr-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
@@ -142,7 +154,29 @@ function applySavedAddressToOrder(idx, btn) {
   document.getElementById('ord-floor').value = a.floor || '';
   document.getElementById('ord-apt').value = a.apt || '';
   document.getElementById('ord-intercom').value = a.intercom || '';
-  onAddressInput(a.address);
+
+  if (a.lat && a.lon) {
+    selectedGeoAddress = {
+      value: a.address,
+      data: { house: "1", geo_lat: a.lat, geo_lon: a.lon }
+    };
+
+    const straightDist = calcHaversineDistance(STORE_LAT, STORE_LON, parseFloat(a.lat), parseFloat(a.lon));
+    const roadDist = straightDist * 1.25;
+    currentDistanceKm = roadDist;
+
+    if (roadDist <= 2.0) {
+      currentDeliveryCost = 350;
+    } else {
+      currentDeliveryCost = Math.round(350 + ((roadDist - 2.0) * 40));
+    }
+
+    document.getElementById('delivery-calc-badge').innerHTML = 
+      `🚚 <b>Доставка: ~${roadDist.toFixed(1)} км — ${currentDeliveryCost} ₽</b>`;
+    recalcOrderFinalTotal();
+  } else {
+    onAddressInput(a.address);
+  }
 }
 
 function setDeliveryType(type) {
@@ -161,6 +195,7 @@ function setRecipientType(type) {
   document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
 }
 
+// Правка 16: жесткий запрет оформления, если номер дома не выбран из DaData
 async function submitFinalOrder() {
   const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
 
@@ -203,6 +238,13 @@ async function submitFinalOrder() {
     const comm = document.getElementById('ord-comment').value.trim();
 
     if (!street) { toast("Укажите улицу и номер дома"); return; }
+
+    // Проверка гео-привязки дома
+    if (!selectedGeoAddress || !selectedGeoAddress.data?.house || !selectedGeoAddress.data?.geo_lat || !selectedGeoAddress.data?.geo_lon) {
+      toast("Выберите точный адрес с номером дома из подсказок DaData");
+      return;
+    }
+
     if (!ent || !flr || !apt || !intc) {
       toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
       return;
@@ -212,7 +254,16 @@ async function submitFinalOrder() {
     dTime = document.getElementById('selected-time-display').innerText;
 
     if (ordSaveAddrChecked && savedAddresses.length < 3) {
-      savedAddresses.push({ label: "Адрес " + (savedAddresses.length + 1), address: street, entrance: ent, floor: flr, apt: apt, intercom: intc });
+      savedAddresses.push({
+        label: "Адрес " + (savedAddresses.length + 1),
+        address: street,
+        entrance: ent,
+        floor: flr,
+        apt: apt,
+        intercom: intc,
+        lat: selectedGeoAddress.data.geo_lat,
+        lon: selectedGeoAddress.data.geo_lon
+      });
       syncSavedAddresses();
     }
   } else {
@@ -379,9 +430,14 @@ function startPaymentTimer(durationSec, orderId) {
   }, 1000);
 }
 
+// Правка 14: копирование точной суммы из открытого окна
 function copyPaymentAmount() {
-  const txt = String(currentFinalOrderAmount);
-  if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast(`Сумма ${txt} скопирована`); }
+  const el = document.getElementById('pay-modal-amount');
+  const txt = el ? el.innerText.replace(/[^\d]/g, '') : '';
+  if (txt && navigator.clipboard) {
+    navigator.clipboard.writeText(txt);
+    toast(`Сумма ${txt} ₽ скопирована`);
+  }
 }
 
 async function confirmPaymentByClient() {
