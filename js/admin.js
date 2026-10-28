@@ -37,6 +37,7 @@ async function loadRootOrders(force = false) {
   } catch (e) {}
 }
 
+// Правка 6: отображение заказчика и фактического получателя отдельными строками
 function renderRootOrders() {
   const container = document.getElementById('root-orders-container');
   const filtered = allRootOrders.filter(ord => {
@@ -62,6 +63,7 @@ function renderRootOrders() {
       return `• ${i.title}${varInfo} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
     }).join('<br>');
 
+    const hasDistinctRecipient = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
     const safeAddr = (ord.address || "").replace(/'/g, "\\'");
 
     return `
@@ -71,7 +73,8 @@ function renderRootOrders() {
           <span class="status-badge st-building">${ord.status}</span>
         </div>
         <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
-          <b>Клиент:</b> ${ord.user_name} (${ord.user_phone})<br>
+          <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
+          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--cyan);">${ord.recipient_info}</span><br>` : ''}
           <b>Адрес:</b> ${ord.address}<br>
           <b>Стоимость доставки:</b> ${deliveryCostText}<br>
           <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
@@ -93,7 +96,7 @@ function renderRootOrders() {
           </button>
         ` : ''}
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="copyCourierData('${ord.order_id}')">📋 Для курьера</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openCourierModal('${ord.order_id}')">📋 Для курьера</button>
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber);" onclick="openYandexGoDelivery('${safeAddr}')">
             🚚 Яндекс Go
           </button>
@@ -111,24 +114,87 @@ function renderRootOrders() {
   }).join('');
 }
 
+// Правка 13: Открытие прямого мобильного приложения Яндекс Go
 function openYandexGoDelivery(orderAddress = "") {
   if (orderAddress && navigator.clipboard) {
     navigator.clipboard.writeText(orderAddress);
     toast("Адрес скопирован! Вставьте его в Яндекс Go");
   }
-  const lat = SERVER_CONFIG.store_lat;
-  const lon = SERVER_CONFIG.store_lon;
-  const url = `https://3.redirect.appmetrica.yandex.com/route?start-lat=${lat}&start-lon=${lon}&appmetrica_tracking_id=1178268795219780156`;
-  if (tg && tg.openLink) tg.openLink(url);
-  else window.open(url, '_blank');
+  const appUrl = "yandexgo://route";
+  const webUrl = "https://3.redirect.appmetrica.yandex.com/route?appmetrica_tracking_id=1178268795219780156";
+
+  window.location.href = appUrl;
+  setTimeout(() => {
+    if (tg && tg.openLink) tg.openLink(webUrl);
+    else window.open(webUrl, '_blank');
+  }, 700);
 }
 
-function copyCourierData(orderId) {
+// Правка 7: Модалка данных для курьера с изолированными блоками и очисткой телефона
+function openCourierModal(orderId) {
   const ord = allRootOrders.find(o => o.order_id === orderId);
   if (!ord) return;
-  const rec = ord.recipient_info ? `Получатель: ${ord.recipient_info}` : `Клиент: ${ord.user_name} (${ord.user_phone})`;
-  const textToCopy = `Адрес: ${ord.address}\n${rec}\nГруз: ЦВЕТЫ! Везти вертикально и в тепле.`;
-  if (navigator.clipboard) { navigator.clipboard.writeText(textToCopy); toast("Данные для курьера скопированы!"); }
+
+  const hasDistinct = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
+  let recName = ord.user_name || "Клиент";
+  let rawPhone = ord.user_phone || "";
+
+  if (hasDistinct) {
+    const match = ord.recipient_info.match(/^(.*?)\s*\((.*?)\)$/);
+    if (match) {
+      recName = match[1].trim();
+      rawPhone = match[2].trim();
+    } else {
+      recName = ord.recipient_info;
+    }
+  }
+
+  // Очистка телефона: убираем скобки, дефисы, пробелы и первую 8 или +7
+  let cleanPhone = rawPhone.replace(/\D/g, '');
+  if (cleanPhone.startsWith('7') || cleanPhone.startsWith('8')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  // Извлечение комментария курьеру из строки адреса [курьеру: ...]
+  let commentVal = "";
+  const commentMatch = (ord.address || "").match(/\[курьеру:\s*(.*?)\]/i);
+  if (commentMatch && commentMatch[1]) {
+    commentVal = commentMatch[1].trim();
+  }
+
+  // Чистый адрес без служебной скобки комментария
+  const cleanAddress = (ord.address || "").replace(/\s*\[курьеру:.*?\]/i, '').trim();
+
+  document.getElementById('courier-modal-title').innerText = `Курьер: ${ord.order_id}`;
+  document.getElementById('courier-val-address').innerText = cleanAddress || "—";
+  document.getElementById('courier-val-name').innerText = recName || "—";
+  document.getElementById('courier-val-phone').innerText = cleanPhone || "—";
+  document.getElementById('courier-val-note').innerText = "Хрупкий товар — ЦВЕТЫ. Везти вертикально, аккуратно";
+
+  const commentCard = document.getElementById('courier-comment-card');
+  if (commentVal) {
+    document.getElementById('courier-val-comment').innerText = commentVal;
+    commentCard.style.display = 'flex';
+  } else {
+    commentCard.style.display = 'none';
+  }
+
+  document.getElementById('courier-modal').classList.add('open');
+}
+
+function closeCourierModal() {
+  document.getElementById('courier-modal').classList.remove('open');
+}
+
+function copyCourierSingleField(elId, fieldName) {
+  const el = document.getElementById(elId);
+  const val = el ? el.innerText.trim() : "";
+  if (!val || val === "—") return;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(val);
+    toast(`${fieldName} скопирован!`);
+  }
 }
 
 async function confirmOrderRoot(orderId) {
@@ -184,6 +250,7 @@ function selectItemToAddToOrder(cid) {
   document.getElementById('add-item-catalog-box').classList.remove('open');
 }
 
+// Правка 6: отображение информации о заказчике и получателе в окне состава
 function openEditItemsModal(orderId) {
   const ord = allRootOrders.find(o => o.order_id === orderId);
   if (!ord) return;
@@ -192,6 +259,12 @@ function openEditItemsModal(orderId) {
   tempSelectedCatalogIdToAdd = "";
   document.getElementById('add-item-catalog-display').innerText = "Выберите цветок для добавления...";
   document.getElementById('edit-items-modal-title').innerText = `Состав ${orderId}`;
+
+  const hasDistinct = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
+  document.getElementById('edit-order-client-info').innerHTML = `
+    <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
+    ${hasDistinct ? `<b>Получатель:</b> <span style="color:var(--cyan);">${ord.recipient_info}</span>` : `<b>Получатель:</b> Заказчик лично`}
+  `;
  
   document.getElementById('edit-order-delivery-input').value = ord.delivery_cost || 0;
   document.getElementById('edit-order-assembly-input').value = 0;
@@ -819,7 +892,7 @@ async function moveFaqOrder(id, direction) {
     })
   });
   loadRootFaq();
-  loadAboutFaq();
+  cachedFaqData = null; // Сброс кеша для витрины
 }
 
 function openAddFaqModal() {
@@ -867,7 +940,7 @@ async function saveFaqEditor() {
   });
   closeFaqEditorModal();
   loadRootFaq();
-  loadAboutFaq();
+  cachedFaqData = null; // Сброс кеша для витрины
 }
 
 async function toggleFaqActiveRoot(id, nextState) {
@@ -887,7 +960,7 @@ async function toggleFaqActiveRoot(id, nextState) {
     })
   });
   loadRootFaq();
-  loadAboutFaq();
+  cachedFaqData = null;
 }
 
 async function deleteFaqRoot(id) {
@@ -898,5 +971,5 @@ async function deleteFaqRoot(id) {
     body: JSON.stringify({ action: "admin_delete_faq", admin_id: userId, admin_passcode: sessionPasscode, id: id })
   });
   loadRootFaq();
-  loadAboutFaq();
+  cachedFaqData = null;
 }
