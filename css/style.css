@@ -118,6 +118,48 @@ header {
   white-space: nowrap;
 }
 
+.hud-right-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Колокольчик в HUD */
+.hud-notif-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--dock-bg);
+  border: 1px solid var(--border-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease;
+}
+.hud-notif-btn:active { transform: scale(0.92); }
+
+.hud-notif-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--red);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+  border: 1.5px solid var(--card-bg);
+}
+
 .hud-user-btn {
   font-size: 11px;
   font-weight: 700;
@@ -335,7 +377,6 @@ header {
 }
 .btn-quick-add:active { transform: scale(0.88); }
 
-/* Красная точка-напоминание на кнопке «Выбрать» */
 .btn-select-variant {
   position: relative;
   padding: 6px 12px;
@@ -1105,6 +1146,98 @@ body.in-text-edit-mode [data-config-key]:hover {
   white-space: nowrap;
 }
 .courier-copy-btn:active { transform: scale(0.95); }
+
+/* Стили уведомлений в клиенте */
+.notif-card-item {
+  background: var(--card-inner);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+.notif-card-item.unread {
+  border-color: var(--cyan);
+  background: rgba(56, 189, 248, 0.05);
+}
+.notif-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.notif-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.notif-card-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.notif-card-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+.notif-card-target-pill {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--cyan);
+  display: inline-block;
+  font-weight: 700;
+}
+
+/* Стили статистики в Root */
+.stats-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.stat-summary-card {
+  background: var(--card-inner);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.stat-summary-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.stat-summary-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--green);
+  margin-top: 4px;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+.stats-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  font-size: 9px;
+}
+.stats-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
 
 #toast {
   position: fixed;
