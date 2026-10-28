@@ -1,3 +1,5 @@
+let cachedFaqData = null;
+
 function navigateTab(screenId, btn) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.dock-tab').forEach(b => b.classList.remove('active'));
@@ -88,6 +90,13 @@ async function loadConfig() {
       if (asmBtn) {
         asmBtn.href = telLink;
         asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
+      }
+    }
+
+    if (cfg.store_lat && cfg.store_lon) {
+      const mapIframe = document.getElementById('yandex-map-iframe');
+      if (mapIframe) {
+        mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
       }
     }
 
@@ -215,11 +224,13 @@ document.addEventListener('click', async (e) => {
   window.addEventListener('mouseup', onEnd);
 })();
 
-// Раскрытие FAQ с кешированием и независимым управлением плашками
+// Корректное раскрытие блока FAQ без конфликтов стилей
 async function toggleAboutFaqSection() {
   const container = document.getElementById('about-faq-container');
   const arrow = document.getElementById('faq-section-arrow');
-  const isHidden = (container.style.display === 'none' || !container.style.display);
+  if (!container) return;
+
+  const isHidden = window.getComputedStyle(container).display === 'none';
 
   if (!isHidden) {
     container.style.display = 'none';
@@ -269,19 +280,15 @@ function renderFaqList(faq) {
 function toggleFaqPill(el) {
   const isOpen = el.classList.contains('open');
   document.querySelectorAll('.faq-pill-item').forEach(p => p.classList.remove('open'));
-  if (!isOpen) {
-    el.classList.add('open');
-  }
+  if (!isOpen) el.classList.add('open');
   if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 
+// Открытие карточки организации в Яндекс Картах
 function openYandexRoute() {
-  const url = SERVER_CONFIG.yandex_org_url || "https://yandex.ru/maps/org/tsvety/18169538769?si=w0t417tmmfzn5zadubrew3uker";
-  if (tg && tg.openLink) {
-    tg.openLink(url);
-  } else {
-    window.open(url, '_blank');
-  }
+  const url = SERVER_CONFIG.yandex_org_url || `https://yandex.ru/maps/org/tsvety/18169538769?si=w0t417tmmfzn5zadubrew3uker`;
+  if (tg && tg.openLink) tg.openLink(url);
+  else window.open(url, '_blank');
 }
 
 function contactSupport() {
@@ -290,12 +297,13 @@ function contactSupport() {
   else window.open(url, '_blank');
 }
 
-// Запуск приложения
+// Инициализация приложения
 loadCatalog();
 checkUserSession();
 loadConfig();
+updateCartUI(); // Восстановление UI корзины из localStorage
 
-// Фоновый опрос каждые 2 минуты (120 000 мс)
+// Фоновое обновление и автопроверка таймаута заказов каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
@@ -305,4 +313,4 @@ setInterval(() => {
     const secOrders = document.getElementById('root-sec-orders')?.style.display !== 'none';
     if (secOrders) loadRootOrders(false);
   }
-}, 120000);
+}, 180000);
