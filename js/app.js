@@ -1,3 +1,5 @@
+let cachedFaqData = null;
+
 function navigateTab(screenId, btn) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.dock-tab').forEach(b => b.classList.remove('active'));
@@ -14,13 +16,16 @@ function navigateTab(screenId, btn) {
     renderSavedAddresses();
     loadUserOrders();
   }
-  if (screenId === 'about') {
-    loadAboutFaq();
-  }
   if (screenId === 'root') loadRootOrders(true);
 }
 
+// Правка 8: Запрет входа в Root, если у клиента в таблице стоит false/ложь
 function handleHudRootTap() {
+  if (currentUser && (currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
+    toast("Доступ запрещен администратором");
+    return;
+  }
+
   if (isAdmin) {
     navigateTab('root', null);
     return;
@@ -35,7 +40,7 @@ function handleHudRootTap() {
     const pass = prompt("Код доступа Root:");
     if (pass) {
       sessionPasscode = pass.trim();
-      fetch(`${API_URL}?action=admin_orders&user_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
+      fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
         .then(r => r.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -81,12 +86,6 @@ async function loadConfig() {
       const telLink = 'tel:' + cfg.shop_phone_tel;
       const callBtn = document.getElementById('shop-call-btn');
       if (callBtn) callBtn.href = telLink;
-
-      const phoneTextBtn = document.getElementById('shop-phone-text-btn');
-      if (phoneTextBtn) {
-        phoneTextBtn.href = telLink;
-        if (cfg.shop_phone) phoneTextBtn.innerText = cfg.shop_phone;
-      }
 
       const asmBtn = document.getElementById('assembly-call-btn');
       if (asmBtn) {
@@ -226,21 +225,55 @@ document.addEventListener('click', async (e) => {
   window.addEventListener('mouseup', onEnd);
 })();
 
-async function loadAboutFaq() {
+// Правка 2: Ленивая загрузка FAQ по первому клику с кешированием в переменной
+async function toggleAboutFaqSection() {
   const container = document.getElementById('about-faq-container');
+  const arrow = document.getElementById('faq-section-arrow');
+  const isHidden = container.style.display === 'none';
+
+  if (!isHidden) {
+    container.style.display = 'none';
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+    return;
+  }
+
+  container.style.display = 'block';
+  if (arrow) arrow.style.transform = 'rotate(180deg)';
+
+  if (cachedFaqData) {
+    renderFaqList(cachedFaqData);
+    return;
+  }
+
+  container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12px;">Загрузка вопросов...</div>`;
+
   try {
     const res = await fetch(`${API_URL}?action=faq`);
-    const faq = await res.json();
-    container.innerHTML = faq.map(f => `
-      <div class="faq-pill-item" onclick="toggleFaqPill(this)">
-        <div class="faq-pill-header">
-          <span>${f.question}</span>
-          <span>▼</span>
-        </div>
-        <div class="faq-pill-body">${f.answer}</div>
+    cachedFaqData = await res.json();
+    renderFaqList(cachedFaqData);
+  } catch (e) {
+    container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--red); font-size:12px;">Ошибка загрузки FAQ</div>`;
+  }
+}
+
+function renderFaqList(faq) {
+  const container = document.getElementById('about-faq-container');
+  if (!container) return;
+
+  if (!faq || !faq.length) {
+    container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12px;">Нет доступных вопросов</div>`;
+    return;
+  }
+
+  container.innerHTML = faq.map(f => `
+    <div class="faq-pill-item" onclick="toggleFaqPill(this)">
+      <div class="faq-pill-header">
+        <span>${f.question}</span>
+        <span>▼</span>
       </div>
-    `).join('');
-  } catch (e) {}
+      <div class="faq-pill-body">${f.answer}</div>
+    </div>
+  `).join('');
 }
 
 function toggleFaqPill(el) {
@@ -250,11 +283,9 @@ function toggleFaqPill(el) {
   if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 
+// Правка 12: Переход по ссылке организации в Яндекс Картах из серверного конфига
 function openYandexRoute() {
-  const lat = SERVER_CONFIG.store_lat;
-  const lon = SERVER_CONFIG.store_lon;
-  if (!lat || !lon) return;
-  const url = `https://yandex.ru/maps/?rtext=~${lat},${lon}&rtt=auto`;
+  const url = SERVER_CONFIG.yandex_org_url || `https://yandex.ru/maps/org/tsvety/18169538769?si=w0t417tmmfzn5zadubrew3uker`;
   if (tg && tg.openLink) tg.openLink(url);
   else window.open(url, '_blank');
 }
