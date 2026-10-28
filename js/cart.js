@@ -34,13 +34,21 @@ function addPopToCart() {
   cartAssemblyItems[cartKey] = true;
 
   updateCartUI();
-  updateProductCardAction(targetId);
+  updateProductCardAction(activePopItem.id);
   closeProductModal();
   toast("Добавлено в заказ");
 }
 
+// Правка 10: Кнопка «+» мгновенно добавляет единицу в корзину без открытия модалки
 function quickAdd(id) {
-  const item = catalog.find(i => String(i.id) === String(id));
+  let item = catalog.find(i => String(i.id) === String(id));
+  if (!item) {
+    const group = displayCatalog.find(g => String(g.id) === String(id));
+    if (group && group.variants && group.variants.length > 0) {
+      item = group.variants.find(v => v.is_active) || group.variants[0];
+    }
+  }
+
   if (!item || !item.is_active) return;
 
   let chosenVar = item.variant || "";
@@ -48,13 +56,13 @@ function quickAdd(id) {
     chosenVar = chosenVar.split('/')[0].trim();
   }
 
-  const cartKey = `${id}:::${chosenVar}`;
+  const cartKey = `${item.id}:::${chosenVar}`;
   cart[cartKey] = (cart[cartKey] || 0) + 1;
   cartAssemblyItems[cartKey] = true;
 
   updateCartUI();
   updateProductCardAction(id);
-  toast("Добавлено в заказ");
+  toast(`Добавлено: ${item.title}`);
 }
 
 function modifyCartByKey(cartKey, delta) {
@@ -94,7 +102,7 @@ function updateCartUI() {
   const entries = Object.entries(cart);
 
   if (!entries.length) {
-    document.getElementById('cart-items-container').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;">Корзина пуста</div>';
+    document.getElementById('cart-items-container').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;" data-config-key="txt_cart_empty">Корзина пуста</div>';
     checkoutCard.style.display = 'none';
     currentFlowersSubtotal = 0;
     return;
