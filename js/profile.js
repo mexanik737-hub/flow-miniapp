@@ -3,6 +3,7 @@ let selectedSavedAddrSuggestion = null;
 function renderSavedAddresses() {
   const box = document.getElementById('saved-addresses-profile-list');
   if (!box) return;
+
   if (!savedAddresses.length) {
     box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
     return;
@@ -13,7 +14,7 @@ function renderSavedAddresses() {
         <b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="color:var(--cyan); cursor:pointer; font-size:13px;" onclick="openEditSavedAddressModal(${idx})">✏️</span>
+        <span style="color:var(--gold-light); cursor:pointer; font-size:13px;" onclick="openEditSavedAddressModal(${idx})">✏️</span>
         <span style="color:var(--red); cursor:pointer; font-size:14px;" onclick="deleteSavedAddress(${idx})">✕</span>
       </div>
     </div>
@@ -21,11 +22,7 @@ function renderSavedAddresses() {
 }
 
 function openAddSavedAddressModal() {
-  if (savedAddresses.length >= 3) { 
-    toast("Максимум 3 адреса"); 
-    hapticWarning();
-    return; 
-  }
+  if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
   hapticImpact('light');
   editingSavedAddrIdx = null;
   selectedSavedAddrSuggestion = null;
@@ -41,7 +38,7 @@ function openAddSavedAddressModal() {
 }
 
 function openEditSavedAddressModal(idx) {
-  hapticImpact('light');
+  hapticSelect();
   editingSavedAddrIdx = idx;
   const a = savedAddresses[idx];
   if (!a) return;
@@ -62,7 +59,7 @@ function openEditSavedAddressModal(idx) {
 }
 
 function closeAddSavedAddressModal() { 
-  hapticImpact('light');
+  hapticSelect();
   document.getElementById('add-saved-addr-modal').classList.remove('open'); 
 }
 
@@ -97,9 +94,9 @@ function onSavedAddrSuggestInput(query) {
 }
 
 function selectSavedAddrItem(idx) {
+  hapticSelect();
   const s = window.savedAddrSuggestions?.[idx];
   if (!s) return;
-  hapticSelection();
   document.getElementById('new-addr-suggest').value = s.value;
   document.getElementById('new-addr-suggest-list').style.display = 'none';
   selectedSavedAddrSuggestion = s;
@@ -113,17 +110,15 @@ function saveNewAddressFromModal() {
   const apt = document.getElementById('new-addr-apt').value.trim();
   const intc = document.getElementById('new-addr-intercom').value.trim();
 
-  if (!addr) { toast("Укажите улицу и номер дома"); hapticWarning(); return; }
+  if (!addr) { toast("Укажите улицу и номер дома"); return; }
 
   if (!selectedSavedAddrSuggestion || !selectedSavedAddrSuggestion.data?.house || !selectedSavedAddrSuggestion.data?.geo_lat || !selectedSavedAddrSuggestion.data?.geo_lon) {
     toast("Выберите точный адрес с номером дома из подсказок DaData");
-    hapticWarning();
     return;
   }
 
   if (!ent || !flr || !apt || !intc) {
     toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
-    hapticWarning();
     return;
   }
 
@@ -146,14 +141,14 @@ function saveNewAddressFromModal() {
     toast("Адрес сохранен");
   }
 
-  hapticSuccess();
+  hapticNotify('success');
   syncSavedAddresses();
   closeAddSavedAddressModal();
   renderSavedAddresses();
 }
 
 function deleteSavedAddress(idx) {
-  hapticWarning();
+  hapticImpact('medium');
   savedAddresses.splice(idx, 1);
   syncSavedAddresses();
   renderSavedAddresses();
@@ -176,19 +171,16 @@ function openEditProfileModal() {
   document.getElementById('edit-prof-phone').value = currentUser.phone || '';
   document.getElementById('edit-profile-modal').classList.add('open');
 }
+
 function closeEditProfileModal() { 
-  hapticImpact('light');
+  hapticSelect();
   document.getElementById('edit-profile-modal').classList.remove('open'); 
 }
 
 async function saveUserProfileChanges() {
   const name = document.getElementById('edit-prof-name').value.trim();
   const phone = document.getElementById('edit-prof-phone').value.trim();
-  if (!name || phone.length < 17) { 
-    toast("Заполните имя и номер полностью: 8 (***) ***-**-**"); 
-    hapticWarning();
-    return; 
-  }
+  if (!name || phone.length < 17) { toast("Заполните имя и номер полностью: 8 (***) ***-**-**"); return; }
 
   await fetch(API_URL, {
     method: 'POST',
@@ -198,9 +190,9 @@ async function saveUserProfileChanges() {
   currentUser.name = name;
   currentUser.phone = phone;
   localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
-  hapticSuccess();
   renderProfileUI();
   closeEditProfileModal();
+  hapticNotify('success');
   toast("Профиль обновлен");
 }
 
@@ -248,7 +240,6 @@ async function submitRegistration() {
 
   if (!phone || phone.length < 17) {
     toast("Введите номер полностью: 8 (***) ***-**-**");
-    hapticWarning();
     return;
   }
 
@@ -259,12 +250,12 @@ async function submitRegistration() {
     isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser.is_admin === true || String(currentUser.is_admin).toUpperCase() === 'TRUE');
     localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
     document.getElementById('reg-modal').classList.remove('open');
-    hapticSuccess();
     renderProfileUI();
+    hapticNotify('success');
     toast("Регистрация завершена");
   } catch (e) {
+    hapticNotify('error');
     toast("Ошибка связи с базой");
-    hapticWarning();
   }
 }
 
@@ -291,9 +282,47 @@ function renderProfileUI() {
   if (pReg) pReg.innerText = regdate;
 }
 
+// Генерация визуального трекера этапов заказа (4 шага)
+function renderOrderStepper(status) {
+  if (status.startsWith('Отменен')) return '';
+
+  let step = 1;
+  if (status === 'Собирается') step = 2;
+  else if (status === 'В пути' || status === 'Готов к выдаче') step = 3;
+  else if (status === 'Завершен') step = 4;
+
+  const fillPercent = ((step - 1) / 3) * 100;
+
+  return `
+    <div class="order-progress-stepper">
+      <div class="order-progress-bar-fill" style="width: calc(${fillPercent}% - 40px * ${(step - 1) / 3});"></div>
+      
+      <div class="order-step-node ${step === 1 ? 'active' : (step > 1 ? 'completed' : '')}">
+        <div class="order-step-circle">${step > 1 ? '✓' : '1'}</div>
+        <div class="order-step-label">Принят</div>
+      </div>
+
+      <div class="order-step-node ${step === 2 ? 'active' : (step > 2 ? 'completed' : '')}">
+        <div class="order-step-circle">${step > 2 ? '✓' : '2'}</div>
+        <div class="order-step-label">Сборка</div>
+      </div>
+
+      <div class="order-step-node ${step === 3 ? 'active' : (step > 3 ? 'completed' : '')}">
+        <div class="order-step-circle">${step > 3 ? '✓' : '3'}</div>
+        <div class="order-step-label">Доставка</div>
+      </div>
+
+      <div class="order-step-node ${step === 4 ? 'active completed' : ''}">
+        <div class="order-step-circle">4</div>
+        <div class="order-step-label">Выполнен</div>
+      </div>
+    </div>
+  `;
+}
+
+// Загрузка заказов с визуальной шкалой и автоотменой таймаута
 async function loadUserOrders() {
   const container = document.getElementById('user-orders-list');
-  if (!container) return;
   try {
     const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
     const orders = await res.json();
@@ -307,7 +336,6 @@ async function loadUserOrders() {
     container.innerHTML = orders.map(ord => {
       let isAwaitingPay = (ord.status === 'Ожидает оплаты');
       const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
-      const isBuilding = ord.status.includes('Собирается');
 
       let timerCardBadge = "";
       if (isAwaitingPay) {
@@ -327,50 +355,55 @@ async function loadUserOrders() {
           } else {
             const m = Math.floor(leftSec / 60);
             const s = leftSec % 60;
-            timerCardBadge = `⏳ Осталось: ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+            timerCardBadge = `⏳ ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
           }
         }
       }
 
       let badgeCls = 'st-await-pay';
-      if (isBuilding) badgeCls = 'st-building';
+      if (ord.status.includes('Собирается')) badgeCls = 'st-building';
       else if (ord.status.includes('В пути') || ord.status.includes('выдаче')) badgeCls = 'st-transit';
       else if (ord.status.includes('Завершен')) badgeCls = 'st-completed';
       else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
       else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
 
+      const stepperHtml = renderOrderStepper(ord.status);
+
       return `
-        <div class="box-card" style="margin-bottom:8px;">
+        <div class="box-card" style="margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
-            <span class="status-badge ${badgeCls}">
-              ${isBuilding ? '<span class="pulse-dot"></span>' : ''}
-              ${ord.status}
-            </span>
+            <span class="status-badge ${badgeCls}">${ord.status}</span>
           </div>
-          <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
+
+          ${stepperHtml}
+
+          <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin:8px 0;">
             ${ord.items.map(i => {
               const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
-              const packTag = i.in_bouquet ? ' <b>[в букет]</b>' : '';
+              const packTag = i.in_bouquet ? ' <b style="color:var(--gold-light);">[в букет]</b>' : '';
               return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
             }).join('<br>')}
           </div>
+
           ${isAwaitingPay ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro btn-sbp" style="font-size:12px; padding:9px; flex:1;" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
             </div>
           ` : ''}
+
           ${isAwaitingAssembly ? `
             <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:9px; margin-bottom:8px; text-decoration:none;">
               📞 Позвонить флористу для согласования
             </a>
           ` : ''}
-          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
+
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px; font-size:11px;">
             <span style="color:var(--text-muted);">${ord.date_time}</span>
-            <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
+            <span style="font-weight:900; font-size:14px; color:var(--text);">${ord.total_amount} ₽</span>
           </div>
         </div>
       `;
