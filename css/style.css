@@ -820,20 +820,52 @@ header {
   display: block !important;
 }
 
+/* Правка 3: фикс схлопывания изображений галереи на iOS (WebKit) */
+.pop-gallery-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.pop-gallery-counter {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(9, 12, 18, 0.75);
+  border: 1px solid var(--border-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 5;
+  display: none;
+}
+
 .product-gallery-scroll {
   display: flex;
-  gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
-  margin-bottom: 12px;
   border-radius: var(--radius-md);
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  aspect-ratio: 1/1;
 }
+.product-gallery-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .gallery-slide-img {
   width: 100%;
-  max-height: 250px;
+  height: 100%;
   aspect-ratio: 1/1;
   object-fit: cover;
-  flex-shrink: 0;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
   border-radius: var(--radius-md);
 }
 
@@ -1025,6 +1057,45 @@ body.in-text-edit-mode [data-config-key]:hover {
   outline-color: var(--amber) !important;
 }
 
+/* Правка 7: стили карточек данных для курьера */
+.courier-card-block {
+  background: var(--card-inner);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.courier-card-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.courier-card-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  word-break: break-word;
+}
+.courier-copy-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--cyan);
+  border: 1px solid var(--border-accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.courier-copy-btn:active { transform: scale(0.95); }
+
+/* Правка 1: адаптивный toast под длинные тексты */
 #toast {
   position: fixed;
   top: 16px;
@@ -1042,6 +1113,11 @@ body.in-text-edit-mode [data-config-key]:hover {
   pointer-events: none;
   z-index: 200;
   transition: all 0.25s ease;
-  white-space: nowrap;
+  width: auto;
+  max-width: 88vw;
+  white-space: normal;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.4;
 }
 #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
