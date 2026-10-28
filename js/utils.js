@@ -5,6 +5,7 @@ function toast(text) {
   setTimeout(() => el.classList.remove('show'), 2400);
 }
 
+
 function toggleDropdown(boxId) {
   const el = document.getElementById(boxId);
   const wasOpen = el.classList.contains('open');
@@ -12,11 +13,13 @@ function toggleDropdown(boxId) {
   if (!wasOpen) el.classList.add('open');
 }
 
+
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.custom-select-box')) {
     document.querySelectorAll('.custom-select-box').forEach(b => b.classList.remove('open'));
   }
 });
+
 
 function toggleCheckbox(elId) {
   const el = document.getElementById(elId);
@@ -25,12 +28,14 @@ function toggleCheckbox(elId) {
   el.innerText = !isChecked ? '✓' : '';
 }
 
+
 function toggleOrderSaveAddressCheckbox() {
   ordSaveAddrChecked = !ordSaveAddrChecked;
   const el = document.getElementById('ord-save-addr-checkbox-ui');
   el.classList.toggle('checked', ordSaveAddrChecked);
   el.innerText = ordSaveAddrChecked ? '✓' : '';
 }
+
 
 function toggleCartAssemblyMode() {
   isAssemblyMode = !isAssemblyMode;
@@ -39,6 +44,7 @@ function toggleCartAssemblyMode() {
   el.innerText = isAssemblyMode ? '✓' : '';
   renderCartItems();
 }
+
 
 function bindPhoneMask(input) {
   if (!input) return;
@@ -58,6 +64,7 @@ bindPhoneMask(document.getElementById('reg-phone'));
 bindPhoneMask(document.getElementById('edit-prof-phone'));
 bindPhoneMask(document.getElementById('ord-rec-phone'));
 
+
 function sortAscendingValues(arr) {
   return arr.sort((a, b) => {
     const numA = parseInt(String(a).match(/\d+/)?.[0] || 0, 10);
@@ -69,6 +76,7 @@ function sortAscendingValues(arr) {
   });
 }
 
+
 function calcHaversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -79,6 +87,7 @@ function calcHaversineDistance(lat1, lon1, lat2, lon2) {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
+
 function parseOrderDateToTs(dateStr) {
   if (!dateStr) return null;
   const match = dateStr.match(/(\d{2}):(\d{2})\s(\d{2})\.(\d{2})\.(\d{4})/);
@@ -88,4 +97,20 @@ function parseOrderDateToTs(dateStr) {
   }
   const parsed = Date.parse(dateStr);
   return isNaN(parsed) ? null : parsed;
+}
+
+
+// Универсальный шаблон форматирования: Товар [штук] [см] [цвет]
+function formatItemFullName(title, unit, variant, color) {
+  let res = String(title || "").trim();
+  if (unit && String(unit).trim()) {
+    res += ` [${String(unit).trim()}]`;
+  }
+  if (variant && String(variant).trim()) {
+    res += ` [${String(variant).trim()}]`;
+  }
+  if (color && String(color).trim()) {
+    res += ` [${String(color).trim()}]`;
+  }
+  return res;
 }
