@@ -37,7 +37,6 @@ async function loadRootOrders(force = false) {
   } catch (e) {}
 }
 
-// Правка 6: отображение заказчика и фактического получателя отдельными строками
 function renderRootOrders() {
   const container = document.getElementById('root-orders-container');
   const filtered = allRootOrders.filter(ord => {
@@ -57,10 +56,11 @@ function renderRootOrders() {
       ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
       : '0 ₽ (Самовывоз)';
 
+    // Форматирование полного наименования позиции: Товар [штук] [см] [цвет]
     const itemsListText = (ord.items || []).map(i => {
-      const varInfo = i.variant ? ` (${i.variant})` : '';
+      const fullTitle = formatItemFullName(i.title, i.unit, i.variant, i.color);
       const bqTag = i.in_bouquet ? ' [в букет]' : '';
-      return `• ${i.title}${varInfo} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
+      return `• ${fullTitle} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
     }).join('<br>');
 
     const hasDistinctRecipient = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
@@ -114,23 +114,20 @@ function renderRootOrders() {
   }).join('');
 }
 
-// Правка 13: Открытие прямого мобильного приложения Яндекс Go
+// Открытие приложения Яндекс Go без сбоев WebView
 function openYandexGoDelivery(orderAddress = "") {
   if (orderAddress && navigator.clipboard) {
     navigator.clipboard.writeText(orderAddress);
     toast("Адрес скопирован! Вставьте его в Яндекс Go");
   }
-  const appUrl = "yandexgo://route";
-  const webUrl = "https://3.redirect.appmetrica.yandex.com/route?appmetrica_tracking_id=1178268795219780156";
-
-  window.location.href = appUrl;
-  setTimeout(() => {
-    if (tg && tg.openLink) tg.openLink(webUrl);
-    else window.open(webUrl, '_blank');
-  }, 700);
+  const appRedirectUrl = "https://3.redirect.appmetrica.yandex.com/route?appmetrica_tracking_id=1178268795219780156";
+  if (tg && tg.openLink) {
+    tg.openLink(appRedirectUrl);
+  } else {
+    window.open(appRedirectUrl, '_blank');
+  }
 }
 
-// Правка 7: Модалка данных для курьера с изолированными блоками и очисткой телефона
 function openCourierModal(orderId) {
   const ord = allRootOrders.find(o => o.order_id === orderId);
   if (!ord) return;
@@ -149,20 +146,17 @@ function openCourierModal(orderId) {
     }
   }
 
-  // Очистка телефона: убираем скобки, дефисы, пробелы и первую 8 или +7
   let cleanPhone = rawPhone.replace(/\D/g, '');
   if (cleanPhone.startsWith('7') || cleanPhone.startsWith('8')) {
     cleanPhone = cleanPhone.substring(1);
   }
 
-  // Извлечение комментария курьеру из строки адреса [курьеру: ...]
   let commentVal = "";
   const commentMatch = (ord.address || "").match(/\[курьеру:\s*(.*?)\]/i);
   if (commentMatch && commentMatch[1]) {
     commentVal = commentMatch[1].trim();
   }
 
-  // Чистый адрес без служебной скобки комментария
   const cleanAddress = (ord.address || "").replace(/\s*\[курьеру:.*?\]/i, '').trim();
 
   document.getElementById('courier-modal-title').innerText = `Курьер: ${ord.order_id}`;
@@ -231,10 +225,10 @@ function populateCatalogDropdown() {
   const optionsBox = document.getElementById('add-item-catalog-options');
   if (!optionsBox) return;
   optionsBox.innerHTML = catalog.map(c => {
-    const varInfo = c.variant ? ` (${c.variant})` : '';
+    const fullTitle = formatItemFullName(c.title, c.unit, c.variant, c.color);
     return `
       <div class="custom-select-option" onclick="selectItemToAddToOrder('${c.id}')">
-        ${c.title}${varInfo} [${c.unit}] — ${c.price} ₽
+        ${fullTitle} — ${c.price} ₽
       </div>
     `;
   }).join('');
@@ -244,13 +238,12 @@ function selectItemToAddToOrder(cid) {
   tempSelectedCatalogIdToAdd = cid;
   const c = catalog.find(i => String(i.id) === String(cid));
   if (c) {
-    const varInfo = c.variant ? ` (${c.variant})` : '';
-    document.getElementById('add-item-catalog-display').innerText = `${c.title}${varInfo} — ${c.price} ₽`;
+    const fullTitle = formatItemFullName(c.title, c.unit, c.variant, c.color);
+    document.getElementById('add-item-catalog-display').innerText = `${fullTitle} — ${c.price} ₽`;
   }
   document.getElementById('add-item-catalog-box').classList.remove('open');
 }
 
-// Правка 6: отображение информации о заказчике и получателе в окне состава
 function openEditItemsModal(orderId) {
   const ord = allRootOrders.find(o => o.order_id === orderId);
   if (!ord) return;
@@ -278,11 +271,11 @@ function closeEditItemsModal() { document.getElementById('edit-items-modal').cla
 function renderEditItemsList() {
   const box = document.getElementById('edit-items-list');
   box.innerHTML = tempEditingItems.map((it, idx) => {
-    const varInfo = it.variant ? ` (${it.variant})` : '';
+    const fullTitle = formatItemFullName(it.title, it.unit, it.variant, it.color);
     const packTag = it.in_bouquet ? ' <b>[в букет]</b>' : '';
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-        <div>${it.title}${varInfo}${packTag} (${it.price} ₽ × ${it.qty})</div>
+        <div>${fullTitle}${packTag} (${it.price} ₽ × ${it.qty})</div>
         <div style="display:flex; gap:4px;">
           <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList(); recalcEditOrderTotalFromInputs();">+</button>
           <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList(); recalcEditOrderTotalFromInputs();">–</button>
@@ -304,7 +297,19 @@ function addItemToCurrentOrder() {
   const c = catalog.find(i => String(i.id) === String(tempSelectedCatalogIdToAdd));
   if (!c) return;
   const ex = tempEditingItems.find(i => String(i.id) === String(c.id));
-  if (ex) ex.qty++; else tempEditingItems.push({ id: c.id, title: c.title, variant: c.variant || '', unit: c.unit || '1 шт.', price: c.price, qty: 1 });
+  if (ex) {
+    ex.qty++;
+  } else {
+    tempEditingItems.push({
+      id: c.id,
+      title: c.title,
+      unit: c.unit || '1 шт.',
+      variant: c.variant || '',
+      color: c.color || '',
+      price: c.price,
+      qty: 1
+    });
+  }
   renderEditItemsList();
   recalcEditOrderTotalFromInputs();
 }
@@ -544,13 +549,14 @@ async function loadRootCatalog() {
       `;
     } else {
       const it = c.item;
+      const specLine = [it.unit, it.variant, it.color].filter(Boolean).join(' · ');
       return `
         <div class="box-card" style="margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between;">
             <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
             <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
-          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Модификатор: ${it.variant || '—'}</div>
+          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Характеристики: ${specLine || '—'}</div>
           <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
           <div style="display:flex; gap:6px;">
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
@@ -581,8 +587,8 @@ function convertProductToGroup(id) {
 
   const tbody = document.getElementById('group-variants-tbody');
   tbody.innerHTML = "";
-  addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", price: it.price, is_active: it.is_active });
-  addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", price: it.price, is_active: true });
+  addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", color: it.color || "", price: it.price, is_active: it.is_active });
+  addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", color: "", price: it.price, is_active: true });
 
   document.getElementById('group-editor-modal').classList.add('open');
   toast("Создание группы на базе цветка");
@@ -602,8 +608,8 @@ function openAddGroupModal() {
 
   const tbody = document.getElementById('group-variants-tbody');
   tbody.innerHTML = "";
-  addGroupVariantRow({ unit: "15 шт.", variant: "50 см", price: 3500, is_active: true });
-  addGroupVariantRow({ unit: "15 шт.", variant: "60 см", price: 4000, is_active: true });
+  addGroupVariantRow({ unit: "15 шт.", variant: "50 см", color: "Красные", price: 3500, is_active: true });
+  addGroupVariantRow({ unit: "15 шт.", variant: "60 см", color: "Белые", price: 4000, is_active: true });
   document.getElementById('group-editor-modal').classList.add('open');
 }
 
@@ -643,7 +649,8 @@ function addGroupVariantRow(data = {}) {
   tr.dataset.id = data.id || "";
   tr.innerHTML = `
     <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
-    <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см / Белые"></td>
+    <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см"></td>
+    <td><input type="text" class="gv-color" value="${data.color || ''}" placeholder="Белые"></td>
     <td><input type="number" class="gv-price" value="${data.price || 3500}"></td>
     <td style="text-align:center;">
       <div class="custom-checkbox ${data.is_active !== false ? 'checked' : ''}" style="width:18px; height:18px; margin:0 auto;" onclick="this.classList.toggle('checked'); this.innerText = this.classList.contains('checked') ? '✓' : '';">${data.is_active !== false ? '✓' : ''}</div>
@@ -669,6 +676,7 @@ async function saveGroupEditor() {
     id: r.dataset.id || null,
     unit: r.querySelector('.gv-unit').value.trim() || '1 шт.',
     variant: r.querySelector('.gv-variant').value.trim(),
+    color: r.querySelector('.gv-color').value.trim(),
     price: parseFloat(r.querySelector('.gv-price').value) || 0,
     is_active: r.querySelector('.custom-checkbox').classList.contains('checked')
   }));
@@ -702,6 +710,7 @@ function openAddProductModal() {
   document.getElementById('prod-edit-name').value = "";
   document.getElementById('prod-edit-unit').value = "1 шт.";
   document.getElementById('prod-edit-variant').value = "";
+  document.getElementById('prod-edit-color').value = "";
   document.getElementById('prod-edit-cat').value = "Цветы";
   document.getElementById('prod-edit-price').value = "";
   document.getElementById('prod-edit-desc').value = "";
@@ -723,6 +732,7 @@ function openEditProductModal(id) {
   document.getElementById('prod-edit-name').value = item.title;
   document.getElementById('prod-edit-unit').value = item.unit || "1 шт.";
   document.getElementById('prod-edit-variant').value = item.variant || "";
+  document.getElementById('prod-edit-color').value = item.color || "";
   document.getElementById('prod-edit-cat').value = item.category;
   document.getElementById('prod-edit-price').value = item.price;
   document.getElementById('prod-edit-desc').value = item.description || "";
@@ -748,6 +758,7 @@ async function saveProductEditor() {
     title: document.getElementById('prod-edit-name').value.trim(),
     unit: document.getElementById('prod-edit-unit').value.trim(),
     variant: document.getElementById('prod-edit-variant').value.trim(),
+    color: document.getElementById('prod-edit-color').value.trim(),
     category: document.getElementById('prod-edit-cat').value.trim(),
     price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
     photo_url: document.getElementById('prod-edit-photo').value.trim(),
@@ -892,7 +903,7 @@ async function moveFaqOrder(id, direction) {
     })
   });
   loadRootFaq();
-  cachedFaqData = null; // Сброс кеша для витрины
+  cachedFaqData = null;
 }
 
 function openAddFaqModal() {
@@ -940,7 +951,7 @@ async function saveFaqEditor() {
   });
   closeFaqEditorModal();
   loadRootFaq();
-  cachedFaqData = null; // Сброс кеша для витрины
+  cachedFaqData = null;
 }
 
 async function toggleFaqActiveRoot(id, nextState) {
