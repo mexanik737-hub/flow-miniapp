@@ -2,6 +2,7 @@ function buildDisplayCatalog() {
   const groupsMap = {};
   const orderTracker = [];
 
+
   catalog.forEach(item => {
     const titleKey = item.title.trim();
     if (!groupsMap[titleKey]) {
@@ -11,16 +12,19 @@ function buildDisplayCatalog() {
     groupsMap[titleKey].push(item);
   });
 
+
   const rawDisplay = orderTracker.map(titleKey => {
     const items = groupsMap[titleKey];
     if (items.length === 1) {
       return { ...items[0], is_group: false };
     }
 
+
     const activeVariants = items.filter(v => v.is_active);
     const prices = (activeVariants.length ? activeVariants : items).map(v => v.price);
     const minPrice = Math.min(...prices);
     const hasPhoto = items.find(v => v.photo_url);
+
 
     return {
       is_group: true,
@@ -37,8 +41,10 @@ function buildDisplayCatalog() {
     };
   });
 
+
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
+
 
 function setupFilterDropdown() {
   const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
@@ -49,9 +55,11 @@ function setupFilterDropdown() {
     <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
   `).join('');
 
+
   const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
   const minP = prices.length ? Math.min(...prices) : 100;
   const maxP = prices.length ? Math.max(...prices) : 10000;
+
 
   const rangeEl = document.getElementById('filter-price-range');
   const numEl = document.getElementById('filter-price-input');
@@ -63,18 +71,22 @@ function setupFilterDropdown() {
   document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
 }
 
+
 function selectFilterCategory(cat) {
   selectedFilterCategoryValue = cat;
   document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
   document.getElementById('filter-cat-box').classList.remove('open');
 }
 
+
 function openFilterModal() { document.getElementById('filter-modal').classList.add('open'); }
 function closeFilterModal() { document.getElementById('filter-modal').classList.remove('open'); }
+
 
 function applyFilters() {
   const cat = selectedFilterCategoryValue;
   const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
+
 
   filteredCatalog = displayCatalog.filter(item => {
     const catMatch = (cat === 'Все' || item.category === cat);
@@ -82,11 +94,13 @@ function applyFilters() {
     return catMatch && priceMatch;
   });
 
+
   renderCatalog(filteredCatalog);
   document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
   closeFilterModal();
   toast(`Найдено позиций: ${filteredCatalog.length}`);
 }
+
 
 function resetFilters() {
   selectFilterCategory('Все');
@@ -100,6 +114,7 @@ function resetFilters() {
   closeFilterModal();
 }
 
+
 async function loadCatalog() {
   try {
     const res = await fetch(`${API_URL}?action=catalog`);
@@ -108,11 +123,13 @@ async function loadCatalog() {
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
     renderCatalog(filteredCatalog);
+    updateCartUI(); // Восстанавливает индикаторы и корзину из localStorage
     if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
   } catch (e) {
     toast("Ошибка загрузки каталога");
   }
 }
+
 
 function getCartItemQuantity(id) {
   return Object.entries(cart).reduce((sum, [key, qty]) => {
@@ -120,6 +137,18 @@ function getCartItemQuantity(id) {
     return String(itemId) === String(id) ? sum + qty : sum;
   }, 0);
 }
+
+
+// Проверка наличия в корзине хотя бы одного элемента из группы
+function isGroupInCart(group) {
+  if (!group || !group.variants) return false;
+  const groupIds = new Set(group.variants.map(v => String(v.id)));
+  return Object.keys(cart).some(key => {
+    const [itemId] = key.split(':::');
+    return groupIds.has(String(itemId));
+  });
+}
+
 
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
@@ -130,6 +159,8 @@ function renderCatalog(items) {
     const isHit = p.is_popular;
     const isAvailable = p.is_active;
     const isGroup = p.is_group;
+    const groupHasCartItems = isGroup && isGroupInCart(p);
+
 
     return `
       <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="openProductModal('${p.id}')">
@@ -151,7 +182,10 @@ function renderCatalog(items) {
               <span class="product-price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
               <div id="product-action-${p.id}">
                 ${isGroup ? `
-                  <button class="btn-select-variant" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
+                  <button class="btn-select-variant" onclick="event.stopPropagation(); openProductModal('${p.id}')">
+                    Выбрать
+                    <span class="group-cart-dot" id="group-dot-${p.id}" style="${groupHasCartItems ? 'display:block;' : 'display:none;'}"></span>
+                  </button>
                 ` : (inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
                     <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${p.id}')">🗑️</button>
@@ -172,10 +206,22 @@ function renderCatalog(items) {
   }).join('');
 }
 
+
 function updateProductCardAction(id) {
+  // Если передан ID группы
+  const group = displayCatalog.find(g => String(g.id) === String(id) || (g.is_group && g.variants?.some(v => String(v.id) === String(id))));
+  if (group && group.is_group) {
+    const dotEl = document.getElementById(`group-dot-${group.id}`);
+    if (dotEl) {
+      dotEl.style.display = isGroupInCart(group) ? 'block' : 'none';
+    }
+  }
+
+
   const actionEl = document.getElementById(`product-action-${id}`);
   if (!actionEl) return;
   const inCartQty = getCartItemQuantity(id);
+
 
   if (inCartQty > 0) {
     actionEl.innerHTML = `
@@ -190,9 +236,12 @@ function updateProductCardAction(id) {
   }
 }
 
-function openProductModal(id, targetVariant = null, targetUnit = null) {
+
+// Открытие модалки карточки товара с поддержкой 3 независимых селекторов
+function openProductModal(id, targetUnit = null, targetVariant = null, targetColor = null) {
   let item = null;
   let matchedInGroup = false;
+
 
   const directItem = catalog.find(i => String(i.id) === String(id));
   if (directItem) {
@@ -203,6 +252,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null) {
       matchedInGroup = true;
       selectedGroupPack = targetUnit || directItem.unit;
       selectedGroupVariant = targetVariant || directItem.variant;
+      selectedGroupColor = targetColor || directItem.color;
     } else {
       item = directItem;
     }
@@ -210,40 +260,58 @@ function openProductModal(id, targetVariant = null, targetUnit = null) {
     item = displayCatalog.find(i => String(i.id) === String(id));
   }
 
+
   if (!item) return;
+
 
   activePopItem = item;
   popQty = 1;
 
+
   const variantBox = document.getElementById('pop-variant-box');
   if (item.is_group) {
     variantBox.style.display = 'block';
-    setupGroupVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null);
-    updateSelectedGroupVariantUI();
+    setupGroupIndependentChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
+    updateSelectedGroupUI();
   } else {
-    const hasSlashVariants = item.variant && item.variant.includes('/');
-    if (hasSlashVariants) {
-      variantBox.style.display = 'block';
-      setupSingleItemSlashVariants(item);
-    } else {
-      variantBox.style.display = 'none';
-      selectedGroupVariant = item.variant || "";
-      setupSingleItemPopUI(item);
-    }
+    setupSingleItemIndependentChips(item);
   }
+
 
   document.getElementById('product-modal').classList.add('open');
 }
 
-function setupSingleItemPopUI(item) {
-  document.getElementById('pop-title').innerText = item.title;
-  document.getElementById('pop-cat').innerText = item.category;
-  document.getElementById('pop-unit').innerText = item.unit || '1 шт.';
-  document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
-  document.getElementById('pop-price').innerText = item.price + ' ₽';
-  document.getElementById('pop-qty').innerText = '1';
 
+// Селекторы для одиночного товара (поддержка слэшей в unit, variant, color)
+function setupSingleItemIndependentChips(item) {
+  const variantBox = document.getElementById('pop-variant-box');
+  const packBlock = document.getElementById('pop-pack-block');
+  const varBlock = document.getElementById('pop-variant-block');
+  const colBlock = document.getElementById('pop-color-block');
+
+
+  const packs = item.unit && item.unit.includes('/') ? sortAscendingValues(item.unit.split('/').map(s => s.trim()).filter(Boolean)) : (item.unit ? [item.unit.trim()] : []);
+  const vars = item.variant && item.variant.includes('/') ? sortAscendingValues(item.variant.split('/').map(s => s.trim()).filter(Boolean)) : (item.variant ? [item.variant.trim()] : []);
+  const cols = item.color && item.color.includes('/') ? sortAscendingValues(item.color.split('/').map(s => s.trim()).filter(Boolean)) : (item.color ? [item.color.trim()] : []);
+
+
+  const hasMultipleOptions = (packs.length > 1) || (vars.length > 1) || (cols.length > 1);
+  variantBox.style.display = hasMultipleOptions ? 'block' : 'none';
+
+
+  selectedGroupPack = packs[0] || item.unit || "";
+  selectedGroupVariant = vars[0] || item.variant || "";
+  selectedGroupColor = cols[0] || item.color || "";
+
+
+  renderChipBlock(packBlock, 'pop-pack-chips', packs, selectedGroupPack, v => { selectedGroupPack = v; updateSingleItemTitleUI(item); });
+  renderChipBlock(varBlock, 'pop-variant-chips', vars, selectedGroupVariant, v => { selectedGroupVariant = v; updateSingleItemTitleUI(item); });
+  renderChipBlock(colBlock, 'pop-color-chips', cols, selectedGroupColor, v => { selectedGroupColor = v; updateSingleItemTitleUI(item); });
+
+
+  updateSingleItemTitleUI(item);
   renderPopGallery(item.photo_url);
+
 
   const addBtn = document.getElementById('pop-add-cart-btn');
   const qtyBox = document.getElementById('pop-qty-controls');
@@ -262,124 +330,95 @@ function setupSingleItemPopUI(item) {
   }
 }
 
-function setupSingleItemSlashVariants(item) {
-  document.getElementById('pop-pack-block').style.display = 'none';
-  const varBlock = document.getElementById('pop-variant-block');
-  const varWrap = document.getElementById('pop-variant-chips');
-  varBlock.style.display = 'block';
 
-  const rawVars = item.variant.split('/').map(s => s.trim()).filter(Boolean);
-  const vars = sortAscendingValues(rawVars);
-
-  if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
-    selectedGroupVariant = vars[0] || "";
-  }
-
-  varWrap.innerHTML = vars.map(v => `
-    <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectSingleSlashVariant('${v}')">${v}</div>
-  `).join('');
-
-  document.getElementById('pop-title').innerText = `${item.title} (${selectedGroupVariant})`;
+function updateSingleItemTitleUI(item) {
+  document.getElementById('pop-title').innerText = formatItemFullName(item.title, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
   document.getElementById('pop-cat').innerText = item.category;
-  document.getElementById('pop-unit').innerText = item.unit || '1 шт.';
+  document.getElementById('pop-unit').innerText = selectedGroupPack || item.unit || '1 шт.';
   document.getElementById('pop-desc').innerText = item.description || 'Свежесрезанные сортовые цветы высшей категории.';
   document.getElementById('pop-price').innerText = item.price + ' ₽';
   document.getElementById('pop-qty').innerText = '1';
-  renderPopGallery(item.photo_url);
 }
 
-function selectSingleSlashVariant(v) {
-  selectedGroupVariant = v;
-  if (activePopItem) setupSingleItemSlashVariants(activePopItem);
-}
 
-function setupGroupVariantChips(group, preferredPack = null, preferredVar = null) {
-  const rawPacks = Array.from(new Set(group.variants.map(v => v.unit).filter(Boolean)));
-  const packs = sortAscendingValues(rawPacks);
-
-  let allRawVars = [];
-  group.variants.forEach(v => {
-    if (v.variant) {
-      if (v.variant.includes('/')) {
-        allRawVars.push(...v.variant.split('/').map(s => s.trim()));
-      } else {
-        allRawVars.push(v.variant.trim());
-      }
-    }
-  });
-  const vars = sortAscendingValues(Array.from(new Set(allRawVars.filter(Boolean))));
-
-  if (preferredPack && packs.includes(preferredPack)) {
-    selectedGroupPack = preferredPack;
-  } else if (!selectedGroupPack || !packs.includes(selectedGroupPack)) {
-    selectedGroupPack = packs[0] || "";
-  }
-
-  if (preferredVar && vars.includes(preferredVar)) {
-    selectedGroupVariant = preferredVar;
-  } else if (!selectedGroupVariant || !vars.includes(selectedGroupVariant)) {
-    selectedGroupVariant = vars[0] || "";
-  }
-
+// Селекторы для группы товаров
+function setupGroupIndependentChips(group, prefPack, prefVar, prefColor) {
   const packBlock = document.getElementById('pop-pack-block');
-  const packWrap = document.getElementById('pop-pack-chips');
-  if (packs.length > 1 || (packs.length === 1 && vars.length > 0)) {
-    packBlock.style.display = 'block';
-    packWrap.innerHTML = packs.map(p => `
-      <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectGroupPack('${p}')">${p}</div>
-    `).join('');
-  } else {
-    packBlock.style.display = 'none';
-  }
-
   const varBlock = document.getElementById('pop-variant-block');
-  const varWrap = document.getElementById('pop-variant-chips');
-  if (vars.length > 0) {
-    varBlock.style.display = 'block';
-    varWrap.innerHTML = vars.map(v => `
-      <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectGroupVariant('${v}')">${v}</div>
+  const colBlock = document.getElementById('pop-color-block');
+
+
+  let allPacks = [];
+  let allVars = [];
+  let allColors = [];
+
+
+  group.variants.forEach(v => {
+    if (v.unit) allPacks.push(...v.unit.split('/').map(s => s.trim()));
+    if (v.variant) allVars.push(...v.variant.split('/').map(s => s.trim()));
+    if (v.color) allColors.push(...v.color.split('/').map(s => s.trim()));
+  });
+
+
+  const packs = sortAscendingValues(Array.from(new Set(allPacks.filter(Boolean))));
+  const vars = sortAscendingValues(Array.from(new Set(allVars.filter(Boolean))));
+  const cols = sortAscendingValues(Array.from(new Set(allColors.filter(Boolean))));
+
+
+  selectedGroupPack = (prefPack && packs.includes(prefPack)) ? prefPack : (packs[0] || "");
+  selectedGroupVariant = (prefVar && vars.includes(prefVar)) ? prefVar : (vars[0] || "");
+  selectedGroupColor = (prefColor && cols.includes(prefColor)) ? prefColor : (cols[0] || "");
+
+
+  renderChipBlock(packBlock, 'pop-pack-chips', packs, selectedGroupPack, v => { selectedGroupPack = v; updateSelectedGroupUI(); });
+  renderChipBlock(varBlock, 'pop-variant-chips', vars, selectedGroupVariant, v => { selectedGroupVariant = v; updateSelectedGroupUI(); });
+  renderChipBlock(colBlock, 'pop-color-chips', cols, selectedGroupColor, v => { selectedGroupColor = v; updateSelectedGroupUI(); });
+}
+
+
+function renderChipBlock(blockEl, wrapId, values, selectedVal, onSelect) {
+  if (values.length > 0) {
+    blockEl.style.display = 'block';
+    const wrap = document.getElementById(wrapId);
+    wrap.innerHTML = values.map(val => `
+      <div class="variant-chip ${val === selectedVal ? 'active' : ''}">${val}</div>
     `).join('');
+    Array.from(wrap.children).forEach((chip, idx) => {
+      chip.onclick = () => {
+        Array.from(wrap.children).forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        onSelect(values[idx]);
+      };
+    });
   } else {
-    varBlock.style.display = 'none';
+    blockEl.style.display = 'none';
   }
 }
 
-function selectGroupPack(pack) {
-  selectedGroupPack = pack;
-  setupGroupVariantChips(activePopItem, pack, selectedGroupVariant);
-  updateSelectedGroupVariantUI();
-}
 
-function selectGroupVariant(v) {
-  selectedGroupVariant = v;
-  setupGroupVariantChips(activePopItem, selectedGroupPack, v);
-  updateSelectedGroupVariantUI();
-}
-
-function updateSelectedGroupVariantUI() {
+function updateSelectedGroupUI() {
   if (!activePopItem || !activePopItem.is_group) return;
 
-  const variant = activePopItem.variants.find(v => {
-    const packMatch = !selectedGroupPack || v.unit.trim() === selectedGroupPack.trim();
-    let varMatch = false;
-    if (!selectedGroupVariant) varMatch = true;
-    else if (v.variant.includes('/')) {
-      const parts = v.variant.split('/').map(s => s.trim());
-      varMatch = parts.includes(selectedGroupVariant);
-    } else {
-      varMatch = (v.variant.trim() === selectedGroupVariant.trim());
-    }
-    return packMatch && varMatch;
-  });
 
-  const varText = selectedGroupVariant ? ` (${selectedGroupVariant})` : '';
-  const packText = selectedGroupPack ? ` [${selectedGroupPack}]` : '';
-  document.getElementById('pop-title').innerText = `${activePopItem.title}${varText}${packText}`;
+  const variant = activePopItem.variants.find(v => {
+    const packMatch = !selectedGroupPack || v.unit.split('/').map(s => s.trim()).includes(selectedGroupPack);
+    const varMatch = !selectedGroupVariant || v.variant.split('/').map(s => s.trim()).includes(selectedGroupVariant);
+    const colMatch = !selectedGroupColor || (v.color && v.color.split('/').map(s => s.trim()).includes(selectedGroupColor));
+    return packMatch && varMatch && colMatch;
+  }) || activePopItem.variants.find(v => {
+    const packMatch = !selectedGroupPack || v.unit.split('/').map(s => s.trim()).includes(selectedGroupPack);
+    return packMatch;
+  }) || activePopItem.variants[0];
+
+
+  document.getElementById('pop-title').innerText = formatItemFullName(activePopItem.title, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
   document.getElementById('pop-cat').innerText = activePopItem.category;
   document.getElementById('pop-unit').innerText = selectedGroupPack || activePopItem.unit;
 
+
   const addBtn = document.getElementById('pop-add-cart-btn');
   const qtyBox = document.getElementById('pop-qty-controls');
+
 
   if (!variant || !variant.is_active) {
     document.getElementById('pop-price').innerText = variant ? `${variant.price} ₽` : "— ₽";
@@ -402,18 +441,20 @@ function updateSelectedGroupVariantUI() {
   }
 }
 
-// Правка 9: Счетчик фото галереи с обновлением при скролле
+
 function renderPopGallery(photosStr) {
   const gallery = document.getElementById('pop-gallery');
   const placeholder = document.getElementById('pop-placeholder');
   const counter = document.getElementById('pop-gallery-counter');
   const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
 
+
   if (photos.length) {
     gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
     gallery.style.display = 'flex';
     gallery.scrollLeft = 0;
     placeholder.style.display = 'none';
+
 
     if (photos.length > 1) {
       if (counter) {
@@ -440,10 +481,12 @@ function renderPopGallery(photosStr) {
   }
 }
 
+
 function closeProductModal() {
   document.getElementById('product-modal').classList.remove('open');
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
 }
+
 
 function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
