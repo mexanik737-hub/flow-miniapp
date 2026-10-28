@@ -11,6 +11,7 @@ function clearCartStorage() {
   localStorage.removeItem('flw_cart');
   localStorage.removeItem('flw_cart_assembly');
   localStorage.removeItem('flw_is_assembly_mode');
+  if (window.PetalsEngine) window.PetalsEngine.updateState();
 }
 
 function addPopToCart() {
@@ -36,13 +37,11 @@ function addPopToCart() {
 
     if (!targetItem || !targetItem.is_active) {
       toast("Выбранный товар отсутствует в наличии");
-      hapticWarning();
       return;
     }
   } else {
     if (!activePopItem.is_active) {
       toast("Товар отсутствует в наличии");
-      hapticWarning();
       return;
     }
     targetItem = activePopItem;
@@ -71,10 +70,7 @@ function quickAdd(id) {
     }
   }
 
-  if (!item || !item.is_active) {
-    hapticWarning();
-    return;
-  }
+  if (!item || !item.is_active) return;
 
   let chosenUnit = item.unit || "";
   if (chosenUnit.includes('/')) chosenUnit = chosenUnit.split('/')[0].trim();
@@ -89,27 +85,26 @@ function quickAdd(id) {
   cart[cartKey] = (cart[cartKey] || 0) + 1;
   cartAssemblyItems[cartKey] = true;
 
-  hapticImpact('light');
+  hapticImpact('medium');
   updateCartUI();
   updateProductCardAction(id);
   toast(`Добавлено: ${formatFullItemTitle(item.title, chosenUnit, chosenVar, chosenColor)}`);
 }
 
 function modifyCartByKey(cartKey, delta) {
+  hapticImpact('light');
   cart[cartKey] = (cart[cartKey] || 0) + delta;
   const [itemId] = cartKey.split(':::');
   if (cart[cartKey] <= 0) {
     delete cart[cartKey];
     delete cartAssemblyItems[cartKey];
-    hapticWarning();
-  } else {
-    hapticImpact('light');
   }
   updateCartUI();
   updateProductCardAction(itemId);
 }
 
 function removeAllOfItemFromCart(id) {
+  hapticImpact('light');
   Object.keys(cart).forEach(key => {
     const [itemId] = key.split(':::');
     if (String(itemId) === String(id)) {
@@ -117,35 +112,29 @@ function removeAllOfItemFromCart(id) {
       delete cartAssemblyItems[key];
     }
   });
-  hapticWarning();
   updateCartUI();
   updateProductCardAction(id);
   toast("Удалено из корзины");
 }
 
 function toggleItemAssemblySelection(cartKey) {
+  hapticSelect();
   cartAssemblyItems[cartKey] = !cartAssemblyItems[cartKey];
-  hapticSelection();
   renderCartItems();
   saveCartToStorage();
 }
 
+// Обновление корзины с контролем лепестков
 function updateCartUI() {
   saveCartToStorage();
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
   const counterEl = document.getElementById('cart-counter');
-  
-  if (counterEl) {
-    const prevCount = parseInt(counterEl.innerText, 10) || 0;
-    counterEl.innerText = count;
+  if (counterEl) counterEl.innerText = count;
 
-    // Пружинящая анимация счётчика при изменении количества
-    if (count !== prevCount && count > 0) {
-      counterEl.classList.remove('cart-bouncing');
-      void counterEl.offsetWidth; // Принудительный reflow для перезапуска CSS-кейфрейма
-      counterEl.classList.add('cart-bouncing');
-    }
+  // Обновление состояния физики лепестков роз (Canvas 2D)
+  if (window.PetalsEngine) {
+    window.PetalsEngine.updateState();
   }
 
   const checkoutCard = document.getElementById('cart-checkout-card');
@@ -165,6 +154,7 @@ function updateCartUI() {
     renderCartItems();
   }
 
+  // Обновление индикаторов групп
   displayCatalog.forEach(g => {
     if (g.is_group) {
       const el = document.getElementById(`product-action-${g.id}`);
@@ -206,7 +196,7 @@ function renderCartItems() {
             </div>
             <div>
               <div style="font-size:12px; font-weight:700; line-height:1.25; color:var(--text);">${fullTitle}</div>
-              <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.price} ₽ × ${qty} шт. = ${item.price * qty} ₽</div>
+              <div style="font-size:11px; color:var(--gold-light); margin-top:2px;">${item.price} ₽ × ${qty} шт. = ${item.price * qty} ₽</div>
             </div>
           </div>
         </div>
