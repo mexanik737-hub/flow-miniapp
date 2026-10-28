@@ -1,40 +1,70 @@
-// Защищенное переключение разделов Root с проверкой наличия DOM-элементов
-function switchRootSection(sec) {
-  const allSecs = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
+window.switchRootSection = function(sec) {
+  const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
 
-  allSecs.forEach(s => {
-    const tabEl = document.getElementById('tab-root-' + s);
-    const secEl = document.getElementById('root-sec-' + s);
-    if (tabEl) {
+  // Шаг 1: Мгновенное и гарантированное переключение подсветки кнопок и экранов
+  sections.forEach(s => {
+    const btn = document.getElementById('tab-root-' + s);
+    const box = document.getElementById('root-sec-' + s);
+
+    if (btn) {
       if (s === sec) {
-        tabEl.classList.add('active');
+        btn.classList.add('active');
       } else {
-        tabEl.classList.remove('active');
+        btn.classList.remove('active');
       }
     }
-    if (secEl) {
-      secEl.style.display = (s === sec ? 'block' : 'none');
+
+    if (box) {
+      box.style.display = (s === sec ? 'block' : 'none');
     }
   });
 
-  if (sec === 'orders' && typeof loadRootOrders === 'function') loadRootOrders(true);
-  if (sec === 'catalog' && typeof loadRootCatalog === 'function') loadRootCatalog();
-  if (sec === 'clients' && typeof loadRootClients === 'function') loadRootClients();
-  if (sec === 'notifs' && typeof loadRootNotifications === 'function') loadRootNotifications();
-  if (sec === 'stats' && typeof loadRootStats === 'function') loadRootStats(currentStatsPeriod || 'today');
-  if (sec === 'faq' && typeof loadRootFaq === 'function') loadRootFaq();
-}
-window.switchRootSection = switchRootSection;
+  // Шаг 2: Безопасный запуск загрузки данных без риска падения UI
+  try {
+    if (sec === 'orders' && typeof loadRootOrders === 'function') {
+      loadRootOrders(true);
+    } else if (sec === 'catalog' && typeof loadRootCatalog === 'function') {
+      loadRootCatalog();
+    } else if (sec === 'clients' && typeof loadRootClients === 'function') {
+      loadRootClients();
+    } else if (sec === 'notifs' && typeof loadRootNotifications === 'function') {
+      loadRootNotifications();
+    } else if (sec === 'stats' && typeof loadRootStats === 'function') {
+      loadRootStats(currentStatsPeriod || 'today');
+    } else if (sec === 'faq' && typeof loadRootFaq === 'function') {
+      loadRootFaq();
+    }
+  } catch (err) {
+    console.error("Root switch data load error:", err);
+  }
+};
 
-function switchRootSubTab(tab) {
+window.switchRootSubTab = function(tab) {
   currentRootSubTab = tab;
   const tabActive = document.getElementById('tab-root-active');
   const tabArchive = document.getElementById('tab-root-archive');
   if (tabActive) tabActive.classList.toggle('active', tab === 'active');
   if (tabArchive) tabArchive.classList.toggle('active', tab === 'archive');
   renderRootOrders();
-}
-window.switchRootSubTab = switchRootSubTab;
+};
+
+window.switchStatsPeriod = function(period) {
+  currentStatsPeriod = period;
+  ['today', '7days', 'month'].forEach(p => {
+    const el = document.getElementById('tab-stat-' + p);
+    if (el) el.classList.toggle('active', p === period);
+  });
+  renderRootStats();
+};
+
+window.selectRootNotifTab = function(val, label) {
+  const hiddenInput = document.getElementById('root-notif-tab');
+  const displaySpan = document.getElementById('root-notif-tab-display');
+  const selectBox = document.getElementById('root-notif-tab-box');
+  if (hiddenInput) hiddenInput.value = val;
+  if (displaySpan) displaySpan.innerText = label;
+  if (selectBox) selectBox.classList.remove('open');
+};
 
 async function loadRootOrders(force = false) {
   if (!isAdmin) return;
