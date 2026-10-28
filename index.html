@@ -15,13 +15,10 @@
 </head>
 <body>
 
-
  <div id="toast">Уведомление</div>
-
 
  <!-- Плавающая перетаскиваемая кнопка редактора текстов -->
  <div class="floating-editor-btn" id="floating-editor-btn">✏️</div>
-
 
  <!-- Кастомный топ-баннер подтверждения удаления заказа -->
  <div class="top-confirm-popup" id="top-confirm-popup">
@@ -32,9 +29,7 @@
  </div>
  </div>
 
-
  <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
-
 
  <div class="app-wrapper">
  <!-- Двойной парящий HUD -->
@@ -50,7 +45,6 @@
  </div>
  </header>
 
-
  <!-- Экран 1: Каталог -->
  <section id="screen-catalog" class="screen active">
  <div class="catalog-top-bar">
@@ -60,13 +54,11 @@
  <div class="catalog-grid" id="catalog-wrap"></div>
  </section>
 
-
  <!-- Экран 2: Корзина -->
  <section id="screen-cart" class="screen">
  <div class="box-card neon-glow" id="cart-items-container">
  <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;" data-config-key="txt_cart_empty">Корзина пуста</div>
  </div>
-
 
  <div class="box-card neon-glow" id="cart-checkout-card" style="display:none;">
  <div style="background:var(--card-inner); border:1px solid var(--border-accent); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:12px;">
@@ -81,7 +73,6 @@
  </div>
  </div>
 
-
  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
  <span style="font-size:14px; font-weight:700;" data-config-key="txt_cart_sum_label">Сумма цветов:</span>
  <span id="cart-total" style="font-size:18px; font-weight:800; color:var(--text);">0 ₽</span>
@@ -89,7 +80,6 @@
  <button class="btn-metro" onclick="openOrderModal()" data-config-key="txt_btn_checkout">Оформить заказ</button>
  </div>
  </section>
-
 
  <!-- Экран 3: Профиль -->
  <section id="screen-profile" class="screen">
@@ -101,7 +91,7 @@
  <div style="font-size:18px; font-weight:800; color:var(--text);" id="prof-name">Загрузка...</div>
  <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" id="prof-phone">-</div>
  
- <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
  <div>
  <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;" data-config-key="txt_prof_spent_label">Сумма выкупа</div>
  <div style="font-size:16px; font-weight:800; color:var(--green); margin-top:2px;" id="prof-spent">0 ₽</div>
@@ -112,7 +102,6 @@
  </div>
  </div>
 
-
  <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
  <span style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" data-config-key="txt_prof_addr_title">Мои адреса (до 3 шт.)</span>
@@ -122,7 +111,7 @@
  </div>
  </div>
 
-
+ <!-- Мои заказы -->
  <div class="box-card neon-glow">
  <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;" data-config-key="txt_prof_orders_title">
  Мои заказы
@@ -132,7 +121,6 @@
  </div>
  </div>
  </section>
-
 
  <!-- Экран 4: О нас -->
  <section id="screen-about" class="screen">
@@ -153,24 +141,22 @@
  </a>
  </div>
 
-
- <!-- Интерактивная карта с прямым виджетом организации «Цветы» -->
+ <!-- Интерактивная карта -->
  <div class="box-card neon-glow" style="padding:10px;">
  <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;" data-config-key="txt_map_section_title">
  Мы на карте
  </div>
  <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative; cursor:pointer;" onclick="openYandexRoute()">
  <iframe 
- id="yandex-map-iframe"
- src="https://yandex.ru/map-widget/v1/org/tsvety/18169538769" 
- width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none; pointer-events:none;">
+id="yandex-map-iframe"
+ src="about:blank" 
+width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none; pointer-events:none;">
  </iframe>
  </div>
  <button class="btn-metro" style="margin-top:10px; font-size:12px; padding:10px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openYandexRoute()" data-config-key="txt_btn_route">
  🗺 Маршрут в Яндекс Картах
  </button>
  </div>
-
 
  <!-- FAQ -->
  <div class="box-card neon-glow">
@@ -180,7 +166,6 @@
  </div>
  <div id="about-faq-container" style="display:none;"></div>
  </div>
-
 
  <!-- Техподдержка -->
  <div class="box-card neon-glow" style="text-align:center;">
@@ -193,7 +178,6 @@
  </div>
  </section>
 
-
  <!-- Экран 5: Root (Панель управления) -->
  <section id="screen-root" class="screen">
  <div class="box-card" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-color:var(--border-accent);">
@@ -204,14 +188,12 @@
  <div class="custom-checkbox" id="root-toggle-editor-btn" style="width:24px; height:24px; font-size:14px;" onclick="toggleEditorFabVisibility()"></div>
  </div>
 
-
  <div class="toggle-grid">
  <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
  <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
  <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
  <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
  </div>
-
 
  <!-- Заказы -->
  <div id="root-sec-orders">
@@ -222,7 +204,6 @@
  <div id="root-orders-container"></div>
  </div>
 
-
  <!-- Каталог -->
  <div id="root-sec-catalog" style="display:none;">
  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px;">
@@ -232,13 +213,11 @@
  <div id="root-catalog-container"></div>
  </div>
 
-
  <!-- Клиенты -->
  <div id="root-sec-clients" style="display:none;">
  <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
  <div id="root-clients-container"></div>
  </div>
-
 
  <!-- FAQ -->
  <div id="root-sec-faq" style="display:none;">
@@ -247,7 +226,6 @@
  </div>
  </section>
  </div>
-
 
  <!-- Док навигации -->
  <div class="dock-pill-container">
@@ -271,7 +249,6 @@
  </nav>
  </div>
 
-
  <!-- Модалка фильтров -->
  <div class="modal-overlay" id="filter-modal">
  <div class="modal-sheet">
@@ -279,7 +256,6 @@
  <div class="modal-title">Фильтры каталога</div>
  <button class="close-btn" onclick="closeFilterModal()">✕</button>
  </div>
-
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория цветов:</label>
  <div class="custom-select-box" id="filter-cat-box">
@@ -290,7 +266,6 @@
  <div class="custom-select-options" id="filter-cat-options"></div>
  </div>
 
-
  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (до):</label>
  <span style="font-size:11px; color:var(--cyan); font-weight:700;"><span id="filter-min-label">0 ₽</span> — <span id="filter-max-label">10000 ₽</span></span>
@@ -300,14 +275,12 @@
  <input type="number" id="filter-price-input" class="metro-input" style="width:95px; margin-bottom:0;" value="10000" oninput="document.getElementById('filter-price-range').value = this.value">
  </div>
 
-
  <div style="display:flex; gap:8px; margin-top:14px;">
  <button class="btn-metro btn-secondary" onclick="resetFilters()">Сбросить</button>
  <button class="btn-metro" onclick="applyFilters()">Применить</button>
  </div>
  </div>
  </div>
-
 
  <!-- Модалка регистрации -->
  <div class="modal-overlay" id="reg-modal">
@@ -321,17 +294,14 @@
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ваше имя: *</label>
  <input type="text" id="reg-name" class="metro-input" placeholder="Иван">
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Номер телефона: *</label>
  <input type="tel" id="reg-phone" class="metro-input" placeholder="8 (___) ___-__-__">
-
 
  <button class="btn-metro" onclick="submitRegistration()">Завершить регистрацию</button>
  </div>
  </div>
 
-
- <!-- Модалка карточки букета (3 независимых селектора: Фасовка, Ростовка, Цвет) -->
+ <!-- Модалка карточки букета (с 3 независимыми блоками выбора: фасовка, высота, цвет) -->
  <div class="modal-overlay" id="product-modal">
  <div class="modal-sheet">
  <div class="modal-header">
@@ -339,26 +309,23 @@
  <button class="close-btn" onclick="closeProductModal()">✕</button>
  </div>
 
-
  <div class="pop-gallery-wrapper">
  <div class="pop-gallery-counter" id="pop-gallery-counter">1 / 1</div>
  <div class="product-gallery-scroll" id="pop-gallery"></div>
  </div>
-
 
  <div class="thumb-placeholder-box" id="pop-placeholder" style="display:none; padding:30px 0;">
  <span class="thumb-placeholder-icon">🌸</span>
  <span class="thumb-placeholder-text">Фото пока не добавили</span>
  </div>
 
-
  <div id="pop-variant-box" style="display:none;">
- <div class="variant-selector-block" id="pop-pack-block">
+ <div class="variant-selector-block" id="pop-pack-block" style="display:none;">
  <div class="variant-selector-label" id="pop-pack-label">Количество / Фасовка:</div>
  <div class="variant-chips-wrap" id="pop-pack-chips"></div>
  </div>
- <div class="variant-selector-block" id="pop-variant-block">
- <div class="variant-selector-label" id="pop-variant-label">Высота / Ростовка:</div>
+ <div class="variant-selector-block" id="pop-variant-block" style="display:none;">
+ <div class="variant-selector-label" id="pop-variant-label">Высота:</div>
  <div class="variant-chips-wrap" id="pop-variant-chips"></div>
  </div>
  <div class="variant-selector-block" id="pop-color-block" style="display:none;">
@@ -366,7 +333,6 @@
  <div class="variant-chips-wrap" id="pop-color-chips"></div>
  </div>
  </div>
-
 
  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
  <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" id="pop-cat">Категория</div>
@@ -385,7 +351,6 @@
  </div>
  </div>
 
-
  <!-- Модалка оформления заказа -->
  <div class="modal-overlay" id="order-modal">
  <div class="modal-sheet">
@@ -394,19 +359,16 @@
  <button class="close-btn" onclick="closeOrderModal()">✕</button>
  </div>
 
-
  <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
  <div class="toggle-btn active" id="btn-del" onclick="setDeliveryType('delivery')">🚚 Доставка</div>
  <div class="toggle-btn" id="btn-pick" onclick="setDeliveryType('pickup')">📍 Самовывоз</div>
  </div>
-
 
  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Получатель:</div>
  <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
  <div class="toggle-btn active" id="btn-rec-self" onclick="setRecipientType('self')">Я сам</div>
  <div class="toggle-btn" id="btn-rec-other" onclick="setRecipientType('other')">Другой человек</div>
  </div>
-
 
  <div id="other-rec-fields" style="display:none;">
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Имя получателя: *</label>
@@ -415,20 +377,17 @@
  <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="8 (___) ___-__-__">
  </div>
 
-
  <div id="delivery-extra-fields">
  <div id="order-saved-address-container" style="display:none; margin-bottom:8px;">
  <div style="font-size:11px; color:var(--cyan); font-weight:700; margin-bottom:4px; text-transform:uppercase;">Сохраненные адреса:</div>
  <div class="quick-addr-pills" id="order-saved-address-pills"></div>
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Улица / Корпус / Дом (выберите из подсказок): *</label>
  <div class="suggest-wrap">
  <input type="text" id="ord-suggest-input" class="metro-input" placeholder="Начните ввод: к1601 или Георгиевский..." autocomplete="off" oninput="onAddressInput(this.value)">
  <div class="suggest-list" id="ord-suggest-list"></div>
  </div>
-
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон: *</label>
  <div class="address-grid">
@@ -438,16 +397,13 @@
  <input type="text" id="ord-intercom" class="metro-input" placeholder="Домофон *">
  </div>
 
-
  <div class="custom-checkbox-wrap" onclick="toggleOrderSaveAddressCheckbox()">
  <div class="custom-checkbox" id="ord-save-addr-checkbox-ui"></div>
  <span style="font-size:12px; color:var(--text-muted);">Сохранить этот адрес в профиль</span>
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
  <input type="text" id="ord-comment" class="metro-input" placeholder="Шлагбаум открыт, не звонить...">
-
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Желаемое время доставки:</label>
  <div class="custom-select-box" id="time-select-box">
@@ -458,12 +414,10 @@
  <div class="custom-select-options" id="time-select-options"></div>
  </div>
 
-
  <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.12); border:1px solid var(--border-accent); color:var(--cyan); font-size:12px; margin-bottom:12px;">
  📍 Введите адрес, чтобы рассчитать точную стоимость доставки (от 350 ₽)
  </div>
  </div>
-
 
  <div id="pickup-extra-fields" style="display:none; padding:12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--border-accent); color:var(--text); font-size:12px; line-height:1.5; margin-bottom:12px;">
  📍 <b>Адрес салона:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
@@ -471,10 +425,8 @@
  🔔 <b>Уведомление:</b> Как только флорист закончит сборку букета, статус заказа сменится на «Готов к выдаче», и вам поступит уведомление в Telegram.
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий салону (необязательно):</label>
  <input type="text" id="ord-shop-comment" class="metro-input" placeholder="Пожелания по сборке, цвету ленты...">
-
 
  <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:12px;">
  <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -491,13 +443,11 @@
  </div>
  </div>
 
-
  <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
  </div>
  </div>
 
-
- <!-- Модалка звонка в магазин -->
+ <!-- Модалка звонка в магазин при согласовании букета -->
  <div class="modal-overlay" id="assembly-call-modal">
  <div class="modal-sheet">
  <div class="modal-header">
@@ -505,14 +455,12 @@
  <button class="close-btn" onclick="closeAssemblyModal()">✕</button>
  </div>
 
-
  <div style="text-align:center; padding:10px 0 16px 0;">
  <div style="font-size:36px; margin-bottom:8px;">💐</div>
  <div style="font-size:15px; font-weight:800; color:var(--text); margin-bottom:6px;" id="asm-modal-order-id">ORD-XXXXXX</div>
  <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:16px;">
  Вы выбрали сборку букета флористом! Чтобы флорист сразу приступил к работе и назвал точную стоимость оформления, позвоните в салон прямо сейчас:
  </div>
-
 
  <a class="btn-metro btn-emerald" id="assembly-call-btn" href="#" style="margin-bottom:10px; text-decoration:none;">
  📞 Позвонить в салон
@@ -524,8 +472,7 @@
  </div>
  </div>
 
-
- <!-- Модалка оплаты СБП -->
+ <!-- Модалка оплаты с оригинальным QR-кодом СБП -->
  <div class="modal-overlay" id="payment-modal">
  <div class="modal-sheet">
  <div class="modal-header">
@@ -533,35 +480,29 @@
  <button class="close-btn" onclick="closePaymentModal()">✕</button>
  </div>
 
-
  <div style="text-align:center; padding:10px 0 16px 0;">
  <div style="padding:6px 12px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:12px; font-weight:800; display:inline-block; margin-bottom:10px;" id="pay-timer-box">
  ⏳ Оплатите в течение: <span id="pay-timer-val">15:00</span>
  </div>
 
-
  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Сумма к оплате:</div>
  <div style="font-size:32px; font-weight:900; color:var(--green); margin:4px 0 10px 0;" id="pay-modal-amount">0 ₽</div>
  
- <button class="btn-metro btn-secondary" style="font-size:12px; padding:8px 14px; max-width:240px; margin:0 auto 14px auto;" onclick="copyPaymentAmount()">
+<button class="btn-metro btn-secondary" style="font-size:12px; padding:8px 14px; max-width:240px; margin:0 auto 14px auto;" onclick="copyPaymentAmount()">
  📋 Скопировать сумму
  </button>
-
 
  <a class="btn-metro" id="pay-sbp-btn" href="#" target="_blank" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); font-size:15px; margin-bottom:14px; text-decoration:none;">
  💳 Оплатить через СБП
  </a>
 
-
  <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:8px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(0,0,0,0.2);">
  <img id="sbp-qr-image-tag" src="" alt="QR СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
  </div>
 
-
  <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
  ⚠️ Введите ровно указанную сумму в приложении банка. Неоплаченные заказы автоматически отменяются через 15 минут.
  </div>
-
 
  <button class="btn-metro" style="background:var(--green); margin-bottom:10px;" onclick="confirmPaymentByClient()">
  ✅ Я оплатил
@@ -570,8 +511,7 @@
  </div>
  </div>
 
-
- <!-- Модалка профиля -->
+ <!-- Модалка редактирования профиля -->
  <div class="modal-overlay" id="edit-profile-modal">
  <div class="modal-sheet">
  <div class="modal-header">
@@ -581,15 +521,12 @@
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ваше имя: *</label>
  <input type="text" id="edit-prof-name" class="metro-input" placeholder="Иван">
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Номер телефона: *</label>
  <input type="tel" id="edit-prof-phone" class="metro-input" placeholder="8 (___) ___-__-__">
-
 
  <button class="btn-metro" onclick="saveUserProfileChanges()">Сохранить изменения</button>
  </div>
  </div>
-
 
  <!-- Модалка адреса -->
  <div class="modal-overlay" id="add-saved-addr-modal">
@@ -599,17 +536,14 @@
  <button class="close-btn" onclick="closeAddSavedAddressModal()">✕</button>
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название адреса: *</label>
  <input type="text" id="new-addr-label" class="metro-input" placeholder="Например: Дом, Работа, Родители">
-
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Улица / Корпус / Дом (выберите из подсказок): *</label>
  <div class="suggest-wrap">
  <input type="text" id="new-addr-suggest" class="metro-input" placeholder="Начните ввод: к1601 или Георгиевский..." autocomplete="off" oninput="onSavedAddrSuggestInput(this.value)">
  <div class="suggest-list" id="new-addr-suggest-list"></div>
  </div>
-
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Подъезд, этаж, квартира, домофон: *</label>
  <div class="address-grid">
@@ -619,11 +553,9 @@
  <input type="text" id="new-addr-intercom" class="metro-input" placeholder="Домофон *">
  </div>
 
-
  <button class="btn-metro" style="margin-top:10px;" id="save-addr-modal-btn" onclick="saveNewAddressFromModal()">Сохранить адрес</button>
  </div>
  </div>
-
 
  <!-- Модалка одиночного товара для Root (с полем цвета) -->
  <div class="modal-overlay" id="product-editor-modal">
@@ -633,35 +565,27 @@
  <button class="close-btn" onclick="closeProductEditorModal()">✕</button>
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название товара: *</label>
  <input type="text" id="prod-edit-name" class="metro-input" placeholder="Роза Эквадор">
 
+ <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Фасовка / Количество (через слэш если несколько): *</label>
+ <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. или 15 шт. / 25 шт.">
 
- <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Фасовка / Количество: *</label>
- <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. или 1 шт.">
-
-
- <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ростовка / Высота:</label>
+ <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Высота / Ростовка (через слэш если несколько):</label>
  <input type="text" id="prod-edit-variant" class="metro-input" placeholder="60 см или 50 см / 60 см">
 
-
- <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цвет / Оттенок:</label>
- <input type="text" id="prod-edit-color" class="metro-input" placeholder="Белые или Белые / Красные">
-
+ <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цвет / Оттенок (через слэш если несколько):</label>
+ <input type="text" id="prod-edit-color" class="metro-input" placeholder="Красный или Белый / Розовый">
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
  <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
  <input type="number" id="prod-edit-price" class="metro-input" placeholder="3600">
-
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Прикрепленные фотографии:</label>
  <div class="prod-photo-strip" id="prod-photo-strip"></div>
  <input type="hidden" id="prod-edit-photo">
-
 
  <div style="display:flex; gap:6px; margin-bottom:14px;">
  <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px;" onclick="triggerProductPhotoUpload('single')">
@@ -672,27 +596,22 @@
  </button>
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Описание и состав:</label>
  <input type="text" id="prod-edit-desc" class="metro-input" placeholder="Сортовой крупный бутон...">
-
 
  <div class="custom-checkbox-wrap" onclick="toggleCheckbox('prod-edit-active-ui')">
  <div class="custom-checkbox checked" id="prod-edit-active-ui">✓</div>
  <span style="font-size:13px; font-weight:600; color:var(--text);">Товар в наличии (виден на витрине)</span>
  </div>
 
-
  <div class="custom-checkbox-wrap" onclick="toggleCheckbox('prod-edit-popular-ui')">
  <div class="custom-checkbox" id="prod-edit-popular-ui"></div>
  <span style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Популярный товар (Хит продаж)</span>
  </div>
 
-
  <button class="btn-metro" onclick="saveProductEditor()">Сохранить товар</button>
  </div>
  </div>
-
 
  <!-- Модалка группы товаров в Root (с колонкой Цвета) -->
  <div class="modal-overlay" id="group-editor-modal">
@@ -702,19 +621,15 @@
  <button class="close-btn" onclick="closeGroupEditorModal()">✕</button>
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Базовое название группы: *</label>
  <input type="text" id="group-edit-name" class="metro-input" placeholder="Например: Роза Эквадор или Хризантема">
-
 
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория группы:</label>
  <input type="text" id="group-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общие фотографии группы:</label>
  <div class="prod-photo-strip" id="group-photo-strip"></div>
  <input type="hidden" id="group-edit-photo">
-
 
  <div style="display:flex; gap:6px; margin-bottom:14px;">
  <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px;" onclick="triggerProductPhotoUpload('group')">
@@ -725,22 +640,18 @@
  </button>
  </div>
 
-
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общее описание группы:</label>
  <input type="text" id="group-edit-desc" class="metro-input" placeholder="Премиальная срезка высшей категории...">
-
 
  <div class="custom-checkbox-wrap" onclick="toggleCheckbox('group-edit-popular-ui')">
  <div class="custom-checkbox" id="group-edit-popular-ui"></div>
  <span style="font-size:13px; font-weight:700; color:var(--amber);">🔥 Хит продаж (для всей группы)</span>
  </div>
 
-
  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:10px;">
  <span style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase;">Вариации в группе:</span>
  <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px 10px; width:auto;" onclick="addGroupVariantRow()">+ Добавить вариант</button>
  </div>
-
 
  <div style="overflow-x:auto;">
  <table class="group-variants-table">
@@ -758,11 +669,9 @@
  </table>
  </div>
 
-
  <button class="btn-metro" onclick="saveGroupEditor()">Сохранить всю группу</button>
  </div>
  </div>
-
 
  <!-- Модалка выбора фото из архива Google Диска -->
  <div class="modal-overlay" id="drive-media-modal">
@@ -777,7 +686,6 @@
  </div>
  </div>
  </div>
-
 
  <!-- Модалка смены статуса (Root) -->
  <div class="modal-overlay" id="status-modal">
@@ -799,7 +707,6 @@
  </div>
  </div>
 
-
  <!-- Модалка состава заказа в Root -->
  <div class="modal-overlay" id="edit-items-modal">
  <div class="modal-sheet">
@@ -808,13 +715,11 @@
  <button class="close-btn" onclick="closeEditItemsModal()">✕</button>
  </div>
 
-
  <div id="edit-order-client-info" style="font-size:12px; line-height:1.45; background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:12px; border:1px solid var(--border);"></div>
-
 
  <div id="edit-items-list" style="margin-bottom:14px;"></div>
  
- <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Добавить позицию:</label>
+<label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Добавить позицию:</label>
  <div class="custom-select-box" id="add-item-catalog-box">
  <div class="custom-select-trigger" onclick="toggleDropdown('add-item-catalog-box')">
  <span id="add-item-catalog-display">Выберите цветок для добавления...</span>
@@ -824,7 +729,7 @@
  </div>
  <button class="btn-metro btn-secondary" style="margin-bottom:14px; font-size:12px; padding:10px;" onclick="addItemToCurrentOrder()">+ Добавить выбранный цветок</button>
  
- <div style="border-top:1px solid var(--border); padding-top:12px; margin-top:8px;">
+<div style="border-top:1px solid var(--border); padding-top:12px; margin-top:8px;">
  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
  <div>
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Доставка (₽):</label>
@@ -842,7 +747,6 @@
  </div>
  </div>
 
-
  <!-- Модалка данных для курьера -->
  <div class="modal-overlay" id="courier-modal">
  <div class="modal-sheet">
@@ -850,7 +754,6 @@
  <div class="modal-title" id="courier-modal-title">Данные для курьера</div>
  <button class="close-btn" onclick="closeCourierModal()">✕</button>
  </div>
-
 
  <div class="courier-card-block">
  <div style="flex:1;">
@@ -860,7 +763,6 @@
  <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-address', 'Адрес')">Копировать</button>
  </div>
 
-
  <div class="courier-card-block">
  <div style="flex:1;">
  <div class="courier-card-label">Имя получателя</div>
@@ -868,7 +770,6 @@
  </div>
  <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-name', 'Имя')">Копировать</button>
  </div>
-
 
  <div class="courier-card-block">
  <div style="flex:1;">
@@ -878,7 +779,6 @@
  <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-phone', 'Телефон')">Копировать</button>
  </div>
 
-
  <div class="courier-card-block" id="courier-comment-card" style="display:none;">
  <div style="flex:1;">
  <div class="courier-card-label">Комментарий курьеру</div>
@@ -886,7 +786,6 @@
  </div>
  <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-comment', 'Комментарий')">Копировать</button>
  </div>
-
 
  <div class="courier-card-block">
  <div style="flex:1;">
@@ -896,11 +795,9 @@
  <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-note', 'Примечание')">Копировать</button>
  </div>
 
-
  <button class="btn-metro btn-secondary" style="margin-top:12px;" onclick="closeCourierModal()">Закрыть</button>
  </div>
  </div>
-
 
  <!-- Модалка FAQ в Root -->
  <div class="modal-overlay" id="faq-editor-modal">
@@ -914,18 +811,15 @@
  <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ответ: *</label>
  <textarea id="faq-edit-a" class="metro-input" style="height:90px; resize:none;" placeholder="Ответ..."></textarea>
  
- <div class="custom-checkbox-wrap" onclick="toggleCheckbox('faq-edit-active-ui')">
+<div class="custom-checkbox-wrap" onclick="toggleCheckbox('faq-edit-active-ui')">
  <div class="custom-checkbox checked" id="faq-edit-active-ui">✓</div>
  <span style="font-size:13px; font-weight:600; color:var(--text);">Отображать вопрос в «О нас»</span>
  </div>
-
 
  <button class="btn-metro" onclick="saveFaqEditor()">Сохранить в FAQ</button>
  </div>
  </div>
 
-
- <!-- Подключение модулей скриптов в строгом порядке зависимостей -->
  <script src="js/config.js?v=1.3"></script>
  <script src="js/utils.js?v=1.3"></script>
  <script src="js/catalog.js?v=1.3"></script>
