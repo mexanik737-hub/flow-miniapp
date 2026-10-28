@@ -1,3 +1,4 @@
+// Функция форматирования названия товара со свойствами: Товар [штук] [см] [цвет]
 function formatFullItemTitle(title, unit, variant, color) {
   const parts = [];
   if (unit && String(unit).trim() && String(unit).trim() !== "1 шт.") {
@@ -12,6 +13,7 @@ function formatFullItemTitle(title, unit, variant, color) {
   return parts.length ? `${title} ${parts.join(' ')}` : title;
 }
 
+// Проверка наличия товаров группы в корзине (для красной точки на кнопке «Выбрать»)
 function isGroupInCart(groupIdOrTitle) {
   const group = displayCatalog.find(g => String(g.id) === String(groupIdOrTitle) || g.title.trim() === String(groupIdOrTitle).trim());
   if (!group || !group.variants) return false;
@@ -60,6 +62,59 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
+// ==================== МЕХАНИКА: БУКЕТ ДНЯ ====================
+function getDailyBloomItem() {
+  const now = new Date();
+  const currentHour = now.getHours();
+
+  // Показываем только после 09:00
+  if (currentHour < 9) return null;
+
+  const activeItems = catalog.filter(i => i.is_active);
+  if (!activeItems.length) return null;
+
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const dateKey = `${y}-${m}-${d}`;
+
+  // Детерминированный хэш от userId + даты для персонального стабильного выбора на весь день
+  const seedStr = `${userId || 'client'}_${dateKey}`;
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+    hash |= 0;
+  }
+
+  const chosenIndex = Math.abs(hash) % activeItems.length;
+  return activeItems[chosenIndex];
+}
+
+function renderDailyBloom() {
+  const container = document.getElementById('daily-bloom-container');
+  if (!container) return;
+
+  const item = getDailyBloomItem();
+  if (!item) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="daily-bloom-banner" onclick="openProductModal('${item.id}')">
+      <div>
+        <div class="daily-bloom-tag">✨ Букет дня</div>
+        <div class="daily-bloom-title">${item.title}</div>
+        <div style="font-size:11px; color:var(--gold-light); font-weight:700; margin-top:2px;">
+          ${item.price} ₽ ${item.unit ? '· ' + item.unit : ''}
+        </div>
+      </div>
+      <button class="daily-bloom-btn">Выбрать ➔</button>
+    </div>
+  `;
+}
+
+// ==================== ФИЛЬТРЫ КАТАЛОГА ====================
 function setupFilterDropdown() {
   const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
   const optionsBox = document.getElementById('filter-cat-options');
@@ -84,23 +139,24 @@ function setupFilterDropdown() {
 }
 
 function selectFilterCategory(cat) {
+  hapticSelect();
   selectedFilterCategoryValue = cat;
   document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
   document.getElementById('filter-cat-box').classList.remove('open');
-  hapticSelection();
 }
 
-function openFilterModal() {
+function openFilterModal() { 
   hapticImpact('light');
-  document.getElementById('filter-modal').classList.add('open');
+  document.getElementById('filter-modal').classList.add('open'); 
 }
 
-function closeFilterModal() {
-  hapticImpact('light');
-  document.getElementById('filter-modal').classList.remove('open');
+function closeFilterModal() { 
+  hapticSelect();
+  document.getElementById('filter-modal').classList.remove('open'); 
 }
 
 function applyFilters() {
+  hapticImpact('medium');
   const cat = selectedFilterCategoryValue;
   const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
 
@@ -110,7 +166,6 @@ function applyFilters() {
     return catMatch && priceMatch;
   });
 
-  hapticImpact('medium');
   renderCatalog(filteredCatalog);
   document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
   closeFilterModal();
@@ -118,13 +173,13 @@ function applyFilters() {
 }
 
 function resetFilters() {
+  hapticImpact('light');
   selectFilterCategory('Все');
   const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
   const maxP = prices.length ? Math.max(...prices) : 10000;
   document.getElementById('filter-price-range').value = maxP;
   document.getElementById('filter-price-input').value = maxP;
   filteredCatalog = [...displayCatalog];
-  hapticImpact('light');
   renderCatalog(filteredCatalog);
   document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
   closeFilterModal();
@@ -138,6 +193,11 @@ async function loadCatalog() {
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
     renderCatalog(filteredCatalog);
+    
+    // Отрисовка персонального букета дня
+    renderDailyBloom();
+
+    // Синхронизация сохраненной корзины сразу после появления актуального каталога
     updateCartUI();
 
     if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
@@ -153,6 +213,7 @@ function getCartItemQuantity(id) {
   }, 0);
 }
 
+// Отрисовка каталога с заменой корзинки на «–» при количестве > 1
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
   el.innerHTML = items.map(p => {
@@ -208,7 +269,9 @@ function renderCatalog(items) {
   }).join('');
 }
 
+// Пошаговое уменьшение единицы товара в каталоге
 function quickDecrease(id) {
+  hapticImpact('light');
   const targetKey = Object.keys(cart).find(k => {
     const [itemId] = k.split(':::');
     return String(itemId) === String(id);
@@ -219,6 +282,7 @@ function quickDecrease(id) {
   }
 }
 
+// Обновление состояния кнопки в карточке товара каталога
 function updateProductCardAction(id) {
   const directItem = catalog.find(i => String(i.id) === String(id));
   if (directItem) {
@@ -260,7 +324,9 @@ function updateProductCardAction(id) {
   }
 }
 
+// Открытие модалки карточки букета со сбором статистики просмотров
 function openProductModal(id, targetVariant = null, targetUnit = null, targetColor = null) {
+  hapticImpact('light');
   let item = null;
   let matchedInGroup = false;
 
@@ -285,8 +351,6 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
 
   activePopItem = item;
   popQty = 1;
-
-  hapticImpact('light');
 
   const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
   fetch(API_URL, {
@@ -372,11 +436,11 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
 }
 
 function selectProductChip(type, value) {
+  hapticSelect();
   if (type === 'pack') selectedGroupPack = value;
   if (type === 'variant') selectedGroupVariant = value;
   if (type === 'color') selectedGroupColor = value;
 
-  hapticSelection();
   setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
   updateSelectedGroupVariantUI();
 }
@@ -423,7 +487,7 @@ function updateSelectedGroupVariantUI() {
     document.getElementById('pop-price').innerText = `${matchedVariant.price} ₽`;
     document.getElementById('pop-desc').innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
     addBtn.innerText = "Добавить в заказ";
-    addBtn.style.background = "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)";
+    addBtn.style.background = "var(--green)";
     addBtn.style.color = "#fff";
     addBtn.disabled = false;
     qtyBox.style.display = 'flex';
@@ -469,14 +533,14 @@ function renderPopGallery(photosStr) {
 }
 
 function closeProductModal() {
-  hapticImpact('light');
+  hapticSelect();
   document.getElementById('product-modal').classList.remove('open');
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
 }
 
 function adjustPopQty(delta) { 
+  hapticSelect();
   popQty = Math.max(1, popQty + delta); 
   document.getElementById('pop-qty').innerText = popQty; 
-  hapticImpact('light');
 }
