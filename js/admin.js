@@ -57,7 +57,7 @@ function renderRootOrders() {
       : '0 ₽ (Самовывоз)';
 
     const itemsListText = (ord.items || []).map(i => {
-      const fullTitle = formatItemFullName(i.title, i.unit, i.variant, i.color);
+      const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
       const bqTag = i.in_bouquet ? ' [в букет]' : '';
       return `• ${fullTitle} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
     }).join('<br>');
@@ -113,16 +113,21 @@ function renderRootOrders() {
   }).join('');
 }
 
+// Прямой вызов мобильного приложения Яндекс Go без блокировки внутри Telegram
 function openYandexGoDelivery(orderAddress = "") {
   if (orderAddress && navigator.clipboard) {
     navigator.clipboard.writeText(orderAddress);
     toast("Адрес скопирован! Вставьте его в Яндекс Go");
   }
-  const appRedirectUrl = "https://3.redirect.appmetrica.yandex.com/route?appmetrica_tracking_id=1178268795219780156";
+  const appUrl = "yandexgo://route";
+  const webUrl = "https://3.redirect.appmetrica.yandex.com/route?appmetrica_tracking_id=1178268795219780156";
+
   if (tg && tg.openLink) {
-    tg.openLink(appRedirectUrl);
+    tg.openLink(appUrl);
+    setTimeout(() => tg.openLink(webUrl), 1000);
   } else {
-    window.open(appRedirectUrl, '_blank');
+    window.location.href = appUrl;
+    setTimeout(() => window.open(webUrl, '_blank'), 1000);
   }
 }
 
@@ -223,7 +228,7 @@ function populateCatalogDropdown() {
   const optionsBox = document.getElementById('add-item-catalog-options');
   if (!optionsBox) return;
   optionsBox.innerHTML = catalog.map(c => {
-    const fullTitle = formatItemFullName(c.title, c.unit, c.variant, c.color);
+    const fullTitle = formatFullItemTitle(c.title, c.unit, c.variant, c.color);
     return `
       <div class="custom-select-option" onclick="selectItemToAddToOrder('${c.id}')">
         ${fullTitle} — ${c.price} ₽
@@ -236,8 +241,7 @@ function selectItemToAddToOrder(cid) {
   tempSelectedCatalogIdToAdd = cid;
   const c = catalog.find(i => String(i.id) === String(cid));
   if (c) {
-    const fullTitle = formatItemFullName(c.title, c.unit, c.variant, c.color);
-    document.getElementById('add-item-catalog-display').innerText = `${fullTitle} — ${c.price} ₽`;
+    document.getElementById('add-item-catalog-display').innerText = `${formatFullItemTitle(c.title, c.unit, c.variant, c.color)} — ${c.price} ₽`;
   }
   document.getElementById('add-item-catalog-box').classList.remove('open');
 }
@@ -269,7 +273,7 @@ function closeEditItemsModal() { document.getElementById('edit-items-modal').cla
 function renderEditItemsList() {
   const box = document.getElementById('edit-items-list');
   box.innerHTML = tempEditingItems.map((it, idx) => {
-    const fullTitle = formatItemFullName(it.title, it.unit, it.variant, it.color);
+    const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
     const packTag = it.in_bouquet ? ' <b>[в букет]</b>' : '';
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
@@ -295,19 +299,16 @@ function addItemToCurrentOrder() {
   const c = catalog.find(i => String(i.id) === String(tempSelectedCatalogIdToAdd));
   if (!c) return;
   const ex = tempEditingItems.find(i => String(i.id) === String(c.id));
-  if (ex) {
-    ex.qty++;
-  } else {
-    tempEditingItems.push({
-      id: c.id,
-      title: c.title,
-      unit: c.unit || '1 шт.',
-      variant: c.variant || '',
-      color: c.color || '',
-      price: c.price,
-      qty: 1
-    });
-  }
+  if (ex) ex.qty++; 
+  else tempEditingItems.push({ 
+    id: c.id, 
+    title: c.title, 
+    unit: c.unit || '1 шт.', 
+    variant: c.variant || '', 
+    color: c.color || '', 
+    price: c.price, 
+    qty: 1 
+  });
   renderEditItemsList();
   recalcEditOrderTotalFromInputs();
 }
@@ -547,14 +548,14 @@ async function loadRootCatalog() {
       `;
     } else {
       const it = c.item;
-      const specLine = [it.unit, it.variant, it.color].filter(Boolean).join(' · ');
+      const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
       return `
         <div class="box-card" style="margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between;">
-            <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
+            <b>${fullTitle} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
             <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
-          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Характеристики: ${specLine || '—'}</div>
+          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
           <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
           <div style="display:flex; gap:6px;">
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
@@ -606,8 +607,8 @@ function openAddGroupModal() {
 
   const tbody = document.getElementById('group-variants-tbody');
   tbody.innerHTML = "";
-  addGroupVariantRow({ unit: "15 шт.", variant: "50 см", color: "Красные", price: 3500, is_active: true });
-  addGroupVariantRow({ unit: "15 шт.", variant: "60 см", color: "Белые", price: 4000, is_active: true });
+  addGroupVariantRow({ unit: "15 шт.", variant: "50 см", color: "Красный", price: 3500, is_active: true });
+  addGroupVariantRow({ unit: "15 шт.", variant: "60 см", color: "Красный", price: 4000, is_active: true });
   document.getElementById('group-editor-modal').classList.add('open');
 }
 
@@ -648,7 +649,7 @@ function addGroupVariantRow(data = {}) {
   tr.innerHTML = `
     <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
     <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см"></td>
-    <td><input type="text" class="gv-color" value="${data.color || ''}" placeholder="Белые"></td>
+    <td><input type="text" class="gv-color" value="${data.color || ''}" placeholder="Красный"></td>
     <td><input type="number" class="gv-price" value="${data.price || 3500}"></td>
     <td style="text-align:center;">
       <div class="custom-checkbox ${data.is_active !== false ? 'checked' : ''}" style="width:18px; height:18px; margin:0 auto;" onclick="this.classList.toggle('checked'); this.innerText = this.classList.contains('checked') ? '✓' : '';">${data.is_active !== false ? '✓' : ''}</div>
