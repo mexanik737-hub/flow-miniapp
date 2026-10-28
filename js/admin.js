@@ -56,7 +56,6 @@ function renderRootOrders() {
       ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
       : '0 ₽ (Самовывоз)';
 
-    // Форматирование полного наименования позиции: Товар [штук] [см] [цвет]
     const itemsListText = (ord.items || []).map(i => {
       const fullTitle = formatItemFullName(i.title, i.unit, i.variant, i.color);
       const bqTag = i.in_bouquet ? ' [в букет]' : '';
@@ -114,7 +113,6 @@ function renderRootOrders() {
   }).join('');
 }
 
-// Открытие приложения Яндекс Go без сбоев WebView
 function openYandexGoDelivery(orderAddress = "") {
   if (orderAddress && navigator.clipboard) {
     navigator.clipboard.writeText(orderAddress);
