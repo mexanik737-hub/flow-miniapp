@@ -32,27 +32,23 @@
  <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
  <div class="app-wrapper">
-  <!-- Двойной парящий HUD -->
-  <header>
-    <div class="header-pills-row">
-      <!-- Левая пилюля: Скрытый вход в Root -->
-      <div class="hud-pill" onclick="handleHudRootTap()">
-        <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
-        <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
-      </div>
-      <!-- Правая пилюля: колокольчик уведомлений + переход в Профиль -->
-      <div class="hud-pill hud-user-btn">
-        <div class="hud-notif-btn" onclick="openNotificationsModal(); event.stopPropagation();">
-          <span>🔔</span>
-          <span class="hud-notif-badge" id="hud-notif-badge"></span>
-        </div>
-        <span onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])" id="hud-name">Клиент</span>
-      </div>
-    </div>
-  </header>
- 
-  <!-- Экран 1: Каталог -->
-  <section id="screen-catalog" class="screen active">
+ <!-- Двойной парящий HUD -->
+ <header>
+ <div class="header-pills-row">
+ <!-- Скрытый вход в Root: 1 клик для админа, 5 кликов с паролем для остальных -->
+ <div class="hud-pill" onclick="handleHudRootTap()">
+ <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
+ <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
+ </div>
+ <!-- Правая пилюля: переход в Профиль -->
+ <div class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])">
+ <span id="hud-name">Клиент</span>
+ </div>
+ </div>
+ </header>
+
+ <!-- Экран 1: Каталог -->
+ <section id="screen-catalog" class="screen active">
  <div class="catalog-top-bar">
  <div class="catalog-active-filter-label" id="catalog-filter-summary">Показано: <b>Все</b></div>
  <button class="filter-btn-pill" onclick="openFilterModal()" data-config-key="txt_btn_filters">Фильтры</button>
@@ -136,42 +132,45 @@
  <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Салон Цветы">
  </div>
  <div style="font-size:18px; font-weight:900; color:var(--text); letter-spacing:0.5px;" data-config-key="txt_shop_title">ЦВЕТЫ</div>
- <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:3px 0 10px 0;">
-   Мелкооптовый цветочный салон
+ <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:3px 0 10px 0;" data-config-key="txt_shop_subtitle">
+ Мелкооптовый цветочный салон
  </div>
  <div style="font-size:12px; color:var(--text-muted); line-height:1.55; margin-bottom:12px;">
-   ⏰ <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
-   🚚 <span data-config-key="txt_delivery_schedule">Доставка с 10:00 до 20:00 (заказы до 19:00)</span>
+ 📍 <span data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span><br>
+ ⏰ Салон: <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
+ 🚚 <span data-config-key="txt_delivery_schedule">Доставка с 10:00 до 20:00 (заказы до 19:00)</span>
  </div>
- <a class="btn-metro btn-emerald" id="shop-call-btn" href="#" style="text-decoration:none;" data-config-key="txt_btn_call_shop">
-   📞 Позвонить
+ <a class="btn-metro btn-emerald" id="shop-call-btn" href="#" style="margin-bottom:8px; text-decoration:none;" data-config-key="txt_btn_call_shop">
+ 📞 Позвонить в салон
  </a>
-
- <!-- Интерактивная карта с кликабельной организацией -->
- <div class="box-card neon-glow" style="padding:10px;">
-   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-     <span style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase;">Мы на карте</span>
-     <span style="font-size:11px; color:var(--cyan); cursor:pointer; font-weight:700;" onclick="openYandexOrgCard()">Яндекс Карты ↗</span>
-   </div>
-   <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
-     <iframe 
-       id="yandex-map-iframe"
-       src="about:blank" 
-       width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none;">
-     </iframe>
-   </div>
-   <button class="btn-metro" style="margin-top:10px; font-size:12px; padding:10px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openYandexOrgCard()" data-config-key="txt_btn_route">
-     🗺 Маршрут в Яндекс Картах
-   </button>
+ <a class="btn-metro btn-secondary" id="shop-phone-text-btn" href="#" style="font-size:12px; padding:9px; text-decoration:none;" data-config-key="txt_shop_phone_btn">
+ Загрузка телефона...
+ </a>
  </div>
- 
- <!-- FAQ (по умолчанию свернут, открывается по клику) -->
+
+ <!-- Интерактивная карта со светлой подложкой Яндекса и точными координатами -->
+ <div class="box-card neon-glow" style="padding:10px;">
+ <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;" data-config-key="txt_map_section_title">
+ Мы на карте
+ </div>
+ <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
+ <iframe 
+id="yandex-map-iframe"
+ src="about:blank" 
+width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none;">
+ </iframe>
+ </div>
+ <button class="btn-metro" style="margin-top:10px; font-size:12px; padding:10px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openYandexRoute()" data-config-key="txt_btn_route">
+ 🗺 Маршрут в Яндекс Картах
+ </button>
+ </div>
+
+ <!-- FAQ -->
  <div class="box-card neon-glow">
-   <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleFaqMainAccordion()">
-     <span style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase;">Часто задаваемые вопросы (FAQ)</span>
-     <span id="faq-main-arrow" style="font-size:13px; color:var(--cyan); transition:transform 0.2s;">▼</span>
-   </div>
-   <div id="about-faq-container" style="display:none; margin-top:10px;"></div>
+ <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;" data-config-key="txt_faq_section_title">
+ Часто задаваемые вопросы (FAQ)
+ </div>
+ <div id="about-faq-container"></div>
  </div>
 
  <!-- Техподдержка -->
@@ -196,13 +195,11 @@
  <div class="custom-checkbox" id="root-toggle-editor-btn" style="width:24px; height:24px; font-size:14px;" onclick="toggleEditorFabVisibility()"></div>
  </div>
 
- <div class="toggle-grid" style="grid-template-columns: repeat(3, 1fr);">
-   <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
-   <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
-   <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
-   <div class="toggle-btn" id="tab-root-notices" onclick="switchRootSection('notices')">Рассылка</div>
-   <div class="toggle-btn" id="tab-root-stats" onclick="switchRootSection('stats')">Статистика</div>
-   <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
+ <div class="toggle-grid">
+ <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
+ <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
+ <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
+ <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
  </div>
 
  <!-- Заказы -->
@@ -237,24 +234,6 @@
  </section>
  </div>
 
- <!-- Секция Уведомлений Root -->
- <div id="root-sec-notices" style="display:none;">
-   <button class="btn-metro" style="margin-bottom:12px;" onclick="openSendNoticeModal()">+ Новое уведомление (рассылка)</button>
-   <div id="root-notices-container"></div>
- </div>
-
- <!-- Секция Статистики Root -->
- <div id="root-sec-stats" style="display:none;">
-   <div class="toggle-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:12px;">
-     <div class="toggle-btn active" id="stat-btn-today" onclick="switchStatPeriod('today')">Сегодня</div>
-     <div class="toggle-btn" id="stat-btn-7days" onclick="switchStatPeriod('7days')">7 дней</div>
-     <div class="toggle-btn" id="stat-btn-month" onclick="switchStatPeriod('month')">Месяц</div>
-   </div>
-   <div id="root-stats-content">
-     <div style="text-align:center; padding:20px; color:var(--text-muted);">Загрузка аналитики...</div>
-   </div>
- </div>
-  
  <!-- Док навигации -->
  <div class="dock-pill-container">
  <nav class="dock-pill" id="dock-pill-bar">
@@ -337,30 +316,22 @@
  <button class="close-btn" onclick="closeProductModal()">✕</button>
  </div>
 
-<div style="position:relative; width:100%;">
-  <div class="gallery-counter-pill" id="pop-gallery-counter">1 / 1</div>
-  <div class="product-gallery-scroll" id="pop-gallery"></div>
-</div>
-<div class="thumb-placeholder-box" id="pop-placeholder" style="display:none; padding:30px 0;">
-  <span class="thumb-placeholder-icon">🌸</span>
-  <span class="thumb-placeholder-text">Фото пока не добавили</span>
-</div>
+ <div class="product-gallery-scroll" id="pop-gallery"></div>
+ <div class="thumb-placeholder-box" id="pop-placeholder" style="display:none; padding:30px 0;">
+ <span class="thumb-placeholder-icon">🌸</span>
+ <span class="thumb-placeholder-text">Фото пока не добавили</span>
+ </div>
 
-<!-- 3 независимых селектора: Фасовка (unit), Высота (variant), Оттенок/Цвет (color) -->
-<div id="pop-variant-box" style="display:none;">
-  <div class="variant-selector-block" id="pop-pack-block" style="display:none;">
-    <div class="variant-selector-label">Количество:</div>
-    <div class="variant-chips-wrap" id="pop-pack-chips"></div>
-  </div>
-  <div class="variant-selector-block" id="pop-variant-block" style="display:none;">
-    <div class="variant-selector-label">Высота:</div>
-    <div class="variant-chips-wrap" id="pop-variant-chips"></div>
-  </div>
-  <div class="variant-selector-block" id="pop-color-block" style="display:none;">
-    <div class="variant-selector-label">Цвет:</div>
-    <div class="variant-chips-wrap" id="pop-color-chips"></div>
-  </div>
-</div>
+ <div id="pop-variant-box" style="display:none;">
+ <div class="variant-selector-block" id="pop-pack-block">
+ <div class="variant-selector-label" id="pop-pack-label">Количество / Фасовка:</div>
+ <div class="variant-chips-wrap" id="pop-pack-chips"></div>
+ </div>
+ <div class="variant-selector-block" id="pop-variant-block">
+ <div class="variant-selector-label" id="pop-variant-label">Высота / Оттенок:</div>
+ <div class="variant-chips-wrap" id="pop-variant-chips"></div>
+ </div>
+ </div>
 
  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
  <div style="font-size:11px; text-transform:uppercase; color:var(--cyan); font-weight:700;" id="pop-cat">Категория</div>
@@ -792,103 +763,6 @@
  </div>
  </div>
 
- <!-- Модалка списка уведомлений (Клиент) -->
- <div class="modal-overlay" id="notifications-modal">
-   <div class="modal-sheet">
-     <div class="modal-header">
-       <div class="modal-title">🔔 Уведомления</div>
-       <button class="close-btn" onclick="closeNotificationsModal()">✕</button>
-     </div>
-     <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
-       <span style="font-size:11px; color:var(--cyan); cursor:pointer; font-weight:700;" onclick="markAllNotificationsAsRead()">✓ Прочитать все</span>
-     </div>
-     <div id="notifications-list-container" style="max-height:60vh; overflow-y:auto;">
-       <div style="text-align:center; color:var(--text-muted); padding:20px 0; font-size:12px;">Нет новых уведомлений</div>
-     </div>
-   </div>
- </div>
-
- <!-- Модалка «Для курьера» с изолированным копированием (Root) -->
- <div class="modal-overlay" id="courier-modal">
-   <div class="modal-sheet">
-     <div class="modal-header">
-       <div class="modal-title" id="courier-modal-title">Данные для курьера</div>
-       <button class="close-btn" onclick="closeCourierModal()">✕</button>
-     </div>
-
-     <label style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Адрес доставки:</label>
-     <div class="courier-info-row">
-       <div class="courier-info-text" id="cour-row-addr">-</div>
-       <button class="courier-copy-btn" onclick="copyCourierSingleField('cour-row-addr')">Копировать</button>
-     </div>
-
-     <label style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Имя получателя:</label>
-     <div class="courier-info-row">
-       <div class="courier-info-text" id="cour-row-name">-</div>
-       <button class="courier-copy-btn" onclick="copyCourierSingleField('cour-row-name')">Копировать</button>
-     </div>
-
-     <label style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Телефон (чистый номер для вызова):</label>
-     <div class="courier-info-row">
-       <div class="courier-info-text" id="cour-row-phone" style="font-weight:700; color:var(--cyan);">-</div>
-       <button class="courier-copy-btn" onclick="copyCourierSingleField('cour-row-phone')">Копировать</button>
-     </div>
-
-     <div id="cour-comment-wrap" style="display:none;">
-       <label style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Комментарий курьеру:</label>
-       <div class="courier-info-row">
-         <div class="courier-info-text" id="cour-row-comm">-</div>
-         <button class="courier-copy-btn" onclick="copyCourierSingleField('cour-row-comm')">Копировать</button>
-       </div>
-     </div>
-
-     <label style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Примечание к грузу:</label>
-     <div class="courier-info-row">
-       <div class="courier-info-text" id="cour-row-note">Хрупкий товар — ЦВЕТЫ. Везти вертикально, аккуратно</div>
-       <button class="courier-copy-btn" onclick="copyCourierSingleField('cour-row-note')">Копировать</button>
-     </div>
-
-     <button class="btn-metro btn-secondary" style="margin-top:8px;" onclick="copyCourierAllFields()">📋 Скопировать всё одним текстом</button>
-   </div>
- </div>
-
- <!-- Модалка создания рассылки (Root) -->
- <div class="modal-overlay" id="send-notice-modal">
-   <div class="modal-sheet">
-     <div class="modal-header">
-       <div class="modal-title">Создать уведомление</div>
-       <button class="close-btn" onclick="closeSendNoticeModal()">✕</button>
-     </div>
-
-     <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Заголовок: *</label>
-     <input type="text" id="notice-new-title" class="metro-input" placeholder="Например: Свежая поставка пионов!">
-
-     <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Текст уведомления: *</label>
-     <textarea id="notice-new-text" class="metro-input" style="height:80px; resize:none;" placeholder="Текст оповещения..."></textarea>
-
-     <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Куда перенаправить клиента:</label>
-     <div class="custom-select-box" id="notice-target-box">
-       <div class="custom-select-trigger" onclick="toggleDropdown('notice-target-box')">
-         <span id="notice-target-display">В каталог товаров (screen-catalog)</span>
-         <span style="font-size:11px; color:var(--cyan);">▼</span>
-       </div>
-       <div class="custom-select-options">
-         <div class="custom-select-option" onclick="selectNoticeTarget('catalog', 'В каталог товаров')">В каталог товаров</div>
-         <div class="custom-select-option" onclick="selectNoticeTarget('cart', 'В корзину')">В корзину</div>
-         <div class="custom-select-option" onclick="selectNoticeTarget('profile', 'В профиль')">В профиль</div>
-         <div class="custom-select-option" onclick="selectNoticeTarget('about', 'О нас')">О нас</div>
-       </div>
-     </div>
-
-     <div class="custom-checkbox-wrap" onclick="toggleCheckbox('notice-send-tg-ui')">
-       <div class="custom-checkbox checked" id="notice-send-tg-ui">✓</div>
-       <span style="font-size:12px; font-weight:600; color:var(--text);">Продублировать сообщением через бота в Telegram</span>
-     </div>
-
-     <button class="btn-metro" onclick="submitNewNotificationRoot()">Отправить уведомление</button>
-   </div>
- </div>
-  
  <!-- Подключение модулей скриптов в строгом порядке зависимостей -->
  <script src="js/config.js?v=1.1"></script>
  <script src="js/utils.js?v=1.1"></script>
