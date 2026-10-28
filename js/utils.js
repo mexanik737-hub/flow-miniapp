@@ -1,3 +1,41 @@
+// --- БЕЗОПАСНЫЙ ТАКТИЛЬНЫЙ ОТКЛИК (TELEGRAM HAPTIC FEEDBACK) ---
+let lastHapticTime = 0;
+
+function hapticSelection() {
+  try {
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.selectionChanged();
+    }
+  } catch (e) {}
+}
+
+function hapticImpact(style = 'light') {
+  try {
+    const now = Date.now();
+    if (now - lastHapticTime < 40) return; // Троттлинг от перегрузки вибромотора
+    lastHapticTime = now;
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(style); // 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'
+    }
+  } catch (e) {}
+}
+
+function hapticSuccess() {
+  try {
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.notificationOccurred('success');
+    }
+  } catch (e) {}
+}
+
+function hapticWarning() {
+  try {
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.notificationOccurred('warning');
+    }
+  } catch (e) {}
+}
+
 function toast(msg) {
   const t = document.getElementById('toast');
   if (!t) return;
@@ -33,7 +71,10 @@ function toggleDropdown(boxId) {
   if (!box) return;
   const wasOpen = box.classList.contains('open');
   document.querySelectorAll('.custom-select-box').forEach(b => b.classList.remove('open'));
-  if (!wasOpen) box.classList.add('open');
+  if (!wasOpen) {
+    box.classList.add('open');
+    hapticImpact('light');
+  }
 }
 
 document.addEventListener('click', (e) => {
@@ -47,6 +88,7 @@ function toggleCheckbox(uiId) {
   if (!el) return;
   el.classList.toggle('checked');
   el.innerText = el.classList.contains('checked') ? '✓' : '';
+  hapticSelection();
 }
 
 function toggleCartAssemblyMode() {
@@ -56,6 +98,7 @@ function toggleCartAssemblyMode() {
     chk.classList.toggle('checked', isAssemblyMode);
     chk.innerText = isAssemblyMode ? '✓' : '';
   }
+  hapticImpact('medium');
   renderCartItems();
   saveCartToStorage();
 }
@@ -67,6 +110,7 @@ function toggleOrderSaveAddressCheckbox() {
     chk.classList.toggle('checked', ordSaveAddrChecked);
     chk.innerText = ordSaveAddrChecked ? '✓' : '';
   }
+  hapticSelection();
 }
 
 function calcHaversineDistance(lat1, lon1, lat2, lon2) {
@@ -100,7 +144,6 @@ function sortAscendingValues(arr) {
   });
 }
 
-// Обновление красного бейджа-счетчика колокольчика
 function updateNotificationsBadge() {
   const badge = document.getElementById('hud-notif-counter');
   if (!badge) return;
@@ -114,7 +157,6 @@ function updateNotificationsBadge() {
   }
 }
 
-// Получение названия вкладки на русском для бейджей
 function getTabDisplayTitle(tabKey) {
   switch (tabKey) {
     case 'catalog': return 'Каталог';
