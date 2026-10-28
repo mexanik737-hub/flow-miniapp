@@ -7,7 +7,6 @@ function navigateTab(screenId, btn) {
   const targetScreen = document.getElementById('screen-' + screenId);
   if (targetScreen) targetScreen.classList.add('active');
 
-  // Если кнопка не передана явно (переход из уведомления/HUD), находим её по индексу
   if (!btn) {
     const tabs = document.querySelectorAll('.dock-tab');
     if (screenId === 'catalog' && tabs[0]) btn = tabs[0];
@@ -18,11 +17,11 @@ function navigateTab(screenId, btn) {
 
   if (btn) {
     btn.classList.add('active');
-    btn.classList.add('spinning');
-    setTimeout(() => btn.classList.remove('spinning'), 450);
   }
 
-  if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+  // Мгновенный тактильный отклик физического переключения
+  hapticSelection();
+
   if (screenId === 'profile') {
     renderSavedAddresses();
     loadUserOrders();
@@ -30,23 +29,37 @@ function navigateTab(screenId, btn) {
   if (screenId === 'root') loadRootOrders(true);
 }
 
+// Привязка мгновенного отклика на тач для док-панели
+document.addEventListener('DOMContentLoaded', () => {
+  const dockTabs = document.querySelectorAll('.dock-tab');
+  dockTabs.forEach(tab => {
+    tab.addEventListener('touchstart', () => {
+      hapticSelection();
+    }, { passive: true });
+  });
+});
+
 function handleHudRootTap() {
   if (currentUser && (currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
     toast("Доступ запрещен администратором");
+    hapticWarning();
     return;
   }
 
   if (isAdmin) {
+    hapticImpact('medium');
     navigateTab('root', null);
     return;
   }
 
   hudTapCount++;
+  hapticSelection();
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
 
   if (hudTapCount >= 5) {
     hudTapCount = 0;
+    hapticSuccess();
     const pass = prompt("Код доступа Root:");
     if (pass) {
       sessionPasscode = pass.trim();
@@ -56,10 +69,12 @@ function handleHudRootTap() {
           if (Array.isArray(data)) {
             isAdmin = true;
             toast("Доступ подтвержден");
+            hapticSuccess();
             navigateTab('root', null);
           } else {
             sessionPasscode = "";
             toast("Неверный код доступа");
+            hapticWarning();
           }
         })
         .catch(() => toast("Ошибка проверки"));
@@ -74,6 +89,7 @@ function toggleEditorFabVisibility(forceState = null) {
   const chk = document.getElementById('root-toggle-editor-btn');
   chk.classList.toggle('checked', isFabVisible);
   chk.innerText = isFabVisible ? '✓' : '';
+  hapticSelection();
 
   if (!isFabVisible && isTextEditActive) {
     toggleTextEditingMode(false);
@@ -125,6 +141,7 @@ function toggleTextEditingMode(forcedState = null) {
   btn.classList.toggle('active', isTextEditActive);
   btn.innerText = isTextEditActive ? '✓' : '✏️';
   document.body.classList.toggle('in-text-edit-mode', isTextEditActive);
+  hapticImpact('medium');
 
   if (isTextEditActive) {
     toast("Режим редактирования: нажмите на любой выделенный текст");
@@ -146,6 +163,7 @@ document.addEventListener('click', async (e) => {
 
   const key = target.dataset.configKey;
   const curVal = target.innerText.trim();
+  hapticImpact('light');
   const newVal = prompt("Изменить текст:", curVal);
 
   if (newVal !== null && newVal.trim() !== "" && newVal.trim() !== curVal) {
@@ -164,9 +182,11 @@ document.addEventListener('click', async (e) => {
           value: cleanVal
         })
       });
+      hapticSuccess();
       toast("Текст сохранен!");
     } catch (err) {
       toast("Ошибка сохранения");
+      hapticWarning();
     }
   }
 }, true);
@@ -235,7 +255,6 @@ document.addEventListener('click', async (e) => {
   window.addEventListener('mouseup', onEnd);
 })();
 
-// Корректное раскрытие блока FAQ без конфликтов стилей
 async function toggleAboutFaqSection() {
   const container = document.getElementById('about-faq-container');
   const arrow = document.getElementById('faq-section-arrow');
@@ -246,11 +265,13 @@ async function toggleAboutFaqSection() {
   if (!isHidden) {
     container.style.display = 'none';
     if (arrow) arrow.style.transform = 'rotate(0deg)';
+    hapticImpact('light');
     return;
   }
 
   container.style.display = 'block';
   if (arrow) arrow.style.transform = 'rotate(180deg)';
+  hapticImpact('medium');
 
   if (cachedFaqData) {
     renderFaqList(cachedFaqData);
@@ -292,22 +313,22 @@ function toggleFaqPill(el) {
   const isOpen = el.classList.contains('open');
   document.querySelectorAll('.faq-pill-item').forEach(p => p.classList.remove('open'));
   if (!isOpen) el.classList.add('open');
-  if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+  hapticSelection();
 }
 
 function openYandexRoute() {
+  hapticImpact('medium');
   const url = SERVER_CONFIG.yandex_org_url || `https://yandex.ru/maps/org/tsvety/18169538769?si=w0t417tmmfzn5zadubrew3uker`;
   if (tg && tg.openLink) tg.openLink(url);
   else window.open(url, '_blank');
 }
 
 function contactSupport() {
+  hapticImpact('medium');
   const url = SERVER_CONFIG.support_url || "https://t.me/";
   if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
   else window.open(url, '_blank');
 }
-
-// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
 
 async function loadNotifications() {
   try {
@@ -318,6 +339,7 @@ async function loadNotifications() {
 }
 
 function openNotificationsModal() {
+  hapticImpact('light');
   const container = document.getElementById('notifications-list');
   if (!container) return;
 
@@ -340,7 +362,6 @@ function openNotificationsModal() {
       `;
     }).join('');
 
-    // Фиксация просмотра списка уведомлений в статистику
     clientNotifications.forEach(n => {
       fetch(API_URL, {
         method: 'POST',
@@ -354,17 +375,18 @@ function openNotificationsModal() {
 }
 
 function closeNotificationsModal() {
+  hapticImpact('light');
   document.getElementById('notifications-modal').classList.remove('open');
 }
 
 function clickNotificationItem(id, targetTab) {
   const strId = String(id);
+  hapticImpact('medium');
   if (!readNotificationIds.includes(strId)) {
     readNotificationIds.push(strId);
     localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
     updateNotificationsBadge();
 
-    // Фиксация прочтения в статистике
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
@@ -372,7 +394,6 @@ function clickNotificationItem(id, targetTab) {
     }).catch(() => {});
   }
 
-  // Фиксация клика / перехода по уведомлению
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
@@ -384,6 +405,7 @@ function clickNotificationItem(id, targetTab) {
 }
 
 function markAllNotificationsAsRead() {
+  hapticSuccess();
   clientNotifications.forEach(n => {
     const strId = String(n.id);
     if (!readNotificationIds.includes(strId)) {
@@ -398,7 +420,7 @@ function markAllNotificationsAsRead() {
 
   localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
   updateNotificationsBadge();
-  openNotificationsModal(); // Перерисовка модалки без синих рамок
+  openNotificationsModal();
   toast("Все уведомления прочитаны");
 }
 
@@ -409,7 +431,6 @@ loadConfig();
 loadNotifications();
 updateCartUI();
 
-// Фоновое обновление и автопроверка таймаута заказов каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
