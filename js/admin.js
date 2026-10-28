@@ -1,32 +1,40 @@
+// Защищенное переключение разделов Root с проверкой наличия DOM-элементов
 function switchRootSection(sec) {
-  document.getElementById('tab-root-orders').classList.toggle('active', sec === 'orders');
-  document.getElementById('tab-root-catalog').classList.toggle('active', sec === 'catalog');
-  document.getElementById('tab-root-clients').classList.toggle('active', sec === 'clients');
-  document.getElementById('tab-root-notifs').classList.toggle('active', sec === 'notifs');
-  document.getElementById('tab-root-stats').classList.toggle('active', sec === 'stats');
-  document.getElementById('tab-root-faq').classList.toggle('active', sec === 'faq');
+  const allSecs = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
 
-  document.getElementById('root-sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
-  document.getElementById('root-sec-catalog').style.display = sec === 'catalog' ? 'block' : 'none';
-  document.getElementById('root-sec-clients').style.display = sec === 'clients' ? 'block' : 'none';
-  document.getElementById('root-sec-notifs').style.display = sec === 'notifs' ? 'block' : 'none';
-  document.getElementById('root-sec-stats').style.display = sec === 'stats' ? 'block' : 'none';
-  document.getElementById('root-sec-faq').style.display = sec === 'faq' ? 'block' : 'none';
+  allSecs.forEach(s => {
+    const tabEl = document.getElementById('tab-root-' + s);
+    const secEl = document.getElementById('root-sec-' + s);
+    if (tabEl) {
+      if (s === sec) {
+        tabEl.classList.add('active');
+      } else {
+        tabEl.classList.remove('active');
+      }
+    }
+    if (secEl) {
+      secEl.style.display = (s === sec ? 'block' : 'none');
+    }
+  });
 
-  if (sec === 'orders') loadRootOrders(true);
-  if (sec === 'catalog') loadRootCatalog();
-  if (sec === 'clients') loadRootClients();
-  if (sec === 'notifs') loadRootNotifications();
-  if (sec === 'stats') loadRootStats(currentStatsPeriod);
-  if (sec === 'faq') loadRootFaq();
+  if (sec === 'orders' && typeof loadRootOrders === 'function') loadRootOrders(true);
+  if (sec === 'catalog' && typeof loadRootCatalog === 'function') loadRootCatalog();
+  if (sec === 'clients' && typeof loadRootClients === 'function') loadRootClients();
+  if (sec === 'notifs' && typeof loadRootNotifications === 'function') loadRootNotifications();
+  if (sec === 'stats' && typeof loadRootStats === 'function') loadRootStats(currentStatsPeriod || 'today');
+  if (sec === 'faq' && typeof loadRootFaq === 'function') loadRootFaq();
 }
+window.switchRootSection = switchRootSection;
 
 function switchRootSubTab(tab) {
   currentRootSubTab = tab;
-  document.getElementById('tab-root-active').classList.toggle('active', tab === 'active');
-  document.getElementById('tab-root-archive').classList.toggle('active', tab === 'archive');
+  const tabActive = document.getElementById('tab-root-active');
+  const tabArchive = document.getElementById('tab-root-archive');
+  if (tabActive) tabActive.classList.toggle('active', tab === 'active');
+  if (tabArchive) tabArchive.classList.toggle('active', tab === 'archive');
   renderRootOrders();
 }
+window.switchRootSubTab = switchRootSubTab;
 
 async function loadRootOrders(force = false) {
   if (!isAdmin) return;
@@ -45,6 +53,8 @@ async function loadRootOrders(force = false) {
 
 function renderRootOrders() {
   const container = document.getElementById('root-orders-container');
+  if (!container) return;
+
   const filtered = allRootOrders.filter(ord => {
     const isClosed = ord.status === 'Завершен' || ord.status.startsWith('Отменен');
     return currentRootSubTab === 'active' ? !isClosed : isClosed;
@@ -868,10 +878,14 @@ async function deleteUserRoot(uid) {
 // ----------------- УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ В ROOT -----------------
 
 function selectRootNotifTab(val, label) {
-  document.getElementById('root-notif-tab').value = val;
-  document.getElementById('root-notif-tab-display').innerText = label;
-  document.getElementById('root-notif-tab-box').classList.remove('open');
+  const hiddenInput = document.getElementById('root-notif-tab');
+  const displaySpan = document.getElementById('root-notif-tab-display');
+  const selectBox = document.getElementById('root-notif-tab-box');
+  if (hiddenInput) hiddenInput.value = val;
+  if (displaySpan) displaySpan.innerText = label;
+  if (selectBox) selectBox.classList.remove('open');
 }
+window.selectRootNotifTab = selectRootNotifTab;
 
 async function loadRootNotifications() {
   const container = document.getElementById('root-notifs-container');
@@ -1014,11 +1028,13 @@ async function deleteNotificationRoot(id) {
 
 function switchStatsPeriod(period) {
   currentStatsPeriod = period;
-  document.getElementById('tab-stat-today').classList.toggle('active', period === 'today');
-  document.getElementById('tab-stat-7days').classList.toggle('active', period === '7days');
-  document.getElementById('tab-stat-month').classList.toggle('active', period === 'month');
+  ['today', '7days', 'month'].forEach(p => {
+    const el = document.getElementById('tab-stat-' + p);
+    if (el) el.classList.toggle('active', p === period);
+  });
   renderRootStats();
 }
+window.switchStatsPeriod = switchStatsPeriod;
 
 async function loadRootStats(period = 'today') {
   currentStatsPeriod = period;
@@ -1043,13 +1059,13 @@ function renderRootStats() {
   const breakdownTbody = document.getElementById('stats-daily-tbody');
 
   if (currentStatsPeriod === 'today') {
-    breakdownBox.style.display = 'none';
+    if (breakdownBox) breakdownBox.style.display = 'none';
     totalVisits = cachedStatsData.today?.visits || 0;
     totalOrdersCount = cachedStatsData.today?.orders?.count || 0;
     totalRevenue = cachedStatsData.today?.orders?.total || 0;
     totalCompleted = cachedStatsData.today?.orders?.completed || 0;
   } else if (currentStatsPeriod === '7days') {
-    breakdownBox.style.display = 'block';
+    if (breakdownBox) breakdownBox.style.display = 'block';
     const list = cachedStatsData.past7days || [];
     list.forEach(d => {
       totalVisits += d.visits;
@@ -1058,16 +1074,18 @@ function renderRootStats() {
       totalCompleted += d.completed_count;
     });
 
-    breakdownTbody.innerHTML = list.map(d => `
-      <tr>
-        <td><b>${d.date}</b></td>
-        <td>${d.visits}</td>
-        <td>${d.orders_count} (${d.completed_count})</td>
-        <td style="color:var(--green); font-weight:700;">${d.orders_total} ₽</td>
-      </tr>
-    `).join('');
+    if (breakdownTbody) {
+      breakdownTbody.innerHTML = list.map(d => `
+        <tr>
+          <td><b>${d.date}</b></td>
+          <td>${d.visits}</td>
+          <td>${d.orders_count} (${d.completed_count})</td>
+          <td style="color:var(--green); font-weight:700;">${d.orders_total} ₽</td>
+        </tr>
+      `).join('');
+    }
   } else if (currentStatsPeriod === 'month') {
-    breakdownBox.style.display = 'none';
+    if (breakdownBox) breakdownBox.style.display = 'none';
     const list = cachedStatsData.past7days || [];
     list.forEach(d => {
       totalVisits += d.visits;
@@ -1077,41 +1095,50 @@ function renderRootStats() {
     });
   }
 
-  document.getElementById('stat-val-visits').innerText = totalVisits;
-  document.getElementById('stat-val-orders').innerText = totalOrdersCount;
-  document.getElementById('stat-val-revenue').innerText = `${totalRevenue} ₽`;
-  document.getElementById('stat-val-completed').innerText = totalCompleted;
+  const vEl = document.getElementById('stat-val-visits');
+  const oEl = document.getElementById('stat-val-orders');
+  const rEl = document.getElementById('stat-val-revenue');
+  const cEl = document.getElementById('stat-val-completed');
+
+  if (vEl) vEl.innerText = totalVisits;
+  if (oEl) oEl.innerText = totalOrdersCount;
+  if (rEl) rEl.innerText = `${totalRevenue} ₽`;
+  if (cEl) cEl.innerText = totalCompleted;
 
   // Рендер просмотров букетов
   const pList = document.getElementById('stats-products-list');
-  const products = cachedStatsData.products_views || [];
-  if (!products.length) {
-    pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о просмотрах</div>';
-  } else {
-    pList.innerHTML = products.slice(0, 15).map((p, idx) => `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-        <div><b>${idx + 1}.</b> ${p.title}</div>
-        <div style="color:var(--cyan); font-weight:800;">${p.views} просм.</div>
-      </div>
-    `).join('');
+  if (pList) {
+    const products = cachedStatsData.products_views || [];
+    if (!products.length) {
+      pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о просмотрах</div>';
+    } else {
+      pList.innerHTML = products.slice(0, 15).map((p, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+          <div><b>${idx + 1}.</b> ${p.title}</div>
+          <div style="color:var(--cyan); font-weight:800;">${p.views} просм.</div>
+        </div>
+      `).join('');
+    }
   }
 
   // Рендер статистики уведомлений
   const nList = document.getElementById('stats-notifs-list');
-  const notifs = cachedStatsData.notifications_stats || [];
-  if (!notifs.length) {
-    nList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о рассылках</div>';
-  } else {
-    nList.innerHTML = notifs.map(n => `
-      <div style="background:var(--card-inner); border-radius:6px; padding:8px 10px; margin-bottom:6px; border:1px solid var(--border); font-size:12px;">
-        <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${n.title}</div>
-        <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
-          <span>Показов: <b style="color:var(--text);">${n.views}</b></span>
-          <span>Прочтений: <b style="color:var(--cyan);">${n.reads}</b></span>
-          <span>Переходов: <b style="color:var(--green);">${n.clicks}</b></span>
+  if (nList) {
+    const notifs = cachedStatsData.notifications_stats || [];
+    if (!notifs.length) {
+      nList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о рассылках</div>';
+    } else {
+      nList.innerHTML = notifs.map(n => `
+        <div style="background:var(--card-inner); border-radius:6px; padding:8px 10px; margin-bottom:6px; border:1px solid var(--border); font-size:12px;">
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${n.title}</div>
+          <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
+            <span>Показов: <b style="color:var(--text);">${n.views}</b></span>
+            <span>Прочтений: <b style="color:var(--cyan);">${n.reads}</b></span>
+            <span>Переходов: <b style="color:var(--green);">${n.clicks}</b></span>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    }
   }
 }
 
