@@ -1,56 +1,69 @@
-// Сохранение корзины в локальное хранилище браузера
-function saveCartToLocalStorage() {
+// Сохранение состояния корзины в локальное хранилище
+function saveCartToStorage() {
   localStorage.setItem('flw_cart', JSON.stringify(cart));
   localStorage.setItem('flw_cart_assembly', JSON.stringify(cartAssemblyItems));
+  localStorage.setItem('flw_is_assembly_mode', String(isAssemblyMode));
 }
 
+// Полная очистка корзины и хранилища (при оформлении заказа)
+function clearCartStorage() {
+  cart = {};
+  cartAssemblyItems = {};
+  isAssemblyMode = false;
+  localStorage.removeItem('flw_cart');
+  localStorage.removeItem('flw_cart_assembly');
+  localStorage.removeItem('flw_is_assembly_mode');
+}
 
+// Добавление выбранного варианта из модального окна в корзину
 function addPopToCart() {
   if (!activePopItem) return;
 
-
-  let targetItem = activePopItem;
-  let finalPack = selectedGroupPack || "";
+  let targetItem = null;
+  let finalUnit = selectedGroupPack || "";
   let finalVariant = selectedGroupVariant || "";
   let finalColor = selectedGroupColor || "";
 
-
   if (activePopItem.is_group) {
-    const variant = activePopItem.variants.find(v => {
-      const packMatch = !selectedGroupPack || v.unit.split('/').map(s => s.trim()).includes(selectedGroupPack);
-      const varMatch = !selectedGroupVariant || v.variant.split('/').map(s => s.trim()).includes(selectedGroupVariant);
-      const colMatch = !selectedGroupColor || (v.color && v.color.split('/').map(s => s.trim()).includes(selectedGroupColor));
-      return packMatch && varMatch && colMatch;
-    }) || activePopItem.variants[0];
+    targetItem = activePopItem.variants.find(v => {
+      const packParts = (v.unit || '').split('/').map(s => s.trim());
+      const varParts = (v.variant || '').split('/').map(s => s.trim());
+      const colorParts = (v.color || '').split('/').map(s => s.trim());
 
+      const packMatch = !selectedGroupPack || packParts.includes(selectedGroupPack) || v.unit.trim() === selectedGroupPack.trim();
+      const varMatch = !selectedGroupVariant || varParts.includes(selectedGroupVariant) || v.variant.trim() === selectedGroupVariant.trim();
+      const colorMatch = !selectedGroupColor || colorParts.includes(selectedGroupColor) || v.color.trim() === selectedGroupColor.trim();
 
-    if (!variant || !variant.is_active) {
-      toast("Товар отсутствует в наличии");
+      return packMatch && varMatch && colorMatch;
+    });
+
+    if (!targetItem || !targetItem.is_active) {
+      toast("Выбранный товар отсутствует в наличии");
       return;
     }
-    targetItem = variant;
   } else {
     if (!activePopItem.is_active) {
       toast("Товар отсутствует в наличии");
       return;
     }
+    targetItem = activePopItem;
+    if (!finalUnit) finalUnit = targetItem.unit || "";
+    if (!finalVariant) finalVariant = targetItem.variant || "";
+    if (!finalColor) finalColor = targetItem.color || "";
   }
 
-
-  // Составной уникальный ключ: id:::unit:::variant:::color
-  const cartKey = `${targetItem.id}:::${finalPack}:::${finalVariant}:::${finalColor}`;
+  // Ключ корзины учитывает все 3 независимые характеристики
+  const cartKey = `${targetItem.id}:::${finalUnit}:::${finalVariant}:::${finalColor}`;
   cart[cartKey] = (cart[cartKey] || 0) + popQty;
   cartAssemblyItems[cartKey] = true;
 
-
-  saveCartToLocalStorage();
   updateCartUI();
   updateProductCardAction(activePopItem.id);
   closeProductModal();
-  toast("Добавлено в заказ");
+  toast(`Добавлено: ${formatFullItemTitle(targetItem.title, finalUnit, finalVariant, finalColor)}`);
 }
 
-
+// Мгновенное добавление единицы товара в корзину по кнопке «+»
 function quickAdd(id) {
   let item = catalog.find(i => String(i.id) === String(id));
   if (!item) {
@@ -60,26 +73,25 @@ function quickAdd(id) {
     }
   }
 
-
   if (!item || !item.is_active) return;
 
+  let chosenUnit = item.unit || "";
+  if (chosenUnit.includes('/')) chosenUnit = chosenUnit.split('/')[0].trim();
 
-  const chosenPack = item.unit ? item.unit.split('/')[0].trim() : "";
-  const chosenVar = item.variant ? item.variant.split('/')[0].trim() : "";
-  const chosenColor = item.color ? item.color.split('/')[0].trim() : "";
+  let chosenVar = item.variant || "";
+  if (chosenVar.includes('/')) chosenVar = chosenVar.split('/')[0].trim();
 
+  let chosenColor = item.color || "";
+  if (chosenColor.includes('/')) chosenColor = chosenColor.split('/')[0].trim();
 
-  const cartKey = `${item.id}:::${chosenPack}:::${chosenVar}:::${chosenColor}`;
+  const cartKey = `${item.id}:::${chosenUnit}:::${chosenVar}:::${chosenColor}`;
   cart[cartKey] = (cart[cartKey] || 0) + 1;
   cartAssemblyItems[cartKey] = true;
 
-
-  saveCartToLocalStorage();
   updateCartUI();
   updateProductCardAction(id);
-  toast(`Добавлено: ${item.title}`);
+  toast(`Добавлено: ${formatFullItemTitle(item.title, chosenUnit, chosenVar, chosenColor)}`);
 }
-
 
 function modifyCartByKey(cartKey, delta) {
   cart[cartKey] = (cart[cartKey] || 0) + delta;
@@ -88,11 +100,9 @@ function modifyCartByKey(cartKey, delta) {
     delete cart[cartKey];
     delete cartAssemblyItems[cartKey];
   }
-  saveCartToLocalStorage();
   updateCartUI();
   updateProductCardAction(itemId);
 }
-
 
 function removeAllOfItemFromCart(id) {
   Object.keys(cart).forEach(key => {
@@ -102,74 +112,63 @@ function removeAllOfItemFromCart(id) {
       delete cartAssemblyItems[key];
     }
   });
-  saveCartToLocalStorage();
   updateCartUI();
   updateProductCardAction(id);
   toast("Удалено из корзины");
 }
 
-
 function toggleItemAssemblySelection(cartKey) {
   cartAssemblyItems[cartKey] = !cartAssemblyItems[cartKey];
-  saveCartToLocalStorage();
   renderCartItems();
+  saveCartToStorage();
 }
 
-
 function updateCartUI() {
-  const count = Object.values(cart).reduce((a, b) => a + b, 0);
-  const counterEl = document.getElementById('cart-counter');
-  if (counterEl) counterEl.innerText = count;
+  saveCartToStorage();
 
+  const count = Object.values(cart).reduce((a, b) => a + b, 0);
+  document.getElementById('cart-counter').innerText = count;
 
   const checkoutCard = document.getElementById('cart-checkout-card');
   const entries = Object.entries(cart);
-
-
-  // Синхронизация красных точек для всех групп товаров
-  displayCatalog.forEach(g => {
-    if (g.is_group) {
-      const dotEl = document.getElementById(`group-dot-${g.id}`);
-      if (dotEl) {
-        dotEl.style.display = isGroupInCart(g) ? 'block' : 'none';
-      }
-    }
-  });
-
 
   if (!entries.length) {
     document.getElementById('cart-items-container').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;" data-config-key="txt_cart_empty">Корзина пуста</div>';
     if (checkoutCard) checkoutCard.style.display = 'none';
     currentFlowersSubtotal = 0;
-    return;
+  } else {
+    if (checkoutCard) checkoutCard.style.display = 'block';
+    renderCartItems();
   }
 
-
-  if (checkoutCard) checkoutCard.style.display = 'block';
-  renderCartItems();
+  // Обновление красных точек на всех групповых кнопках «Выбрать»
+  displayCatalog.forEach(g => {
+    if (g.is_group) {
+      const el = document.getElementById(`product-action-${g.id}`);
+      if (el) {
+        const hasItems = isGroupInCart(g.id);
+        el.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${g.id}')">Выбрать</button>`;
+      }
+    }
+  });
 }
 
-
+// Отображение позиций в корзине с полным шаблоном: Товар [штук] [см] [цвет] × qty = sum ₽
 function renderCartItems() {
   const container = document.getElementById('cart-items-container');
   let subtotal = 0;
   const entries = Object.entries(cart);
 
-
   container.innerHTML = entries.map(([cartKey, qty]) => {
-    const [id, selectedPack, selectedVar, selectedColor] = cartKey.split(':::');
+    const [id, selectedUnit, selectedVar, selectedColor] = cartKey.split(':::');
     const item = catalog.find(i => String(i.id) === String(id));
     if (!item) return '';
-
 
     subtotal += item.price * qty;
     const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
     const thumb = photos[0] || "";
     const isChecked = !!cartAssemblyItems[cartKey];
-    
-    // Форматирование по стандарту: Товар [штук] [см] [цвет]
-    const fullTitle = formatItemFullName(item.title, selectedPack, selectedVar, selectedColor);
-
+    const fullTitle = formatFullItemTitle(item.title, selectedUnit || item.unit, selectedVar, selectedColor);
 
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
@@ -177,12 +176,12 @@ function renderCartItems() {
           ${isAssemblyMode ? `
             <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
           ` : ''}
-          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${selectedPack || ''}', '${selectedVar || ''}', '${selectedColor || ''}')">
+          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}')">
             <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
               ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
             </div>
             <div>
-              <div style="font-size:13px; font-weight:700; line-height:1.2; text-decoration:underline; text-decoration-color:rgba(56,189,248,0.4);">${fullTitle}</div>
+              <div style="font-size:12px; font-weight:700; line-height:1.25; color:var(--text);">${fullTitle}</div>
               <div style="font-size:11px; color:var(--cyan); margin-top:2px;">${item.price} ₽ × ${qty} шт. = ${item.price * qty} ₽</div>
             </div>
           </div>
@@ -196,7 +195,7 @@ function renderCartItems() {
     `;
   }).join('');
 
-
   currentFlowersSubtotal = subtotal;
-  document.getElementById('cart-total').innerText = subtotal + ' ₽';
+  const totalEl = document.getElementById('cart-total');
+  if (totalEl) totalEl.innerText = subtotal + ' ₽';
 }
