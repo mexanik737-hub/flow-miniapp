@@ -1,12 +1,12 @@
 let selectedSavedAddrSuggestion = null;
 
+
 function renderSavedAddresses() {
   const box = document.getElementById('saved-addresses-profile-list');
   if (!savedAddresses.length) {
     box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
     return;
   }
-  // Координаты lat/lon скрытно присутствуют в объектах и не отображаются
   box.innerHTML = savedAddresses.map((a, idx) => `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
       <div style="max-width:75%;">
@@ -19,6 +19,7 @@ function renderSavedAddresses() {
     </div>
   `).join('');
 }
+
 
 function openAddSavedAddressModal() {
   if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
@@ -35,6 +36,7 @@ function openAddSavedAddressModal() {
   document.getElementById('add-saved-addr-modal').classList.add('open');
 }
 
+
 function openEditSavedAddressModal(idx) {
   editingSavedAddrIdx = idx;
   const a = savedAddresses[idx];
@@ -43,6 +45,7 @@ function openEditSavedAddressModal(idx) {
     value: a.address,
     data: { house: "1", geo_lat: a.lat, geo_lon: a.lon }
   } : null;
+
 
   document.getElementById('saved-addr-modal-title').innerText = `Редактирование: ${a.label}`;
   document.getElementById('save-addr-modal-btn').innerText = "Сохранить изменения";
@@ -55,14 +58,18 @@ function openEditSavedAddressModal(idx) {
   document.getElementById('add-saved-addr-modal').classList.add('open');
 }
 
+
 function closeAddSavedAddressModal() { document.getElementById('add-saved-addr-modal').classList.remove('open'); }
+
 
 function onSavedAddrSuggestInput(query) {
   clearTimeout(suggestDebounceTimer);
   const box = document.getElementById('new-addr-suggest-list');
   selectedSavedAddrSuggestion = null;
 
+
   if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+
 
   suggestDebounceTimer = setTimeout(async () => {
     try {
@@ -87,7 +94,7 @@ function onSavedAddrSuggestInput(query) {
   }, 250);
 }
 
-// Правка 16: захват данных дома и координат
+
 function selectSavedAddrItem(idx) {
   const s = window.savedAddrSuggestions?.[idx];
   if (!s) return;
@@ -96,7 +103,7 @@ function selectSavedAddrItem(idx) {
   selectedSavedAddrSuggestion = s;
 }
 
-// Правка 16: валидация наличия номера дома и скрытое сохранение координат
+
 function saveNewAddressFromModal() {
   const label = document.getElementById('new-addr-label').value.trim() || "Дом";
   const addr = document.getElementById('new-addr-suggest').value.trim();
@@ -105,17 +112,21 @@ function saveNewAddressFromModal() {
   const apt = document.getElementById('new-addr-apt').value.trim();
   const intc = document.getElementById('new-addr-intercom').value.trim();
 
+
   if (!addr) { toast("Укажите улицу и номер дома"); return; }
+
 
   if (!selectedSavedAddrSuggestion || !selectedSavedAddrSuggestion.data?.house || !selectedSavedAddrSuggestion.data?.geo_lat || !selectedSavedAddrSuggestion.data?.geo_lon) {
     toast("Выберите точный адрес с номером дома из подсказок DaData");
     return;
   }
 
+
   if (!ent || !flr || !apt || !intc) {
     toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
     return;
   }
+
 
   const addrObj = {
     label: label,
@@ -128,6 +139,7 @@ function saveNewAddressFromModal() {
     lon: selectedSavedAddrSuggestion.data.geo_lon
   };
 
+
   if (editingSavedAddrIdx !== null) {
     savedAddresses[editingSavedAddrIdx] = addrObj;
     toast("Адрес обновлен");
@@ -136,10 +148,12 @@ function saveNewAddressFromModal() {
     toast("Адрес сохранен");
   }
 
+
   syncSavedAddresses();
   closeAddSavedAddressModal();
   renderSavedAddresses();
 }
+
 
 function deleteSavedAddress(idx) {
   savedAddresses.splice(idx, 1);
@@ -147,6 +161,7 @@ function deleteSavedAddress(idx) {
   renderSavedAddresses();
   toast("Адрес удален");
 }
+
 
 function syncSavedAddresses() {
   localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
@@ -157,6 +172,7 @@ function syncSavedAddresses() {
   }).catch(() => {});
 }
 
+
 function openEditProfileModal() {
   if (!currentUser) return;
   document.getElementById('edit-prof-name').value = currentUser.name || '';
@@ -165,10 +181,12 @@ function openEditProfileModal() {
 }
 function closeEditProfileModal() { document.getElementById('edit-profile-modal').classList.remove('open'); }
 
+
 async function saveUserProfileChanges() {
   const name = document.getElementById('edit-prof-name').value.trim();
   const phone = document.getElementById('edit-prof-phone').value.trim();
   if (!name || phone.length < 17) { toast("Заполните имя и номер полностью: 8 (***) ***-**-**"); return; }
+
 
   await fetch(API_URL, {
     method: 'POST',
@@ -183,20 +201,24 @@ async function saveUserProfileChanges() {
   toast("Профиль обновлен");
 }
 
+
 async function checkUserSession() {
   if (currentUser) {
     renderProfileUI();
   }
+
 
   try {
     const cleanUid = String(userId).trim();
     const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${encodeURIComponent(cleanUid)}`);
     const user = await res.json();
 
+
     if (user && !user.error) {
       currentUser = user;
       isAdmin = (user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
       localStorage.setItem('flw_user_profile', JSON.stringify(user));
+
 
       if (user.address && String(user.address).startsWith('[')) {
         try {
@@ -204,6 +226,7 @@ async function checkUserSession() {
           localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
         } catch (e) {}
       }
+
 
       renderProfileUI();
       renderSavedAddresses();
@@ -221,14 +244,17 @@ async function checkUserSession() {
   }
 }
 
+
 async function submitRegistration() {
   const name = document.getElementById('reg-name').value.trim() || tgFirstName;
   const phone = document.getElementById('reg-phone').value.trim();
+
 
   if (!phone || phone.length < 17) {
     toast("Введите номер полностью: 8 (***) ***-**-**");
     return;
   }
+
 
   toast("Сохранение профиля...");
   try {
@@ -244,6 +270,7 @@ async function submitRegistration() {
   }
 }
 
+
 function renderProfileUI() {
   if (!currentUser) return;
   const name = currentUser.name || tgFirstName || "Клиент";
@@ -251,22 +278,29 @@ function renderProfileUI() {
   const spent = (currentUser.total_spent !== undefined && currentUser.total_spent !== null) ? currentUser.total_spent : 0;
   const regdate = currentUser.reg_date || "-";
 
+
   const hudEl = document.getElementById('hud-name');
   if (hudEl) hudEl.innerText = name;
+
 
   const pName = document.getElementById('prof-name');
   if (pName) pName.innerText = name;
 
+
   const pPhone = document.getElementById('prof-phone');
   if (pPhone) pPhone.innerText = phone;
 
+
   const pSpent = document.getElementById('prof-spent');
   if (pSpent) pSpent.innerText = spent + ' ₽';
+
 
   const pReg = document.getElementById('prof-regdate');
   if (pReg) pReg.innerText = regdate;
 }
 
+
+// Загрузка заказов с автоматической отменой по истечении 15 минут
 async function loadUserOrders() {
   const container = document.getElementById('user-orders-list');
   try {
@@ -277,7 +311,41 @@ async function loadUserOrders() {
       return;
     }
 
+
+    const now = Date.now();
+
+
     container.innerHTML = orders.map(ord => {
+      let isAwaitingPay = (ord.status === 'Ожидает оплаты');
+      const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
+
+
+      let timerCardBadge = "";
+      if (isAwaitingPay) {
+        const createdTs = parseOrderDateToTs(ord.date_time);
+        if (createdTs) {
+          const elapsedSec = Math.floor((now - createdTs) / 1000);
+          const leftSec = (15 * 60) - elapsedSec;
+
+
+          if (leftSec <= 0) {
+            // Время вышло — переводим заказ в отмененный без клика по кнопке
+            ord.status = 'Отменен (таймаут)';
+            isAwaitingPay = false;
+            fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ action: "cancel_order_timeout", order_id: ord.order_id })
+            }).catch(() => {});
+          } else {
+            const m = Math.floor(leftSec / 60);
+            const s = leftSec % 60;
+            timerCardBadge = `⏳ Осталось: ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+          }
+        }
+      }
+
+
       let badgeCls = 'st-await-pay';
       if (ord.status.includes('Собирается')) badgeCls = 'st-building';
       else if (ord.status.includes('В пути') || ord.status.includes('выдаче')) badgeCls = 'st-transit';
@@ -285,19 +353,6 @@ async function loadUserOrders() {
       else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
       else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
 
-      const isAwaitingPay = (ord.status === 'Ожидает оплаты');
-      const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
-
-      let timerCardBadge = "";
-      if (isAwaitingPay) {
-        const createdTs = parseOrderDateToTs(ord.date_time);
-        if (createdTs) {
-          const leftSec = Math.max(0, (15 * 60) - Math.floor((Date.now() - createdTs) / 1000));
-          const m = Math.floor(leftSec / 60);
-          const s = leftSec % 60;
-          timerCardBadge = `⏳ Осталось: ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
-        }
-      }
 
       return `
         <div class="box-card" style="margin-bottom:8px;">
@@ -307,9 +362,9 @@ async function loadUserOrders() {
           </div>
           <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
             ${ord.items.map(i => {
-              const varInfo = i.variant ? ` (${i.variant})` : '';
+              const fullTitle = formatItemFullName(i.title, i.unit, i.variant, i.color);
               const packTag = i.in_bouquet ? ' <b>[в букет]</b>' : '';
-              return `• ${i.title}${varInfo} × ${i.qty}${packTag}`;
+              return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
             }).join('<br>')}
           </div>
           ${isAwaitingPay ? `
@@ -321,7 +376,7 @@ async function loadUserOrders() {
             </div>
           ` : ''}
           ${isAwaitingAssembly ? `
-            <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:8px; margin-bottom:8px; text-decoration:none;">
+            <a class="btn-metro btn-emerald" href="tel:${SERVER_CONFIG.shop_phone_tel || '89162257117'}" style="font-size:12px; padding:8px; margin-bottom:8px; text-decoration:none;">
               📞 Позвонить флористу для согласования
             </a>
           ` : ''}
