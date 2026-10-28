@@ -4,7 +4,7 @@
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
  <title>Магазин «Цветы»</title>
- <link rel="stylesheet" href="css/style.css?v=1.3">
+ <link rel="stylesheet" href="css/style.css?v=1.4">
  <script src="https://telegram.org/js/telegram-web-app.js"></script>
  <script>
  if (window.Telegram && window.Telegram.WebApp) {
@@ -32,15 +32,22 @@
  <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
  <div class="app-wrapper">
- <!-- Двойной парящий HUD -->
+ <!-- Двойной парящий HUD с колокольчиком уведомлений -->
  <header>
  <div class="header-pills-row">
  <div class="hud-pill" onclick="handleHudRootTap()">
  <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
  <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
  </div>
+ 
+<div class="hud-right-group">
+ <div class="hud-notif-btn" onclick="openNotificationsModal()" title="Уведомления">
+ 🔔
+ <span class="hud-notif-badge" id="hud-notif-counter">0</span>
+ </div>
  <div class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])">
  <span id="hud-name">Клиент</span>
+ </div>
  </div>
  </div>
  </header>
@@ -192,6 +199,8 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  <div class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</div>
  <div class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</div>
  <div class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</div>
+ <div class="toggle-btn" id="tab-root-notifs" onclick="switchRootSection('notifs')">Уведомления</div>
+ <div class="toggle-btn" id="tab-root-stats" onclick="switchRootSection('stats')">Статистика</div>
  <div class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</div>
  </div>
 
@@ -217,6 +226,101 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  <div id="root-sec-clients" style="display:none;">
  <input type="text" id="root-client-search" class="metro-input" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
  <div id="root-clients-container"></div>
+ </div>
+
+ <!-- Уведомления (Root) -->
+ <div id="root-sec-notifs" style="display:none;">
+ <div class="box-card" style="margin-bottom:14px;">
+ <div style="font-size:13px; font-weight:800; color:var(--cyan); margin-bottom:10px; text-transform:uppercase;">Создать рассылку</div>
+ <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Заголовок уведомления: *</label>
+ <input type="text" id="root-notif-title" class="metro-input" placeholder="🌸 Новая поставка пионов!">
+
+ <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Текст уведомления: *</label>
+ <textarea id="root-notif-text" class="metro-input" style="height:70px; resize:none;" placeholder="Свежие пионы Сара Бернар уже на витрине со скидкой 15%..."></textarea>
+
+ <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Целевой экран перехода: *</label>
+ <div class="custom-select-box" id="root-notif-tab-box">
+ <div class="custom-select-trigger" onclick="toggleDropdown('root-notif-tab-box')">
+ <span id="root-notif-tab-display">Каталог</span>
+ <span style="font-size:11px; color:var(--cyan);">▼</span>
+ </div>
+ <div class="custom-select-options">
+ <div class="custom-select-option" onclick="selectRootNotifTab('catalog', 'Каталог')">Каталог</div>
+ <div class="custom-select-option" onclick="selectRootNotifTab('cart', 'Корзина')">Корзина</div>
+ <div class="custom-select-option" onclick="selectRootNotifTab('profile', 'Профиль')">Профиль</div>
+ <div class="custom-select-option" onclick="selectRootNotifTab('about', 'О нас')">О нас</div>
+ </div>
+ </div>
+ <input type="hidden" id="root-notif-tab" value="catalog">
+
+ <div class="custom-checkbox-wrap" onclick="toggleCheckbox('root-notif-tg-ui')">
+ <div class="custom-checkbox checked" id="root-notif-tg-ui">✓</div>
+ <span style="font-size:12px; font-weight:700; color:var(--text);">Дублировать сообщение через Telegram-бота</span>
+ </div>
+
+ <button class="btn-metro" onclick="submitCreateNotification()">🚀 Отправить уведомление</button>
+ </div>
+
+ <div style="font-size:12px; font-weight:800; color:var(--text); margin-bottom:8px; text-transform:uppercase;">История рассылок</div>
+ <div id="root-notifs-container"></div>
+ </div>
+
+ <!-- Статистика (Root) -->
+ <div id="root-sec-stats" style="display:none;">
+ <div class="toggle-grid" style="grid-template-columns:repeat(3, 1fr); margin-bottom:12px;">
+ <div class="toggle-btn active" id="tab-stat-today" onclick="switchStatsPeriod('today')">Сегодня</div>
+ <div class="toggle-btn" id="tab-stat-7days" onclick="switchStatsPeriod('7days')">7 дней</div>
+ <div class="toggle-btn" id="tab-stat-month" onclick="switchStatsPeriod('month')">Месяц</div>
+ </div>
+
+ <div class="stats-summary-grid">
+ <div class="stat-summary-card">
+ <div class="stat-summary-label">Визиты клиентов</div>
+ <div class="stat-summary-val" id="stat-val-visits">0</div>
+ </div>
+ <div class="stat-summary-card">
+ <div class="stat-summary-label">Заказы (оформлено)</div>
+ <div class="stat-summary-val" id="stat-val-orders">0</div>
+ </div>
+ <div class="stat-summary-card">
+ <div class="stat-summary-label">Выручка (₽)</div>
+ <div class="stat-summary-val" id="stat-val-revenue">0 ₽</div>
+ </div>
+ <div class="stat-summary-card">
+ <div class="stat-summary-label">Выполнено заказов</div>
+ <div class="stat-summary-val" id="stat-val-completed">0</div>
+ </div>
+ </div>
+
+ <!-- Детализация по дням (для фильтра 7 дней) -->
+ <div id="stats-daily-breakdown" style="display:none;" class="box-card">
+ <div style="font-size:12px; font-weight:800; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">Динамика по дням</div>
+ <div style="overflow-x:auto;">
+ <table class="stats-table">
+ <thead>
+ <tr>
+ <th>Дата</th>
+ <th>Визиты</th>
+ <th>Заказы</th>
+ <th>Выручка</th>
+ </tr>
+ </thead>
+ <tbody id="stats-daily-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+
+ <!-- Популярность товаров -->
+ <div class="box-card" style="margin-bottom:12px;">
+ <div style="font-size:12px; font-weight:800; color:var(--cyan); margin-bottom:8px; text-transform:uppercase;">Просмотры букетов каталога</div>
+ <div id="stats-products-list"></div>
+ </div>
+
+ <!-- Эффективность уведомлений -->
+ <div class="box-card">
+ <div style="font-size:12px; font-weight:800; color:var(--cyan); margin-bottom:8px; text-transform:uppercase;">Статистика рассылок</div>
+ <div id="stats-notifs-list"></div>
+ </div>
  </div>
 
  <!-- FAQ -->
@@ -247,6 +351,21 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  <span data-config-key="txt_tab_about">О нас</span>
  </button>
  </nav>
+ </div>
+
+ <!-- Модалка уведомлений клиента -->
+ <div class="modal-overlay" id="notifications-modal">
+ <div class="modal-sheet">
+ <div class="modal-header">
+ <div class="modal-title">Уведомления</div>
+ <button class="close-btn" onclick="closeNotificationsModal()">✕</button>
+ </div>
+ <div id="notifications-list" style="margin-bottom:14px;"></div>
+ <div style="display:flex; gap:8px;">
+ <button class="btn-metro btn-secondary" onclick="markAllNotificationsAsRead()">Прочитать все</button>
+ <button class="btn-metro" onclick="closeNotificationsModal()">Закрыть</button>
+ </div>
+ </div>
  </div>
 
  <!-- Модалка фильтров -->
@@ -820,13 +939,13 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </div>
  </div>
 
- <script src="js/config.js?v=1.3"></script>
- <script src="js/utils.js?v=1.3"></script>
- <script src="js/catalog.js?v=1.3"></script>
- <script src="js/cart.js?v=1.3"></script>
- <script src="js/order.js?v=1.3"></script>
- <script src="js/profile.js?v=1.3"></script>
- <script src="js/admin.js?v=1.3"></script>
- <script src="js/app.js?v=1.3"></script>
+ <script src="js/config.js?v=1.4"></script>
+ <script src="js/utils.js?v=1.4"></script>
+ <script src="js/catalog.js?v=1.4"></script>
+ <script src="js/cart.js?v=1.4"></script>
+ <script src="js/order.js?v=1.4"></script>
+ <script src="js/profile.js?v=1.4"></script>
+ <script src="js/admin.js?v=1.4"></script>
+ <script src="js/app.js?v=1.4"></script>
 </body>
 </html>
