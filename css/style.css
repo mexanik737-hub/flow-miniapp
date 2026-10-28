@@ -11,8 +11,8 @@
   --purple: #a78bfa;
   --text: #f3f5f4;
   --text-muted: #8da396;
-  --dock-bg: rgba(20, 26, 23, 0.90);
-  --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+  --dock-bg: rgba(20, 26, 23, 0.92);
+  --dock-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
   --radius-sm: 9px;
   --radius-md: 15px;
   --radius-lg: 22px;
@@ -31,8 +31,8 @@
   --purple: #7c3aed;
   --text: #111815;
   --text-muted: #5d6b63;
-  --dock-bg: rgba(255, 255, 255, 0.92);
-  --dock-shadow: 0 16px 36px rgba(17, 24, 21, 0.08);
+  --dock-bg: rgba(255, 255, 255, 0.94);
+  --dock-shadow: 0 16px 36px rgba(17, 24, 21, 0.1);
 }
 
 * {
@@ -44,25 +44,45 @@
   user-select: none;
 }
 
+/* Тонкий органический скроллбар */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(74, 222, 128, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.45);
+}
+
 html, body {
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% -10%, rgba(74, 222, 128, 0.08) 0%, transparent 55%), var(--bg);
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(circle at 85% 5%, rgba(250, 204, 21, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 15% 95%, rgba(74, 222, 128, 0.07) 0%, transparent 50%),
+    radial-gradient(circle at 50% -10%, rgba(74, 222, 128, 0.09) 0%, transparent 55%);
   background-attachment: fixed;
   color: var(--text);
   overflow-x: hidden;
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* Деликатная микрозернистость крафтовой бумаги */
+/* Фактурная микрозернистость крафтовой оранжерейной бумаги */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='craftNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23craftNoise)'/%3E%3C/svg%3E");
 }
 
 body {
@@ -113,7 +133,7 @@ header {
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease;
 }
-.hud-pill:active { transform: scale(0.94); }
+.hud-pill:active { transform: scale(0.93) translateY(1px); }
 
 .hud-brand {
   font-size: 13px;
@@ -154,7 +174,7 @@ header {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.hud-notif-btn:active { transform: scale(0.90); }
+.hud-notif-btn:active { transform: scale(0.88); }
 
 .hud-notif-badge {
   position: absolute;
@@ -223,7 +243,7 @@ header {
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.filter-btn-pill:active { transform: scale(0.93); }
+.filter-btn-pill:active { transform: scale(0.92); }
 
 .catalog-grid {
   display: grid;
@@ -244,7 +264,7 @@ header {
   position: relative;
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, border-color 0.22s ease;
 }
-.product-card:active { transform: scale(0.965); }
+.product-card:active { transform: scale(0.96) translateY(2px); }
 
 /* Благородный солнечный перелив на карточках-хитах */
 .product-card.popular-hit {
@@ -396,8 +416,8 @@ header {
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
 }
 .btn-quick-add:active { 
-  transform: scale(0.86);
-  box-shadow: 0 0 14px rgba(74, 222, 128, 0.5);
+  transform: scale(0.85);
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.55);
 }
 
 .btn-select-variant {
@@ -477,7 +497,7 @@ header {
   padding: 14px;
   margin-bottom: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
-  transition: background 0.25s ease, border-color 0.2s ease;
+  transition: background 0.25s ease, border-color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .box-card.neon-glow {
@@ -504,7 +524,7 @@ header {
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
 }
 .btn-metro:active {
-  transform: scale(0.96);
+  transform: scale(0.95) translateY(2px);
   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
 }
 
@@ -531,10 +551,26 @@ header {
   box-shadow: 0 4px 12px rgba(21, 128, 61, 0.35);
 }
 
-.btn-warm-support {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+/* Кнопка навигации и карт: глубокий хвойный петроль */
+.btn-petrol {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.35);
+}
+
+/* Кнопка банка СБП: глубокий сапфирово-хвойный */
+.btn-sbp {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid var(--border-accent);
+  color: #f3f5f4;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* Кнопка поддержки: шамотная теплая терракота */
+.btn-warm-support {
+  background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.35);
 }
 
 .qty-btn {
@@ -553,7 +589,7 @@ header {
   transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s ease;
 }
 .qty-btn:active {
-  transform: scale(0.88);
+  transform: scale(0.86);
   border-color: var(--cyan);
 }
 
@@ -565,6 +601,9 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.4px;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .st-await-pay { background: rgba(250, 204, 21, 0.15); color: var(--amber); border: 1px solid rgba(250, 204, 21, 0.35); }
 .st-check-pay { background: rgba(167, 139, 250, 0.15); color: var(--purple); border: 1px solid rgba(167, 139, 250, 0.35); }
@@ -572,6 +611,20 @@ header {
 .st-transit { background: rgba(167, 139, 250, 0.2); color: var(--purple); border: 1px solid var(--purple); }
 .st-completed { background: rgba(34, 197, 94, 0.18); color: var(--green); border: 1px solid rgba(34, 197, 94, 0.35); }
 .st-cancelled { background: rgba(248, 113, 113, 0.15); color: var(--red); border: 1px solid rgba(248, 113, 113, 0.35); }
+
+/* Живой пульс статуса сборки */
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  animation: pulseDotAnim 1.6s infinite ease-in-out;
+}
+@keyframes pulseDotAnim {
+  0%, 100% { transform: scale(0.9); opacity: 0.5; }
+  50% { transform: scale(1.4); opacity: 1; }
+}
 
 .dock-pill-container {
   position: fixed;
@@ -601,6 +654,7 @@ header {
   gap: 4px;
 }
 
+/* Новая упругая анимация док-панели (Squish & Spring) */
 .dock-tab {
   display: flex;
   flex-direction: column;
@@ -613,26 +667,27 @@ header {
   cursor: pointer;
   padding: 6px 0;
   border-radius: 20px;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, color 0.2s ease;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, color 0.2s ease;
 }
 .dock-tab:active {
-  transform: scale(0.92);
+  transform: scale(0.86) translateY(2px);
 }
 
 .dock-tab svg {
   width: 19px;
   height: 19px;
   fill: currentColor;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .dock-tab span { font-size: 10px; font-weight: 600; white-space: nowrap; }
 
 .dock-tab.active {
   background: rgba(74, 222, 128, 0.16);
   color: var(--cyan);
+  transform: scale(1.02);
 }
-.dock-tab.spinning svg {
-  transform: rotate(360deg);
+.dock-tab.active svg {
+  transform: translateY(-1.5px);
 }
 
 /* Пружинящий отклик счётчика корзины */
@@ -775,7 +830,7 @@ header {
   margin-bottom: 12px;
   transition: transform 0.15s ease;
 }
-.custom-checkbox-wrap:active { transform: scale(0.98); }
+.custom-checkbox-wrap:active { transform: scale(0.97); }
 
 .custom-checkbox {
   width: 20px;
@@ -859,7 +914,7 @@ header {
   text-align: center;
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease;
 }
-.toggle-btn:active { transform: scale(0.93); }
+.toggle-btn:active { transform: scale(0.92); }
 
 .toggle-btn.active {
   background: rgba(74, 222, 128, 0.14) !important;
@@ -894,7 +949,7 @@ header {
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.variant-chip:active { transform: scale(0.92); }
+.variant-chip:active { transform: scale(0.91); }
 
 .variant-chip.active {
   background: rgba(74, 222, 128, 0.16);
@@ -922,7 +977,7 @@ header {
   cursor: pointer;
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.addr-pill:active { transform: scale(0.93); }
+.addr-pill:active { transform: scale(0.92); }
 
 .addr-pill.active {
   background: rgba(74, 222, 128, 0.15);
