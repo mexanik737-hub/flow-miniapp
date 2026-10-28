@@ -154,9 +154,9 @@ function renderCatalog(items) {
                   <button class="btn-select-variant" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
                 ` : (inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
-                    <button class="btn-trash-mini" onclick="removeAllOfItemFromCart('${p.id}')">🗑️</button>
+                    <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${p.id}')">🗑️</button>
                     <span class="cart-active-qty">${inCartQty}</span>
-                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="openProductModal('${p.id}')">+</button>
+                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
                   </div>
                 ` : `
                   <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
@@ -180,9 +180,9 @@ function updateProductCardAction(id) {
   if (inCartQty > 0) {
     actionEl.innerHTML = `
       <div class="cart-active-stepper" onclick="event.stopPropagation();">
-        <button class="btn-trash-mini" onclick="removeAllOfItemFromCart('${id}')">🗑️</button>
+        <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${id}')">🗑️</button>
         <span class="cart-active-qty">${inCartQty}</span>
-        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="openProductModal('${id}')">+</button>
+        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${id}')">+</button>
       </div>
     `;
   } else {
@@ -402,21 +402,48 @@ function updateSelectedGroupVariantUI() {
   }
 }
 
+// Правка 9: Счетчик фото галереи с обновлением при скролле
 function renderPopGallery(photosStr) {
   const gallery = document.getElementById('pop-gallery');
   const placeholder = document.getElementById('pop-placeholder');
+  const counter = document.getElementById('pop-gallery-counter');
   const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
 
   if (photos.length) {
     gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
     gallery.style.display = 'flex';
+    gallery.scrollLeft = 0;
     placeholder.style.display = 'none';
+
+    if (photos.length > 1) {
+      if (counter) {
+        counter.innerText = `1 / ${photos.length}`;
+        counter.style.display = 'block';
+      }
+      gallery.onscroll = () => {
+        const itemWidth = gallery.clientWidth || 1;
+        const currentIdx = Math.round(gallery.scrollLeft / itemWidth);
+        if (counter) {
+          counter.innerText = `${Math.min(photos.length, Math.max(1, currentIdx + 1))} / ${photos.length}`;
+        }
+      };
+    } else {
+      if (counter) counter.style.display = 'none';
+      gallery.onscroll = null;
+    }
   } else {
     gallery.innerHTML = '';
     gallery.style.display = 'none';
     placeholder.style.display = 'flex';
+    if (counter) counter.style.display = 'none';
+    gallery.onscroll = null;
   }
 }
 
-function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
+function closeProductModal() {
+  document.getElementById('product-modal').classList.remove('open');
+  const counter = document.getElementById('pop-gallery-counter');
+  if (counter) counter.style.display = 'none';
+}
+
 function adjustPopQty(delta) { popQty = Math.max(1, popQty + delta); document.getElementById('pop-qty').innerText = popQty; }
