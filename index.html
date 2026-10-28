@@ -4,7 +4,7 @@
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
  <title>Магазин «Цветы»</title>
- <link rel="stylesheet" href="css/style.css?v=1.1">
+ <link rel="stylesheet" href="css/style.css?v=1.2">
  <script src="https://telegram.org/js/telegram-web-app.js"></script>
  <script>
  if (window.Telegram && window.Telegram.WebApp) {
@@ -126,38 +126,34 @@
 
  <!-- Экран 4: О нас -->
  <section id="screen-about" class="screen">
- <!-- Верхний блок салона с оригинальным фото из Google Диска -->
+ <!-- Правка 5: Убран текстовый адрес и слово «салон», оставлена одна кнопка «Позвонить» -->
  <div class="box-card neon-glow" style="text-align:center;">
  <div class="shop-logo-circle">
- <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Салон Цветы">
+ <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Цветы">
  </div>
  <div style="font-size:18px; font-weight:900; color:var(--text); letter-spacing:0.5px;" data-config-key="txt_shop_title">ЦВЕТЫ</div>
  <div style="font-size:12px; font-weight:700; color:var(--cyan); margin:3px 0 10px 0;" data-config-key="txt_shop_subtitle">
  Мелкооптовый цветочный салон
  </div>
  <div style="font-size:12px; color:var(--text-muted); line-height:1.55; margin-bottom:12px;">
- 📍 <span data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span><br>
- ⏰ Салон: <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
+ ⏰ <b data-config-key="txt_shop_schedule">Ежедневно с 09:00 до 20:00</b><br>
  🚚 <span data-config-key="txt_delivery_schedule">Доставка с 10:00 до 20:00 (заказы до 19:00)</span>
  </div>
- <a class="btn-metro btn-emerald" id="shop-call-btn" href="#" style="margin-bottom:8px; text-decoration:none;" data-config-key="txt_btn_call_shop">
- 📞 Позвонить в салон
- </a>
- <a class="btn-metro btn-secondary" id="shop-phone-text-btn" href="#" style="font-size:12px; padding:9px; text-decoration:none;" data-config-key="txt_shop_phone_btn">
- Загрузка телефона...
+ <a class="btn-metro btn-emerald" id="shop-call-btn" href="#" style="text-decoration:none;" data-config-key="txt_btn_call_shop">
+ 📞 Позвонить
  </a>
  </div>
 
- <!-- Интерактивная карта со светлой подложкой Яндекса и точными координатами -->
+ <!-- Интерактивная карта (Правка 12: клик по карте открывает карточку организации) -->
  <div class="box-card neon-glow" style="padding:10px;">
  <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;" data-config-key="txt_map_section_title">
  Мы на карте
  </div>
- <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
+ <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative; cursor:pointer;" onclick="openYandexRoute()">
  <iframe 
 id="yandex-map-iframe"
  src="about:blank" 
-width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none;">
+width="100%" height="100%" frameborder="0" allowfullscreen="true" style="position:relative; border:none; pointer-events:none;">
  </iframe>
  </div>
  <button class="btn-metro" style="margin-top:10px; font-size:12px; padding:10px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openYandexRoute()" data-config-key="txt_btn_route">
@@ -165,12 +161,13 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </button>
  </div>
 
- <!-- FAQ -->
+ <!-- FAQ (Правка 2: ленивая подгрузка по первому клику) -->
  <div class="box-card neon-glow">
- <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px;" data-config-key="txt_faq_section_title">
- Часто задаваемые вопросы (FAQ)
+ <div style="font-size:12px; font-weight:800; color:var(--cyan); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleAboutFaqSection()">
+ <span data-config-key="txt_faq_section_title">Часто задаваемые вопросы (FAQ)</span>
+ <span id="faq-section-arrow" style="font-size:13px; color:var(--cyan); transition:transform 0.2s ease;">▼</span>
  </div>
- <div id="about-faq-container"></div>
+ <div id="about-faq-container" style="display:none;"></div>
  </div>
 
  <!-- Техподдержка -->
@@ -186,7 +183,6 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
 
  <!-- Экран 5: Root (Панель управления) -->
  <section id="screen-root" class="screen">
- <!-- Блок включения режима редактирования -->
  <div class="box-card" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-color:var(--border-accent);">
  <div>
  <b style="font-size:13px; color:var(--cyan);">Режим редактирования</b>
@@ -308,7 +304,7 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </div>
  </div>
 
- <!-- Модалка карточки букета -->
+ <!-- Модалка карточки букета (Правка 9: добавлен верхний бейдж pop-gallery-counter) -->
  <div class="modal-overlay" id="product-modal">
  <div class="modal-sheet">
  <div class="modal-header">
@@ -316,7 +312,11 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  <button class="close-btn" onclick="closeProductModal()">✕</button>
  </div>
 
+ <div class="pop-gallery-wrapper">
+ <div class="pop-gallery-counter" id="pop-gallery-counter">1 / 1</div>
  <div class="product-gallery-scroll" id="pop-gallery"></div>
+ </div>
+
  <div class="thumb-placeholder-box" id="pop-placeholder" style="display:none; padding:30px 0;">
  <span class="thumb-placeholder-icon">🌸</span>
  <span class="thumb-placeholder-text">Фото пока не добавили</span>
@@ -376,7 +376,6 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  <input type="tel" id="ord-rec-phone" class="metro-input" placeholder="8 (___) ___-__-__">
  </div>
 
- <!-- Поля для доставки (все поля обязательны) -->
  <div id="delivery-extra-fields">
  <div id="order-saved-address-container" style="display:none; margin-bottom:8px;">
  <div style="font-size:11px; color:var(--cyan); font-weight:700; margin-bottom:4px; text-transform:uppercase;">Сохраненные адреса:</div>
@@ -415,11 +414,10 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </div>
 
  <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.12); border:1px solid var(--border-accent); color:var(--cyan); font-size:12px; margin-bottom:12px;">
- 📍 Введите адрес, чтобы рассчитать точную стоимость доставки (от 400 ₽)
+ 📍 Введите адрес, чтобы рассчитать точную стоимость доставки (от 350 ₽)
  </div>
  </div>
 
- <!-- Поля для самовывоза -->
  <div id="pickup-extra-fields" style="display:none; padding:12px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.1); border:1px solid var(--border-accent); color:var(--text); font-size:12px; line-height:1.5; margin-bottom:12px;">
  📍 <b>Адрес салона:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
  ⏰ <b>График выдачи:</b> ежедневно с 09:00 до 20:00 (в праздники продлевается).<br>
@@ -497,7 +495,6 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  💳 Оплатить через СБП
  </a>
 
- <!-- QR-код заполняется безопасно с сервера -->
  <div style="background:#fff; width:190px; height:190px; border-radius:14px; padding:8px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(0,0,0,0.2);">
  <img id="sbp-qr-image-tag" src="" alt="QR СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
  </div>
@@ -530,7 +527,7 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </div>
  </div>
 
- <!-- Модалка адреса (все поля обязательны) -->
+ <!-- Модалка адреса -->
  <div class="modal-overlay" id="add-saved-addr-modal">
  <div class="modal-sheet">
  <div class="modal-header">
@@ -705,13 +702,16 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </div>
  </div>
 
- <!-- Модалка состава заказа в Root -->
+ <!-- Модалка состава заказа в Root (Правка 6: отображение заказчика и получателя) -->
  <div class="modal-overlay" id="edit-items-modal">
  <div class="modal-sheet">
  <div class="modal-header">
  <div class="modal-title" id="edit-items-modal-title">Состав заказа</div>
  <button class="close-btn" onclick="closeEditItemsModal()">✕</button>
  </div>
+
+ <div id="edit-order-client-info" style="font-size:12px; line-height:1.45; background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:12px; border:1px solid var(--border);"></div>
+
  <div id="edit-items-list" style="margin-bottom:14px;"></div>
  
 <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Добавить позицию:</label>
@@ -742,6 +742,58 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </div>
  </div>
 
+ <!-- Правка 7: Модалка данных для курьера с отдельными кнопками копирования -->
+ <div class="modal-overlay" id="courier-modal">
+ <div class="modal-sheet">
+ <div class="modal-header">
+ <div class="modal-title" id="courier-modal-title">Данные для курьера</div>
+ <button class="close-btn" onclick="closeCourierModal()">✕</button>
+ </div>
+
+ <div class="courier-card-block">
+ <div style="flex:1;">
+ <div class="courier-card-label">Адрес доставки</div>
+ <div class="courier-card-val" id="courier-val-address">—</div>
+ </div>
+ <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-address', 'Адрес')">Копировать</button>
+ </div>
+
+ <div class="courier-card-block">
+ <div style="flex:1;">
+ <div class="courier-card-label">Имя получателя</div>
+ <div class="courier-card-val" id="courier-val-name">—</div>
+ </div>
+ <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-name', 'Имя')">Копировать</button>
+ </div>
+
+ <div class="courier-card-block">
+ <div style="flex:1;">
+ <div class="courier-card-label">Телефон получателя (без скобок и 8)</div>
+ <div class="courier-card-val" id="courier-val-phone">—</div>
+ </div>
+ <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-phone', 'Телефон')">Копировать</button>
+ </div>
+
+ <div class="courier-card-block" id="courier-comment-card" style="display:none;">
+ <div style="flex:1;">
+ <div class="courier-card-label">Комментарий курьеру</div>
+ <div class="courier-card-val" id="courier-val-comment">—</div>
+ </div>
+ <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-comment', 'Комментарий')">Копировать</button>
+ </div>
+
+ <div class="courier-card-block">
+ <div style="flex:1;">
+ <div class="courier-card-label">Примечание к грузу</div>
+ <div class="courier-card-val" id="courier-val-note">Хрупкий товар — ЦВЕТЫ. Везти вертикально, аккуратно</div>
+ </div>
+ <button class="courier-copy-btn" onclick="copyCourierSingleField('courier-val-note', 'Примечание')">Копировать</button>
+ </div>
+
+ <button class="btn-metro btn-secondary" style="margin-top:12px;" onclick="closeCourierModal()">Закрыть</button>
+ </div>
+ </div>
+
  <!-- Модалка FAQ в Root -->
  <div class="modal-overlay" id="faq-editor-modal">
  <div class="modal-sheet">
@@ -764,13 +816,13 @@ width="100%" height="100%" frameborder="0" allowfullscreen="true" style="positio
  </div>
 
  <!-- Подключение модулей скриптов в строгом порядке зависимостей -->
- <script src="js/config.js?v=1.1"></script>
- <script src="js/utils.js?v=1.1"></script>
- <script src="js/catalog.js?v=1.1"></script>
- <script src="js/cart.js?v=1.1"></script>
- <script src="js/order.js?v=1.1"></script>
- <script src="js/profile.js?v=1.1"></script>
- <script src="js/admin.js?v=1.1"></script>
- <script src="js/app.js?v=1.1"></script>
+ <script src="js/config.js?v=1.2"></script>
+ <script src="js/utils.js?v=1.2"></script>
+ <script src="js/catalog.js?v=1.2"></script>
+ <script src="js/cart.js?v=1.2"></script>
+ <script src="js/order.js?v=1.2"></script>
+ <script src="js/profile.js?v=1.2"></script>
+ <script src="js/admin.js?v=1.2"></script>
+ <script src="js/app.js?v=1.2"></script>
 </body>
 </html>
