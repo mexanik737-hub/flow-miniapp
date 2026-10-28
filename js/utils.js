@@ -1,53 +1,28 @@
-let lastHapticTime = 0;
-
-function hapticSelection() {
+// Тактильный менеджер для виброотклика Telegram
+function hapticSelect() {
   try {
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.selectionChanged();
-    }
+    if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
   } catch (e) {}
 }
 
 function hapticImpact(style = 'light') {
   try {
-    const now = Date.now();
-    if (now - lastHapticTime < 30) return;
-    lastHapticTime = now;
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred(style);
-    }
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style);
   } catch (e) {}
 }
 
-function hapticSuccess() {
+function hapticNotify(type = 'success') {
   try {
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.notificationOccurred('success');
-    }
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(type);
   } catch (e) {}
 }
-
-function hapticWarning() {
-  try {
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.notificationOccurred('warning');
-    }
-  } catch (e) {}
-}
-
-// Глобальный перехватчик: любая кнопка или кликабельный элемент вибрирует в момент касания пальца
-document.addEventListener('touchstart', (e) => {
-  const target = e.target.closest('button, .dock-tab, .btn-metro, .variant-chip, .toggle-btn, .hud-pill, .hud-notif-btn, .qty-btn, .btn-quick-add, .btn-select-variant, .addr-pill, .notif-card-item, [onclick]');
-  if (target) {
-    hapticImpact('light');
-  }
-}, { passive: true });
 
 function toast(msg) {
   const t = document.getElementById('toast');
   if (!t) return;
   t.innerText = msg;
   t.classList.add('show');
+  hapticImpact('light');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
@@ -74,14 +49,12 @@ initPhoneMask('ord-rec-phone');
 initPhoneMask('edit-prof-phone');
 
 function toggleDropdown(boxId) {
+  hapticSelect();
   const box = document.getElementById(boxId);
   if (!box) return;
   const wasOpen = box.classList.contains('open');
   document.querySelectorAll('.custom-select-box').forEach(b => b.classList.remove('open'));
-  if (!wasOpen) {
-    box.classList.add('open');
-    hapticImpact('light');
-  }
+  if (!wasOpen) box.classList.add('open');
 }
 
 document.addEventListener('click', (e) => {
@@ -91,33 +64,33 @@ document.addEventListener('click', (e) => {
 });
 
 function toggleCheckbox(uiId) {
+  hapticImpact('light');
   const el = document.getElementById(uiId);
   if (!el) return;
   el.classList.toggle('checked');
   el.innerText = el.classList.contains('checked') ? '✓' : '';
-  hapticSelection();
 }
 
 function toggleCartAssemblyMode() {
+  hapticImpact('medium');
   isAssemblyMode = !isAssemblyMode;
   const chk = document.getElementById('cart-assembly-checkbox-ui');
   if (chk) {
     chk.classList.toggle('checked', isAssemblyMode);
     chk.innerText = isAssemblyMode ? '✓' : '';
   }
-  hapticImpact('medium');
   renderCartItems();
   saveCartToStorage();
 }
 
 function toggleOrderSaveAddressCheckbox() {
+  hapticSelect();
   ordSaveAddrChecked = !ordSaveAddrChecked;
   const chk = document.getElementById('ord-save-addr-checkbox-ui');
   if (chk) {
     chk.classList.toggle('checked', ordSaveAddrChecked);
     chk.innerText = ordSaveAddrChecked ? '✓' : '';
   }
-  hapticSelection();
 }
 
 function calcHaversineDistance(lat1, lon1, lat2, lon2) {
