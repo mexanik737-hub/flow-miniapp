@@ -36,11 +36,13 @@ function addPopToCart() {
 
     if (!targetItem || !targetItem.is_active) {
       toast("Выбранный товар отсутствует в наличии");
+      hapticWarning();
       return;
     }
   } else {
     if (!activePopItem.is_active) {
       toast("Товар отсутствует в наличии");
+      hapticWarning();
       return;
     }
     targetItem = activePopItem;
@@ -53,6 +55,7 @@ function addPopToCart() {
   cart[cartKey] = (cart[cartKey] || 0) + popQty;
   cartAssemblyItems[cartKey] = true;
 
+  hapticImpact('medium');
   updateCartUI();
   updateProductCardAction(activePopItem.id);
   closeProductModal();
@@ -68,7 +71,10 @@ function quickAdd(id) {
     }
   }
 
-  if (!item || !item.is_active) return;
+  if (!item || !item.is_active) {
+    hapticWarning();
+    return;
+  }
 
   let chosenUnit = item.unit || "";
   if (chosenUnit.includes('/')) chosenUnit = chosenUnit.split('/')[0].trim();
@@ -83,6 +89,7 @@ function quickAdd(id) {
   cart[cartKey] = (cart[cartKey] || 0) + 1;
   cartAssemblyItems[cartKey] = true;
 
+  hapticImpact('light');
   updateCartUI();
   updateProductCardAction(id);
   toast(`Добавлено: ${formatFullItemTitle(item.title, chosenUnit, chosenVar, chosenColor)}`);
@@ -94,6 +101,9 @@ function modifyCartByKey(cartKey, delta) {
   if (cart[cartKey] <= 0) {
     delete cart[cartKey];
     delete cartAssemblyItems[cartKey];
+    hapticWarning();
+  } else {
+    hapticImpact('light');
   }
   updateCartUI();
   updateProductCardAction(itemId);
@@ -107,6 +117,7 @@ function removeAllOfItemFromCart(id) {
       delete cartAssemblyItems[key];
     }
   });
+  hapticWarning();
   updateCartUI();
   updateProductCardAction(id);
   toast("Удалено из корзины");
@@ -114,17 +125,28 @@ function removeAllOfItemFromCart(id) {
 
 function toggleItemAssemblySelection(cartKey) {
   cartAssemblyItems[cartKey] = !cartAssemblyItems[cartKey];
+  hapticSelection();
   renderCartItems();
   saveCartToStorage();
 }
 
-// Обновление корзины с защитой от пустого каталога при старте приложения
 function updateCartUI() {
   saveCartToStorage();
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
   const counterEl = document.getElementById('cart-counter');
-  if (counterEl) counterEl.innerText = count;
+  
+  if (counterEl) {
+    const prevCount = parseInt(counterEl.innerText, 10) || 0;
+    counterEl.innerText = count;
+
+    // Пружинящая анимация счётчика при изменении количества
+    if (count !== prevCount && count > 0) {
+      counterEl.classList.remove('cart-bouncing');
+      void counterEl.offsetWidth; // Принудительный reflow для перезапуска CSS-кейфрейма
+      counterEl.classList.add('cart-bouncing');
+    }
+  }
 
   const checkoutCard = document.getElementById('cart-checkout-card');
   const entries = Object.entries(cart);
@@ -137,14 +159,12 @@ function updateCartUI() {
     if (checkoutCard) checkoutCard.style.display = 'none';
     currentFlowersSubtotal = 0;
   } else {
-    // Если каталог еще не получен с сервера — откладываем рендер содержимого, но счетчик в шапке сохраняем
     if (!catalog || !catalog.length) return;
 
     if (checkoutCard) checkoutCard.style.display = 'block';
     renderCartItems();
   }
 
-  // Обновление красных точек на группах товаров
   displayCatalog.forEach(g => {
     if (g.is_group) {
       const el = document.getElementById(`product-action-${g.id}`);
