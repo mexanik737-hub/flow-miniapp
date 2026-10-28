@@ -1,11 +1,9 @@
-// Сохранение состояния корзины в локальное хранилище
 function saveCartToStorage() {
   localStorage.setItem('flw_cart', JSON.stringify(cart));
   localStorage.setItem('flw_cart_assembly', JSON.stringify(cartAssemblyItems));
   localStorage.setItem('flw_is_assembly_mode', String(isAssemblyMode));
 }
 
-// Полная очистка корзины и хранилища (при оформлении заказа)
 function clearCartStorage() {
   cart = {};
   cartAssemblyItems = {};
@@ -15,7 +13,6 @@ function clearCartStorage() {
   localStorage.removeItem('flw_is_assembly_mode');
 }
 
-// Добавление выбранного варианта из модального окна в корзину
 function addPopToCart() {
   if (!activePopItem) return;
 
@@ -52,7 +49,6 @@ function addPopToCart() {
     if (!finalColor) finalColor = targetItem.color || "";
   }
 
-  // Ключ корзины учитывает все 3 независимые характеристики
   const cartKey = `${targetItem.id}:::${finalUnit}:::${finalVariant}:::${finalColor}`;
   cart[cartKey] = (cart[cartKey] || 0) + popQty;
   cartAssemblyItems[cartKey] = true;
@@ -63,7 +59,6 @@ function addPopToCart() {
   toast(`Добавлено: ${formatFullItemTitle(targetItem.title, finalUnit, finalVariant, finalColor)}`);
 }
 
-// Мгновенное добавление единицы товара в корзину по кнопке «+»
 function quickAdd(id) {
   let item = catalog.find(i => String(i.id) === String(id));
   if (!item) {
@@ -123,25 +118,33 @@ function toggleItemAssemblySelection(cartKey) {
   saveCartToStorage();
 }
 
+// Обновление корзины с защитой от пустого каталога при старте приложения
 function updateCartUI() {
   saveCartToStorage();
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
-  document.getElementById('cart-counter').innerText = count;
+  const counterEl = document.getElementById('cart-counter');
+  if (counterEl) counterEl.innerText = count;
 
   const checkoutCard = document.getElementById('cart-checkout-card');
   const entries = Object.entries(cart);
 
   if (!entries.length) {
-    document.getElementById('cart-items-container').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;" data-config-key="txt_cart_empty">Корзина пуста</div>';
+    const container = document.getElementById('cart-items-container');
+    if (container) {
+      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;" data-config-key="txt_cart_empty">Корзина пуста</div>';
+    }
     if (checkoutCard) checkoutCard.style.display = 'none';
     currentFlowersSubtotal = 0;
   } else {
+    // Если каталог еще не получен с сервера — откладываем рендер содержимого, но счетчик в шапке сохраняем
+    if (!catalog || !catalog.length) return;
+
     if (checkoutCard) checkoutCard.style.display = 'block';
     renderCartItems();
   }
 
-  // Обновление красных точек на всех групповых кнопках «Выбрать»
+  // Обновление красных точек на группах товаров
   displayCatalog.forEach(g => {
     if (g.is_group) {
       const el = document.getElementById(`product-action-${g.id}`);
@@ -153,9 +156,10 @@ function updateCartUI() {
   });
 }
 
-// Отображение позиций в корзине с полным шаблоном: Товар [штук] [см] [цвет] × qty = sum ₽
 function renderCartItems() {
   const container = document.getElementById('cart-items-container');
+  if (!container) return;
+
   let subtotal = 0;
   const entries = Object.entries(cart);
 
