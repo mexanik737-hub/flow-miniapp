@@ -1,4 +1,3 @@
-// --- БЕЗОПАСНЫЙ ТАКТИЛЬНЫЙ ОТКЛИК (TELEGRAM HAPTIC FEEDBACK) ---
 let lastHapticTime = 0;
 
 function hapticSelection() {
@@ -12,10 +11,10 @@ function hapticSelection() {
 function hapticImpact(style = 'light') {
   try {
     const now = Date.now();
-    if (now - lastHapticTime < 40) return; // Троттлинг от перегрузки вибромотора
+    if (now - lastHapticTime < 30) return;
     lastHapticTime = now;
     if (tg?.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred(style); // 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'
+      tg.HapticFeedback.impactOccurred(style);
     }
   } catch (e) {}
 }
@@ -35,6 +34,14 @@ function hapticWarning() {
     }
   } catch (e) {}
 }
+
+// Глобальный перехватчик: любая кнопка или кликабельный элемент вибрирует в момент касания пальца
+document.addEventListener('touchstart', (e) => {
+  const target = e.target.closest('button, .dock-tab, .btn-metro, .variant-chip, .toggle-btn, .hud-pill, .hud-notif-btn, .qty-btn, .btn-quick-add, .btn-select-variant, .addr-pill, .notif-card-item, [onclick]');
+  if (target) {
+    hapticImpact('light');
+  }
+}, { passive: true });
 
 function toast(msg) {
   const t = document.getElementById('toast');
