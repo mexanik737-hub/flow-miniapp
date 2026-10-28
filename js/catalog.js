@@ -13,7 +13,7 @@ function formatFullItemTitle(title, unit, variant, color) {
   return parts.length ? `${title} ${parts.join(' ')}` : title;
 }
 
-// Проверка наличия товаров группы в корзине (для отображения красной точки)
+// Проверка наличия товаров группы в корзине (для красной точки на кнопке «Выбрать»)
 function isGroupInCart(groupIdOrTitle) {
   const group = displayCatalog.find(g => String(g.id) === String(groupIdOrTitle) || g.title.trim() === String(groupIdOrTitle).trim());
   if (!group || !group.variants) return false;
@@ -130,6 +130,10 @@ async function loadCatalog() {
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
     renderCatalog(filteredCatalog);
+    
+    // Синхронизация сохраненной корзины сразу после появления актуального каталога
+    updateCartUI();
+
     if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
   } catch (e) {
     toast("Ошибка загрузки каталога");
@@ -143,7 +147,7 @@ function getCartItemQuantity(id) {
   }, 0);
 }
 
-// Отрисовка каталога с красной точкой на кнопке «Выбрать» для групп
+// Отрисовка каталога с заменой корзинки на «–» при количестве > 1
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
   el.innerHTML = items.map(p => {
@@ -177,7 +181,11 @@ function renderCatalog(items) {
                   <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
                 ` : (inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
-                    <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${p.id}')">🗑️</button>
+                    ${inCartQty === 1 ? `
+                      <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${p.id}')">🗑️</button>
+                    ` : `
+                      <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${p.id}')">–</button>
+                    `}
                     <span class="cart-active-qty">${inCartQty}</span>
                     <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
                   </div>
@@ -195,7 +203,20 @@ function renderCatalog(items) {
   }).join('');
 }
 
-// Обновление состояния кнопки карточки товара (сохраняет «Выбрать» у групп и управляет красной точкой)
+// Пошаговое уменьшение единицы товара в каталоге
+function quickDecrease(id) {
+  // Находим ключ товара в корзине
+  const targetKey = Object.keys(cart).find(k => {
+    const [itemId] = k.split(':::');
+    return String(itemId) === String(id);
+  });
+
+  if (targetKey) {
+    modifyCartByKey(targetKey, -1);
+  }
+}
+
+// Обновление состояния кнопки в карточке товара каталога
 function updateProductCardAction(id) {
   const directItem = catalog.find(i => String(i.id) === String(id));
   if (directItem) {
@@ -223,7 +244,11 @@ function updateProductCardAction(id) {
   if (inCartQty > 0) {
     actionEl.innerHTML = `
       <div class="cart-active-stepper" onclick="event.stopPropagation();">
-        <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${id}')">🗑️</button>
+        ${inCartQty === 1 ? `
+          <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${id}')">🗑️</button>
+        ` : `
+          <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${id}')">–</button>
+        `}
         <span class="cart-active-qty">${inCartQty}</span>
         <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${id}')">+</button>
       </div>
@@ -233,7 +258,7 @@ function updateProductCardAction(id) {
   }
 }
 
-// Открытие модалки карточки с 3 независимыми характеристиками (фасовка, высота, цвет)
+// Открытие модалки карточки букета со сбором статистики просмотров
 function openProductModal(id, targetVariant = null, targetUnit = null, targetColor = null) {
   let item = null;
   let matchedInGroup = false;
@@ -260,13 +285,20 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   activePopItem = item;
   popQty = 1;
 
+  // Фиксация просмотра товара в статистике
+  const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "track_stat", type: "product_view", ref_id: String(statRefId) })
+  }).catch(() => {});
+
   setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
   updateSelectedGroupVariantUI();
 
   document.getElementById('product-modal').classList.add('open');
 }
 
-// Универсальный сбор и рендеринг чипсов фасовки, высоты и цвета (для групп и одиночных товаров со слэшами /)
 function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefColor = null) {
   const variantBox = document.getElementById('pop-variant-box');
   const sourceItems = item.is_group ? item.variants : [item];
@@ -346,7 +378,6 @@ function selectProductChip(type, value) {
   updateSelectedGroupVariantUI();
 }
 
-// Обновление цены, наличия и описания в модалке товара
 function updateSelectedGroupVariantUI() {
   if (!activePopItem) return;
 
@@ -397,7 +428,6 @@ function updateSelectedGroupVariantUI() {
   }
 }
 
-// Счетчик фото галереи с обновлением при скролле
 function renderPopGallery(photosStr) {
   const gallery = document.getElementById('pop-gallery');
   const placeholder = document.getElementById('pop-placeholder');
