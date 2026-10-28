@@ -31,7 +31,7 @@ if (!userId) {
 
 const tgFirstName = tg?.initDataUnsafe?.user?.first_name || "Клиент";
 const tgUsername = tg?.initDataUnsafe?.user?.username ? `@${tg.initDataUnsafe.user.username}` : "";
-let sessionPasscode = ""; // Заполняется строго при ручном вводе
+let sessionPasscode = "";
 
 function applyTelegramTheme() {
   const scheme = tg?.colorScheme || 'dark';
@@ -61,15 +61,22 @@ let currentUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null')
 let savedAddresses = JSON.parse(localStorage.getItem('flw_saved_addresses') || '[]');
 let isAdmin = (currentUser?.is_admin === true || String(currentUser?.is_admin).toUpperCase() === 'TRUE');
 
+// Состояние уведомлений
+let clientNotifications = [];
+let readNotificationIds = JSON.parse(localStorage.getItem('flw_read_notifs') || '[]');
+
 // Состояние Root-панели
 let allRootOrders = [];
 let allRootCatalog = [];
 let allRootClients = [];
 let allRootFaq = [];
+let allRootNotifs = [];
+let currentStatsPeriod = 'today';
+let cachedStatsData = null;
 let lastRootOrdersHash = "";
 let currentRootSubTab = 'active';
 
-// Состояние модалок и форм (включая цвет)
+// Состояние модалок и форм
 let activePopItem = null;
 let popQty = 1;
 let selectedGroupPack = "";
