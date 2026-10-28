@@ -1,18 +1,40 @@
-function toast(text) {
-  const el = document.getElementById('toast');
-  el.innerText = text;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2400);
+function toast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.innerText = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+function initPhoneMask(id) {
+  const input = document.getElementById(id);
+  if (!input) return;
+
+  input.addEventListener('input', (e) => {
+    let val = input.value.replace(/\D/g, '');
+    if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
+
+    let formatted = '8 (';
+    if (val.length > 0) formatted += val.substring(0, 3);
+    if (val.length >= 3) formatted += ') ' + val.substring(3, 6);
+    if (val.length >= 6) formatted += '-' + val.substring(6, 8);
+    if (val.length >= 8) formatted += '-' + val.substring(8, 10);
+
+    input.value = formatted;
+  });
+}
+
+initPhoneMask('reg-phone');
+initPhoneMask('ord-rec-phone');
+initPhoneMask('edit-prof-phone');
 
 function toggleDropdown(boxId) {
-  const el = document.getElementById(boxId);
-  const wasOpen = el.classList.contains('open');
+  const box = document.getElementById(boxId);
+  if (!box) return;
+  const wasOpen = box.classList.contains('open');
   document.querySelectorAll('.custom-select-box').forEach(b => b.classList.remove('open'));
-  if (!wasOpen) el.classList.add('open');
+  if (!wasOpen) box.classList.add('open');
 }
-
 
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.custom-select-box')) {
@@ -20,77 +42,47 @@ document.addEventListener('click', (e) => {
   }
 });
 
-
-function toggleCheckbox(elId) {
-  const el = document.getElementById(elId);
-  const isChecked = el.classList.contains('checked');
-  el.classList.toggle('checked', !isChecked);
-  el.innerText = !isChecked ? '✓' : '';
+function toggleCheckbox(uiId) {
+  const el = document.getElementById(uiId);
+  if (!el) return;
+  el.classList.toggle('checked');
+  el.innerText = el.classList.contains('checked') ? '✓' : '';
 }
-
-
-function toggleOrderSaveAddressCheckbox() {
-  ordSaveAddrChecked = !ordSaveAddrChecked;
-  const el = document.getElementById('ord-save-addr-checkbox-ui');
-  el.classList.toggle('checked', ordSaveAddrChecked);
-  el.innerText = ordSaveAddrChecked ? '✓' : '';
-}
-
 
 function toggleCartAssemblyMode() {
   isAssemblyMode = !isAssemblyMode;
-  const el = document.getElementById('cart-assembly-checkbox-ui');
-  el.classList.toggle('checked', isAssemblyMode);
-  el.innerText = isAssemblyMode ? '✓' : '';
+  const chk = document.getElementById('cart-assembly-checkbox-ui');
+  if (chk) {
+    chk.classList.toggle('checked', isAssemblyMode);
+    chk.innerText = isAssemblyMode ? '✓' : '';
+  }
   renderCartItems();
+  saveCartToStorage();
 }
 
-
-function bindPhoneMask(input) {
-  if (!input) return;
-  input.addEventListener('input', () => {
-    let val = input.value.replace(/\D/g, '');
-    if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
-    val = val.substring(0, 10);
-    let res = "8";
-    if (val.length > 0) res += " (" + val.substring(0, 3);
-    if (val.length >= 4) res += ") " + val.substring(3, 6);
-    if (val.length >= 7) res += "-" + val.substring(6, 8);
-    if (val.length >= 9) res += "-" + val.substring(8, 10);
-    input.value = res;
-  });
+function toggleOrderSaveAddressCheckbox() {
+  ordSaveAddrChecked = !ordSaveAddrChecked;
+  const chk = document.getElementById('ord-save-addr-checkbox-ui');
+  if (chk) {
+    chk.classList.toggle('checked', ordSaveAddrChecked);
+    chk.innerText = ordSaveAddrChecked ? '✓' : '';
+  }
 }
-bindPhoneMask(document.getElementById('reg-phone'));
-bindPhoneMask(document.getElementById('edit-prof-phone'));
-bindPhoneMask(document.getElementById('ord-rec-phone'));
-
-
-function sortAscendingValues(arr) {
-  return arr.sort((a, b) => {
-    const numA = parseInt(String(a).match(/\d+/)?.[0] || 0, 10);
-    const numB = parseInt(String(b).match(/\d+/)?.[0] || 0, 10);
-    if (numA !== numB) {
-      return numA - numB;
-    }
-    return String(a).localeCompare(String(b), 'ru', { numeric: true });
-  });
-}
-
 
 function calcHaversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
-
 
 function parseOrderDateToTs(dateStr) {
   if (!dateStr) return null;
-  const match = dateStr.match(/(\d{2}):(\d{2})\s(\d{2})\.(\d{2})\.(\d{4})/);
+  const match = String(dateStr).match(/(\d{2}):(\d{2})\s(\d{2})\.(\d{2})\.(\d{4})/);
   if (match) {
     const [_, h, m, day, mon, yr] = match;
     return new Date(yr, mon - 1, day, h, m).getTime();
@@ -99,18 +91,36 @@ function parseOrderDateToTs(dateStr) {
   return isNaN(parsed) ? null : parsed;
 }
 
+function sortAscendingValues(arr) {
+  return arr.sort((a, b) => {
+    const numA = parseFloat(a.replace(/[^\d.]/g, ''));
+    const numB = parseFloat(b.replace(/[^\d.]/g, ''));
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return a.localeCompare(b);
+  });
+}
 
-// Универсальный шаблон форматирования: Товар [штук] [см] [цвет]
-function formatItemFullName(title, unit, variant, color) {
-  let res = String(title || "").trim();
-  if (unit && String(unit).trim()) {
-    res += ` [${String(unit).trim()}]`;
+// Обновление красного бейджа-счетчика колокольчика
+function updateNotificationsBadge() {
+  const badge = document.getElementById('hud-notif-counter');
+  if (!badge) return;
+
+  const unreadCount = clientNotifications.filter(n => !readNotificationIds.includes(String(n.id))).length;
+  if (unreadCount > 0) {
+    badge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
   }
-  if (variant && String(variant).trim()) {
-    res += ` [${String(variant).trim()}]`;
+}
+
+// Получение названия вкладки на русском для бейджей
+function getTabDisplayTitle(tabKey) {
+  switch (tabKey) {
+    case 'catalog': return 'Каталог';
+    case 'cart': return 'Корзина';
+    case 'profile': return 'Профиль';
+    case 'about': return 'О нас';
+    default: return 'Каталог';
   }
-  if (color && String(color).trim()) {
-    res += ` [${String(color).trim()}]`;
-  }
-  return res;
 }
