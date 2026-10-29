@@ -35,6 +35,7 @@ function generateDynamicDeliveryTimeSlots() {
 }
 
 function selectDeliveryTime(val) {
+  triggerHaptic('selection');
   document.getElementById('selected-time-display').innerText = val;
   document.getElementById('time-select-box').classList.remove('open');
 }
@@ -77,6 +78,7 @@ function onAddressInput(query) {
 }
 
 function selectSuggestion(idx) {
+  triggerHaptic('selection');
   const s = window.lastSuggestions[idx];
   if (!s) return;
 
@@ -124,6 +126,7 @@ function recalcOrderFinalTotal() {
 }
 
 function openOrderModal() {
+  triggerHaptic('selection');
   generateDynamicDeliveryTimeSlots();
   const savedBox = document.getElementById('order-saved-address-container');
   const pillsBox = document.getElementById('order-saved-address-pills');
@@ -139,9 +142,13 @@ function openOrderModal() {
   document.getElementById('order-modal').classList.add('open');
 }
 
-function closeOrderModal() { document.getElementById('order-modal').classList.remove('open'); }
+function closeOrderModal() { 
+  triggerHaptic('light');
+  document.getElementById('order-modal').classList.remove('open'); 
+}
 
 function applySavedAddressToOrder(idx, btn) {
+  triggerHaptic('selection');
   document.querySelectorAll('.addr-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
 
@@ -177,6 +184,7 @@ function applySavedAddressToOrder(idx, btn) {
 }
 
 function setDeliveryType(type) {
+  triggerHaptic('selection');
   orderDelType = type;
   document.getElementById('btn-del').classList.toggle('active', type === 'delivery');
   document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
@@ -186,14 +194,15 @@ function setDeliveryType(type) {
 }
 
 function setRecipientType(type) {
+  triggerHaptic('selection');
   orderRecType = type;
   document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
   document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
   document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
 }
 
-// Оформление заказа с передачей unit, variant, color и сбросом корзины
 async function submitFinalOrder() {
+  triggerHaptic('medium');
   const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
 
   let orderItems = [];
@@ -243,7 +252,7 @@ async function submitFinalOrder() {
     }
 
     if (!ent || !flr || !apt || !intc) {
-      toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
+      toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон");
       return;
     }
 
@@ -293,6 +302,7 @@ async function submitFinalOrder() {
     });
     const data = await res.json();
     if (data.success) {
+      triggerHaptic('success');
       clearCartStorage();
       const asmCheck = document.getElementById('cart-assembly-checkbox-ui');
       if (asmCheck) {
@@ -320,6 +330,7 @@ function openAssemblyCallModal(orderId) {
 }
 
 function closeAssemblyModal() {
+  triggerHaptic('light');
   document.getElementById('assembly-call-modal').classList.remove('open');
   navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
 }
@@ -343,6 +354,7 @@ function openPaymentModal(orderId, amount, createdAtStr = null) {
 }
 
 function closePaymentModal() {
+  triggerHaptic('light');
   clearInterval(paymentTimerInterval);
   document.getElementById('payment-modal').classList.remove('open');
 }
@@ -364,7 +376,7 @@ function setPaymentActiveState(isActive) {
       confirmBtn.style.cursor = 'not-allowed';
     }
     if (timerBox) {
-      timerBox.style.background = 'rgba(239,68,68,0.25)';
+      timerBox.style.background = 'rgba(185,28,28,0.25)';
       timerBox.innerHTML = '❌ <b>Заказ отменён (время вышло)</b>';
     }
   } else {
@@ -429,6 +441,7 @@ function startPaymentTimer(durationSec, orderId) {
 }
 
 function copyPaymentAmount() {
+  triggerHaptic('light');
   const el = document.getElementById('pay-modal-amount');
   const txt = el ? el.innerText.replace(/[^\d]/g, '') : '';
   if (txt && navigator.clipboard) {
@@ -439,6 +452,7 @@ function copyPaymentAmount() {
 
 async function confirmPaymentByClient() {
   if (!activePaymentOrderId) return;
+  triggerHaptic('medium');
   toast("Отправка подтверждения...");
   try {
     await fetch(API_URL, {
@@ -446,6 +460,7 @@ async function confirmPaymentByClient() {
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: "client_paid", order_id: activePaymentOrderId })
     });
+    triggerHaptic('success');
     toast("Оплата отправлена на проверку!");
     closePaymentModal();
     navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
