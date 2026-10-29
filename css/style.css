@@ -1,46 +1,50 @@
 :root {
-  --bg: #080a0f;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #151a24 0%, #080a0f 75%);
-  --card-bg: rgba(18, 22, 32, 0.72);
-  --card-inner: rgba(11, 14, 22, 0.75);
-  --border: rgba(212, 175, 55, 0.12);
-  --border-accent: rgba(212, 175, 55, 0.38);
-  --gold: #d4af37;
-  --gold-glow: rgba(212, 175, 55, 0.28);
-  --cyan: #e5c578;
+  --bg: #07090e;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #141822 0%, #07090e 75%);
+  --card-bg: rgba(16, 20, 30, 0.74);
+  --card-inner: rgba(10, 13, 20, 0.78);
+  --border: rgba(197, 160, 89, 0.14);
+  --border-accent: rgba(197, 160, 89, 0.42);
+  --gold: #c5a059;
+  --gold-light: #e8c887;
+  --gold-dark: #9e7d3b;
+  --gold-glow: rgba(197, 160, 89, 0.25);
+  --cyan: #c5a059;
   --green: #0d9468;
   --green-glow: rgba(13, 148, 104, 0.25);
-  --amber: #d97706;
+  --amber: #c57d1e;
   --red: #b91c1c;
-  --purple: #9333ea;
+  --purple: #8b5cf6;
   --text: #f8fafc;
-  --text-muted: #94a3b8;
-  --dock-bg: rgba(14, 18, 26, 0.82);
-  --dock-shadow: 0 20px 45px rgba(0, 0, 0, 0.75);
+  --text-muted: #8e9bb0;
+  --dock-bg: rgba(12, 16, 24, 0.86);
+  --dock-shadow: 0 20px 48px rgba(0, 0, 0, 0.8);
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 24px;
 }
 
 [data-theme="light"] {
-  --bg: #f8f6f0;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #ffffff 0%, #f4f0e6 85%);
-  --card-bg: rgba(255, 255, 255, 0.82);
-  --card-inner: rgba(246, 243, 236, 0.8);
-  --border: rgba(180, 145, 50, 0.16);
-  --border-accent: rgba(180, 145, 50, 0.45);
-  --gold: #b49132;
-  --gold-glow: rgba(180, 145, 50, 0.2);
-  --cyan: #997825;
+  --bg: #f7f5f0;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #ffffff 0%, #f0ece1 85%);
+  --card-bg: rgba(255, 255, 255, 0.86);
+  --card-inner: rgba(245, 241, 233, 0.85);
+  --border: rgba(168, 132, 58, 0.18);
+  --border-accent: rgba(168, 132, 58, 0.48);
+  --gold: #a8843a;
+  --gold-light: #c5a059;
+  --gold-dark: #7a5e24;
+  --gold-glow: rgba(168, 132, 58, 0.2);
+  --cyan: #a8843a;
   --green: #059669;
   --green-glow: rgba(5, 150, 105, 0.2);
   --amber: #b45309;
   --red: #dc2626;
-  --purple: #7e22ce;
-  --text: #1a1e24;
+  --purple: #7c3aed;
+  --text: #171b22;
   --text-muted: #64748b;
-  --dock-bg: rgba(255, 255, 255, 0.88);
-  --dock-shadow: 0 16px 40px rgba(180, 145, 50, 0.14);
+  --dock-bg: rgba(255, 255, 255, 0.9);
+  --dock-shadow: 0 16px 40px rgba(168, 132, 58, 0.15);
 }
 
 * {
@@ -78,7 +82,7 @@ body {
   position: relative;
 }
 
-/* Холст опадающих лепестков розы в корзине */
+/* Холст опадающих лепестков роз поверх корзины */
 #cart-petals-canvas {
   position: fixed;
   top: 0;
@@ -86,13 +90,44 @@ body {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 40;
+  z-index: 95;
   opacity: 0;
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  display: none;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
 #cart-petals-canvas.active {
+  display: block;
   opacity: 1;
+}
+
+/* Анимация подпрыгивания и золотой вспышки счетчика корзины */
+@keyframes cartBounceGold {
+  0% {
+    transform: scale(1);
+    color: inherit;
+    text-shadow: none;
+  }
+  30% {
+    transform: scale(1.6) translateY(-4px);
+    color: var(--gold-light);
+    text-shadow: 0 0 14px var(--gold-light);
+  }
+  65% {
+    transform: scale(0.9) translateY(1px);
+    color: var(--gold);
+    text-shadow: 0 0 8px var(--gold-glow);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    color: inherit;
+    text-shadow: none;
+  }
+}
+
+.cart-bounce-gold {
+  display: inline-block;
+  animation: cartBounceGold 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 header {
@@ -118,34 +153,34 @@ header {
   border-radius: 40px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   padding: 7px 14px;
   display: flex;
   align-items: center;
   gap: 7px;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.2s ease;
+  transition: transform 0.15s ease;
 }
 .hud-pill:active { transform: scale(0.96); }
 
 .hud-brand {
   font-size: 13px;
   font-weight: 900;
-  letter-spacing: 1px;
-  background: linear-gradient(135deg, #fff 20%, var(--gold) 100%);
+  letter-spacing: 1.2px;
+  background: linear-gradient(135deg, #ffffff 15%, var(--gold-light) 60%, var(--gold-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 [data-theme="light"] .hud-brand {
-  background: linear-gradient(135deg, #1a1e24 20%, var(--gold) 100%);
+  background: linear-gradient(135deg, #171b22 15%, var(--gold) 70%, var(--gold-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .hud-address {
   font-size: 10px;
-  background: rgba(212, 175, 55, 0.12);
-  color: var(--cyan);
+  background: rgba(197, 160, 89, 0.12);
+  color: var(--gold);
   border: 1px solid var(--border);
   padding: 2px 8px;
   border-radius: 20px;
@@ -217,25 +252,24 @@ header {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Карточка "Букет дня" (Daily Bloom) */
+/* Карточка "Букет дня" */
 .daily-bloom-card {
   position: relative;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.16) 0%, rgba(18, 22, 32, 0.85) 60%, rgba(13, 148, 104, 0.14) 100%);
+  background: linear-gradient(135deg, rgba(197, 160, 89, 0.16) 0%, rgba(16, 20, 30, 0.88) 55%, rgba(13, 148, 104, 0.12) 100%);
   border: 1px solid var(--border-accent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   padding: 14px;
   margin-bottom: 14px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
-.daily-bloom-card:active {
-  transform: scale(0.98);
-}
+.daily-bloom-card:active { transform: scale(0.98); }
+
 .daily-bloom-header {
   display: flex;
   justify-content: space-between;
@@ -250,8 +284,8 @@ header {
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: var(--gold);
-  background: rgba(212, 175, 55, 0.14);
+  color: var(--gold-light);
+  background: rgba(197, 160, 89, 0.16);
   border: 1px solid var(--border-accent);
   padding: 3px 9px;
   border-radius: 20px;
@@ -272,7 +306,7 @@ header {
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid var(--border-accent);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 .daily-bloom-thumb img {
   width: 100%;
@@ -295,7 +329,7 @@ header {
 }
 .daily-bloom-unit {
   font-size: 11px;
-  color: var(--cyan);
+  color: var(--gold);
   font-weight: 600;
 }
 .daily-bloom-footer {
@@ -307,17 +341,17 @@ header {
 .daily-bloom-price {
   font-size: 16px;
   font-weight: 900;
-  color: var(--gold);
+  color: var(--gold-light);
 }
 .daily-bloom-btn {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 6px 14px;
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--gold) 0%, #a88420 100%);
-  color: #080a0f;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+  color: #07090e;
   border: none;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 14px var(--gold-glow);
 }
 
 .catalog-top-bar {
@@ -340,7 +374,7 @@ header {
 .filter-btn-pill {
   padding: 7px 16px;
   border-radius: 20px;
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(197, 160, 89, 0.1);
   border: 1px solid var(--border-accent);
   color: var(--gold);
   font-size: 12px;
@@ -362,40 +396,40 @@ header {
   border: 1px solid var(--border);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   cursor: pointer;
   position: relative;
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 .product-card:active { transform: scale(0.97); }
 
-/* Премиальное аккуратное переливание карточек-хитов */
+/* Благородное сатиновое переливание хита продаж */
 .product-card.popular-hit {
   border-color: var(--border-accent);
-  box-shadow: 0 8px 28px rgba(212, 175, 55, 0.18);
+  box-shadow: 0 8px 28px rgba(197, 160, 89, 0.18);
   position: relative;
 }
 .product-card.popular-hit::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
-  width: 60%;
+  left: -120%;
+  width: 65%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.15), rgba(255, 255, 255, 0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgba(232, 200, 135, 0.15), rgba(255, 255, 255, 0.18), transparent);
   transform: skewX(-25deg);
-  animation: shimmerLuxury 4.5s ease-in-out infinite;
+  animation: shimmerLuxury 4.8s ease-in-out infinite;
   pointer-events: none;
   z-index: 2;
 }
 
 @keyframes shimmerLuxury {
-  0% { left: -100%; }
-  35%, 100% { left: 200%; }
+  0% { left: -120%; }
+  35%, 100% { left: 220%; }
 }
 
 .product-card.out-of-stock {
@@ -428,8 +462,8 @@ header {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.95) 0%, rgba(168, 132, 32, 0.95) 100%);
-  color: #080a0f;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-dark) 100%);
+  color: #07090e;
   font-size: 10px;
   font-weight: 900;
   padding: 3px 8px;
@@ -485,7 +519,7 @@ header {
 .product-unit {
   font-size: 11px;
   font-weight: 600;
-  color: var(--cyan);
+  color: var(--gold);
   line-height: 1.2;
 }
 
@@ -524,7 +558,7 @@ header {
   position: relative;
   padding: 7px 13px;
   border-radius: 10px;
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(197, 160, 89, 0.12);
   color: var(--gold);
   border: 1px solid var(--border-accent);
   font-size: 11px;
@@ -596,13 +630,13 @@ header {
   border-radius: var(--radius-md);
   padding: 14px;
   margin-bottom: 12px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .box-card.neon-glow {
   border-color: var(--border-accent);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px var(--gold-glow);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 20px var(--gold-glow);
 }
 
 .btn-metro {
@@ -622,7 +656,7 @@ header {
   gap: 6px;
   text-decoration: none;
   box-shadow: 0 6px 20px var(--green-glow);
-  transition: transform 0.12s ease, box-shadow 0.15s ease;
+  transition: transform 0.12s ease;
 }
 .btn-metro:active { transform: scale(0.98); }
 
@@ -668,84 +702,65 @@ header {
 }
 .qty-btn:active { transform: scale(0.9); }
 
-/* Графический статус-трекер заказа в профиле */
-.order-tracker-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-  margin: 12px 4px 14px 4px;
-  padding: 0 8px;
-}
-.order-tracker-line {
-  position: absolute;
-  top: 10px;
-  left: 20px;
-  right: 20px;
-  height: 2px;
-  background: var(--border);
-  z-index: 1;
-}
-.order-tracker-fill {
-  position: absolute;
-  top: 10px;
-  left: 20px;
-  height: 2px;
-  background: linear-gradient(90deg, var(--gold) 0%, var(--green) 100%);
-  z-index: 2;
-  transition: width 0.4s ease;
-}
-.order-step-node {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.order-step-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+/* Современный компактный капсульный прогресс-бар заказа */
+.order-progress-box {
   background: var(--card-inner);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.order-progress-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  font-size: 9px;
+  margin-bottom: 7px;
+}
+
+.order-progress-stage {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold-light);
+  letter-spacing: 0.3px;
+}
+
+.order-progress-percent {
+  font-size: 11px;
+  font-weight: 900;
   color: var(--text-muted);
-  transition: all 0.3s ease;
 }
-.order-step-node.completed .order-step-dot {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
+
+.order-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
 }
-.order-step-node.active .order-step-dot {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: #080a0f;
-  box-shadow: 0 0 12px var(--gold-glow);
-  animation: pulseDot 2s infinite;
+
+.order-progress-bar {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 50%, var(--green) 100%);
+  box-shadow: 0 0 10px var(--gold-glow);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@keyframes pulseDot {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-}
-.order-step-label {
+
+.order-progress-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
   font-size: 9px;
   font-weight: 700;
-  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  text-align: center;
+  color: var(--text-muted);
 }
-.order-step-node.active .order-step-label {
-  color: var(--gold);
-}
-.order-step-node.completed .order-step-label {
-  color: var(--green);
-}
+.order-progress-steps span.done { color: var(--green); }
+.order-progress-steps span.active { color: var(--gold-light); }
 
 .status-badge {
   font-size: 10px;
@@ -756,10 +771,10 @@ header {
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
-.st-await-pay { background: rgba(217, 119, 6, 0.16); color: var(--amber); border: 1px solid rgba(217, 119, 6, 0.35); }
-.st-check-pay { background: rgba(147, 51, 234, 0.16); color: var(--purple); border: 1px solid rgba(147, 51, 234, 0.35); }
-.st-building { background: rgba(212, 175, 55, 0.18); color: var(--gold); border: 1px solid var(--border-accent); }
-.st-transit { background: rgba(147, 51, 234, 0.2); color: var(--purple); border: 1px solid var(--purple); }
+.st-await-pay { background: rgba(197, 125, 30, 0.16); color: var(--amber); border: 1px solid rgba(197, 125, 30, 0.35); }
+.st-check-pay { background: rgba(139, 92, 246, 0.16); color: var(--purple); border: 1px solid rgba(139, 92, 246, 0.35); }
+.st-building { background: rgba(197, 160, 89, 0.18); color: var(--gold); border: 1px solid var(--border-accent); }
+.st-transit { background: rgba(139, 92, 246, 0.2); color: var(--purple); border: 1px solid var(--purple); }
 .st-completed { background: rgba(13, 148, 104, 0.16); color: var(--green); border: 1px solid rgba(13, 148, 104, 0.35); }
 .st-cancelled { background: rgba(185, 28, 28, 0.16); color: #ef4444; border: 1px solid rgba(185, 28, 28, 0.35); }
 
@@ -815,7 +830,7 @@ header {
 .dock-tab span { font-size: 10px; font-weight: 700; white-space: nowrap; }
 
 .dock-tab.active {
-  background: rgba(212, 175, 55, 0.14);
+  background: rgba(197, 160, 89, 0.14);
   color: var(--gold);
 }
 .dock-tab.spinning svg {
@@ -930,7 +945,7 @@ header {
   cursor: pointer;
 }
 .custom-select-option:hover, .custom-select-option:active {
-  background: rgba(212, 175, 55, 0.16);
+  background: rgba(197, 160, 89, 0.16);
   color: var(--gold);
 }
 
@@ -950,7 +965,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #080a0f;
+  color: #07090e;
   font-size: 12px;
   font-weight: 900;
   transition: all 0.15s ease;
@@ -985,7 +1000,7 @@ header {
   cursor: pointer;
 }
 .suggest-item:hover, .suggest-item:active {
-  background: rgba(212, 175, 55, 0.16);
+  background: rgba(197, 160, 89, 0.16);
   color: var(--gold);
 }
 
@@ -1024,7 +1039,7 @@ header {
   transition: all 0.15s ease;
 }
 .toggle-btn.active {
-  background: rgba(212, 175, 55, 0.16) !important;
+  background: rgba(197, 160, 89, 0.16) !important;
   border-color: var(--gold) !important;
   color: var(--gold) !important;
 }
@@ -1056,7 +1071,7 @@ header {
   transition: all 0.15s ease;
 }
 .variant-chip.active {
-  background: rgba(212, 175, 55, 0.16);
+  background: rgba(197, 160, 89, 0.16);
   border-color: var(--gold);
   color: var(--gold);
 }
@@ -1080,7 +1095,7 @@ header {
   cursor: pointer;
 }
 .addr-pill.active {
-  background: rgba(212, 175, 55, 0.14);
+  background: rgba(197, 160, 89, 0.14);
   border-color: var(--gold);
   color: var(--gold);
 }
@@ -1134,7 +1149,7 @@ header {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(8, 10, 15, 0.8);
+  background: rgba(7, 9, 14, 0.85);
   border: 1px solid var(--border-accent);
   color: #fff;
   font-size: 11px;
@@ -1376,7 +1391,7 @@ body.in-text-edit-mode [data-config-key] {
 .courier-copy-btn {
   padding: 6px 10px;
   border-radius: 6px;
-  background: rgba(212, 175, 55, 0.14);
+  background: rgba(197, 160, 89, 0.14);
   color: var(--gold);
   border: 1px solid var(--border-accent);
   font-size: 11px;
@@ -1397,7 +1412,7 @@ body.in-text-edit-mode [data-config-key] {
 }
 .notif-card-item.unread {
   border-color: var(--gold);
-  background: rgba(212, 175, 55, 0.06);
+  background: rgba(197, 160, 89, 0.08);
 }
 .notif-card-header {
   display: flex;
@@ -1424,7 +1439,7 @@ body.in-text-edit-mode [data-config-key] {
   font-size: 10px;
   padding: 2px 7px;
   border-radius: 4px;
-  background: rgba(212, 175, 55, 0.15);
+  background: rgba(197, 160, 89, 0.15);
   color: var(--gold);
   display: inline-block;
   font-weight: 800;
