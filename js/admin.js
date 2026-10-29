@@ -416,37 +416,89 @@ function triggerProductPhotoUpload(target) {
   document.getElementById('camera-file-input').click();
 }
 
+// Функция клиентского сжатия фото без потери видимого качества
+function compressImageFile(file, maxSide = 1400, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxSide || height > maxSide) {
+          if (width > height) {
+            height = Math.round((height * maxSide) / width);
+            width = maxSide;
+          } else {
+            width = Math.round((width * maxSide) / height);
+            height = maxSide;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      img.onerror = () => reject(new Error("Не удалось прочитать изображение"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Ошибка чтения файла"));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function handleNativeFileSelect(input) {
   const file = input.files && input.files[0];
   if (!file) return;
-  toast("Загрузка...");
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64 = e.target.result;
+
+  toast("Сжатие и загрузка фото...");
+
+  try {
+    const base64 = await compressImageFile(file, 1400, 0.82);
+
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        action: "admin_upload_photo", admin_id: userId, admin_passcode: sessionPasscode,
+        action: "admin_upload_photo",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
         base64: base64,
-        order_id: uploadTargetContext.type === 'order' ? uploadTargetContext.id : ""
+        content_type: "image/jpeg",
+        order_id: (uploadTargetContext && uploadTargetContext.type === 'order') ? uploadTargetContext.id : ""
       })
     });
+
     const d = await res.json();
-    if (d.success && uploadTargetContext.type === 'product') {
+    if (d.success && uploadTargetContext && uploadTargetContext.type === 'product') {
       if (uploadTargetContext.target === 'group') {
         addGroupPhotoUrl(d.photo_url);
       } else {
         addProductPhotoUrl(d.photo_url);
       }
-      toast("Фото добавлено!");
+      toast("Фото сжато и добавлено!");
     } else if (d.success) {
       toast("Фото букета отправлено клиенту!");
+    } else {
+      toast("Ошибка загрузки на сервер");
     }
-  };
-  reader.readAsDataURL(file);
-  input.value = "";
+  } catch (err) {
+    console.error("Upload error:", err);
+    toast("Ошибка обработки фотографии");
+  } finally {
+    input.value = "";
+  }
 }
+window.handleNativeFileSelect = handleNativeFileSelect;
 
 function renderProductEditorPhotos(urlsStr) {
   const box = document.getElementById('prod-photo-strip');
