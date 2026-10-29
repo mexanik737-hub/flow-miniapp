@@ -21,15 +21,15 @@ window.switchRootSection = function(sec) {
     if (sec === 'orders' && typeof loadRootOrders === 'function') {
       loadRootOrders(true);
     } else if (sec === 'catalog' && typeof loadRootCatalog === 'function') {
-      loadRootCatalog(false); // Сначала из кеша
+      loadRootCatalog(false);
     } else if (sec === 'clients' && typeof loadRootClients === 'function') {
       loadRootClients();
     } else if (sec === 'notifs' && typeof loadRootNotifications === 'function') {
-      loadRootNotifications(false); // Сначала из кеша
+      loadRootNotifications(false);
     } else if (sec === 'stats' && typeof loadRootStats === 'function') {
       loadRootStats(currentStatsPeriod || 'today');
     } else if (sec === 'faq' && typeof loadRootFaq === 'function') {
-      loadRootFaq(false); // Сначала из кеша
+      loadRootFaq(false);
     }
   } catch (err) {
     console.error("Root switch data load error:", err);
@@ -69,7 +69,6 @@ function getDistinctCategories() {
 function populateCategorySelects(selectedCat = "") {
   const cats = getDistinctCategories();
 
-  // 1. Селектор в модалке одиночного товара
   const prodBox = document.getElementById('prod-edit-cat-options');
   const prodDisp = document.getElementById('prod-edit-cat-display');
   if (prodBox) {
@@ -79,7 +78,6 @@ function populateCategorySelects(selectedCat = "") {
   }
   if (prodDisp) prodDisp.innerText = selectedCat || "Выберите категорию...";
 
-  // 2. Селектор в модалке группы товаров
   const groupBox = document.getElementById('group-edit-cat-options');
   const groupDisp = document.getElementById('group-edit-cat-display');
   if (groupBox) {
@@ -133,13 +131,11 @@ function renderCategoriesManagerList() {
   const catItemsMap = {};
   cats.forEach(c => catItemsMap[c] = []);
 
-  // Группируем товары и группы по категориям
   const processedGroups = new Set();
   (allRootCatalog || []).forEach(it => {
     const c = it.category && it.category.trim() ? it.category.trim() : "Цветы";
     if (!catItemsMap[c]) catItemsMap[c] = [];
 
-    // Определяем, одиночный товар или часть группы
     const isPartOfGroup = allRootCatalog.filter(x => (x.title || '').trim() === (it.title || '').trim()).length > 1;
     if (isPartOfGroup) {
       const gTitle = (it.title || '').trim();
@@ -224,14 +220,13 @@ async function promptRenameCategory(oldCat) {
     const d = await res.json();
     if (d.success) {
       toast(`Категория переименована! Обновлено товаров: ${d.updated}`);
-      // Обновляем в локальной памяти
       (allRootCatalog || []).forEach(it => {
         if (it.category === oldCat) it.category = cleanNew;
       });
       localStorage.setItem('flw_root_catalog_cache', JSON.stringify(allRootCatalog));
       renderCategoriesManagerList();
       renderRootCatalogCards();
-      loadCatalog(); // Синхронизируем клиентскую витрину
+      loadCatalog();
     } else {
       toast("Ошибка переименования");
     }
@@ -289,7 +284,6 @@ async function loadRootCatalog(forceFetch = false) {
   const container = document.getElementById('root-catalog-container');
   if (!container) return;
 
-  // 1. Читаем из локального хранилища, если не запрошено принудительное обновление
   const cached = localStorage.getItem('flw_root_catalog_cache');
   if (!forceFetch && cached) {
     try {
@@ -456,7 +450,6 @@ async function saveProductEditor() {
   const name = document.getElementById('prod-edit-name').value.trim();
   const priceVal = parseFloat(document.getElementById('prod-edit-price').value);
 
-  // Валидация обязательных параметров
   if (!name) { toast("Укажите название товара"); return; }
   if (isNaN(priceVal) || priceVal <= 0) {
     triggerHaptic('error');
@@ -589,7 +582,6 @@ async function saveGroupEditor() {
   const rows = Array.from(document.querySelectorAll('#group-variants-tbody tr'));
   if (!rows.length) { toast("Добавьте хотя бы одну вариацию"); return; }
 
-  // Валидация цен у всех строк группы
   let priceMissing = false;
   const variants = [];
 
@@ -616,7 +608,6 @@ async function saveGroupEditor() {
     return;
   }
 
-  // МЕХАНИКА РАСФОРМИРОВАНИЯ: если остался ровно 1 товар и включен чекбокс
   if (variants.length === 1 && shouldDisband && editingGroupName) {
     if (!confirm("В группе остался 1 вариант. Расформировать группу в одиночный товар?")) return;
     triggerHaptic('medium');
@@ -654,7 +645,6 @@ async function saveGroupEditor() {
     return;
   }
 
-  // Обычное сохранение группы
   triggerHaptic('medium');
   toast("Сохранение группы...");
   await fetch(API_URL, {
@@ -798,7 +788,6 @@ function triggerProductPhotoUpload(target) {
 }
 window.triggerProductPhotoUpload = triggerProductPhotoUpload;
 
-// Клиентское сжатие изображений через Canvas
 function compressImageFile(file, maxSide = 1400, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -882,8 +871,6 @@ async function handleNativeFileSelect(input) {
 }
 window.handleNativeFileSelect = handleNativeFileSelect;
 
-// --- Сортировка и рендер фото в карточке одиночного товара ---
-
 function renderProductEditorPhotos(urlsStr) {
   const box = document.getElementById('prod-photo-strip');
   const hiddenInput = document.getElementById('prod-edit-photo');
@@ -937,8 +924,6 @@ function removeProductPhoto(idx) {
   renderProductEditorPhotos(urls.join(', '));
 }
 window.removeProductPhoto = removeProductPhoto;
-
-// --- Сортировка и рендер фото в карточке группы товаров ---
 
 function renderGroupEditorPhotos(urlsStr) {
   const box = document.getElementById('group-photo-strip');
@@ -994,8 +979,6 @@ function removeGroupPhoto(idx) {
 }
 window.removeGroupPhoto = removeGroupPhoto;
 
-// --- Локальный кеш и мультиселект из Google Диска ---
-
 function openDriveMediaModal(target) {
   triggerHaptic('selection');
   driveModalTarget = target;
@@ -1004,7 +987,6 @@ function openDriveMediaModal(target) {
 
   document.getElementById('drive-media-modal').classList.add('open');
 
-  // Читаем из локального хранилища
   const cached = localStorage.getItem('flw_drive_media_cache');
   if (cached) {
     try {
@@ -1116,7 +1098,7 @@ function confirmDriveSelection() {
 window.confirmDriveSelection = confirmDriveSelection;
 
 // ==========================================
-// 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ЗАКАЗОВ, FAQ И КЛИЕНТОВ
+// 6. ЗАКАЗЫ, FAQ, КЛИЕНТЫ И СТАТИСТИКА
 // ==========================================
 
 async function loadRootOrders(force = false) {
