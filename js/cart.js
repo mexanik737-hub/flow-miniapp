@@ -11,11 +11,10 @@ function clearCartStorage() {
   localStorage.removeItem('flw_cart');
   localStorage.removeItem('flw_cart_assembly');
   localStorage.removeItem('flw_is_assembly_mode');
-  if (typeof updatePetalsCanvasState === 'function') updatePetalsCanvasState();
+  stopCartPetals();
 }
 
 function addPopToCart() {
-  triggerHaptic('medium');
   if (!activePopItem) return;
 
   let targetItem = null;
@@ -55,6 +54,7 @@ function addPopToCart() {
   cart[cartKey] = (cart[cartKey] || 0) + popQty;
   cartAssemblyItems[cartKey] = true;
 
+  triggerHaptic('medium');
   updateCartUI();
   updateProductCardAction(activePopItem.id);
   closeProductModal();
@@ -62,7 +62,6 @@ function addPopToCart() {
 }
 
 function quickAdd(id) {
-  triggerHaptic('medium');
   let item = catalog.find(i => String(i.id) === String(id));
   if (!item) {
     const group = displayCatalog.find(g => String(g.id) === String(id));
@@ -86,13 +85,14 @@ function quickAdd(id) {
   cart[cartKey] = (cart[cartKey] || 0) + 1;
   cartAssemblyItems[cartKey] = true;
 
+  triggerHaptic('medium');
   updateCartUI();
   updateProductCardAction(id);
   toast(`Добавлено: ${formatFullItemTitle(item.title, chosenUnit, chosenVar, chosenColor)}`);
 }
 
 function modifyCartByKey(cartKey, delta) {
-  triggerHaptic('light');
+  triggerHaptic('medium');
   cart[cartKey] = (cart[cartKey] || 0) + delta;
   const [itemId] = cartKey.split(':::');
   if (cart[cartKey] <= 0) {
@@ -126,7 +126,6 @@ function toggleItemAssemblySelection(cartKey) {
 
 function updateCartUI() {
   saveCartToStorage();
-  if (typeof updatePetalsCanvasState === 'function') updatePetalsCanvasState();
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
   const counterEl = document.getElementById('cart-counter');
@@ -142,10 +141,18 @@ function updateCartUI() {
     }
     if (checkoutCard) checkoutCard.style.display = 'none';
     currentFlowersSubtotal = 0;
+    stopCartPetals();
   } else {
     if (!catalog || !catalog.length) return;
+
     if (checkoutCard) checkoutCard.style.display = 'block';
     renderCartItems();
+
+    // Запуск лепестков, если пользователь сейчас на экране корзины
+    const activeScreen = document.querySelector('.screen.active')?.id;
+    if (activeScreen === 'screen-cart') {
+      startCartPetals();
+    }
   }
 
   displayCatalog.forEach(g => {
@@ -153,7 +160,7 @@ function updateCartUI() {
       const el = document.getElementById(`product-action-${g.id}`);
       if (el) {
         const hasItems = isGroupInCart(g.id);
-        el.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('light'); openProductModal('${g.id}')">Выбрать</button>`;
+        el.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${g.id}')">Выбрать</button>`;
       }
     }
   });
@@ -183,8 +190,8 @@ function renderCartItems() {
           ${isAssemblyMode ? `
             <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
           ` : ''}
-          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="triggerHaptic('light'); openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}')">
-            <div style="width:44px; height:44px; border-radius:10px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
+          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="triggerHaptic('selection'); openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}')">
+            <div style="width:44px; height:44px; border-radius:10px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent); box-shadow:0 4px 12px rgba(0,0,0,0.25);">
               ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
             </div>
             <div>
@@ -195,7 +202,7 @@ function renderCartItems() {
         </div>
         <div style="display:flex; align-items:center; gap:6px;">
           <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', -1)">–</button>
-          <span style="font-size:14px; font-weight:700; min-width:18px; text-align:center;">${qty}</span>
+          <span style="font-size:14px; font-weight:800; min-width:18px; text-align:center; color:var(--text);">${qty}</span>
           <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', 1)">+</button>
         </div>
       </div>
