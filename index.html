@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Магазин «Цветы»</title>
-  <link rel="stylesheet" href="css/style.css?v=2.4">
+  <link rel="stylesheet" href="css/style.css?v=2.6">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -35,7 +35,7 @@
   <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
   <div class="app-wrapper">
-    <!-- Двойной парящий HUD с колокольчиком уведомлений -->
+    <!-- Двойной парящий HUD -->
     <header>
       <div class="header-pills-row">
         <div class="hud-pill" onclick="handleHudRootTap()">
@@ -717,13 +717,13 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название товара: *</label>
       <input type="text" id="prod-edit-name" class="metro-input" placeholder="Роза Эквадор">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Фасовка / Количество: *</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Количество: *</label>
       <input type="text" id="prod-edit-unit" class="metro-input" placeholder="15 шт. или 15 шт. / 25 шт.">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Высота / Ростовка:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Высота:</label>
       <input type="text" id="prod-edit-variant" class="metro-input" placeholder="60 см или 50 см / 60 см">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цвет / Оттенок:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цвет:</label>
       <input type="text" id="prod-edit-color" class="metro-input" placeholder="Красный или Белый / Розовый">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория товара: *</label>
@@ -828,7 +828,7 @@
         <table class="group-variants-table">
           <thead>
             <tr>
-              <th style="width:20%;">Фасовка</th>
+              <th style="width:20%;">Количество</th>
               <th style="width:22%;">Высота</th>
               <th style="width:22%;">Цвет</th>
               <th style="width:20%;">Цена (₽)*</th>
@@ -850,7 +850,6 @@
       <div class="modal-header" style="margin-bottom:8px;">
         <div style="display:flex; align-items:center; gap:10px;">
           <div class="modal-title">Google Диск</div>
-          <!-- Кнопка «Обновить» в точности по красной зоне макета -->
           <button class="courier-copy-btn" style="padding:4px 9px; font-size:11px;" onclick="forceSyncDriveMedia()" title="Обновить список фото с Диска">
             🔄 Обновить
           </button>
