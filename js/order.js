@@ -28,13 +28,16 @@ function generateDynamicDeliveryTimeSlots() {
   slots.push({ label: "Завтра: 17:00 – 20:00", val: "Завтра 17:00 - 20:00" });
   slots.push({ label: "Завтра: в интервале с 10:00 до 20:00", val: "Завтра 10:00 - 20:00" });
 
-  displaySpan.innerText = slots[0].label;
-  optionsBox.innerHTML = slots.map(s => `
-    <div class="custom-select-option" onclick="selectDeliveryTime('${s.label}')">${s.label}</div>
-  `).join('');
+  if (displaySpan) displaySpan.innerText = slots[0].label;
+  if (optionsBox) {
+    optionsBox.innerHTML = slots.map(s => `
+      <div class="custom-select-option" onclick="selectDeliveryTime('${s.label}')">${s.label}</div>
+    `).join('');
+  }
 }
 
 function selectDeliveryTime(val) {
+  triggerHaptic('light');
   document.getElementById('selected-time-display').innerText = val;
   document.getElementById('time-select-box').classList.remove('open');
 }
@@ -45,7 +48,7 @@ function onAddressInput(query) {
   selectedGeoAddress = null;
 
   if (!query || query.trim().length < 2) { 
-    box.style.display = 'none'; 
+    if (box) box.style.display = 'none'; 
     return; 
   }
 
@@ -66,17 +69,20 @@ function onAddressInput(query) {
       });
       const data = await res.json();
       const items = data.suggestions || [];
-      if (!items.length) { box.style.display = 'none'; return; }
-      box.innerHTML = items.map((s, idx) => `
-        <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
-      `).join('');
-      box.style.display = 'block';
+      if (!items.length) { if (box) box.style.display = 'none'; return; }
+      if (box) {
+        box.innerHTML = items.map((s, idx) => `
+          <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
+        `).join('');
+        box.style.display = 'block';
+      }
       window.lastSuggestions = items;
     } catch (e) {}
   }, 250);
 }
 
 function selectSuggestion(idx) {
+  triggerHaptic('light');
   const s = window.lastSuggestions[idx];
   if (!s) return;
 
@@ -118,18 +124,23 @@ function recalcOrderFinalTotal() {
   const delivery = orderDelType === 'delivery' ? currentDeliveryCost : 0;
   currentFinalOrderAmount = currentFlowersSubtotal + delivery;
 
-  document.getElementById('order-subtotal-val').innerText = `${currentFlowersSubtotal} ₽`;
-  document.getElementById('order-delivery-val').innerText = `${delivery} ₽`;
-  document.getElementById('order-final-val').innerText = `${currentFinalOrderAmount} ₽`;
+  const subEl = document.getElementById('order-subtotal-val');
+  const delEl = document.getElementById('order-delivery-val');
+  const finEl = document.getElementById('order-final-val');
+
+  if (subEl) subEl.innerText = `${currentFlowersSubtotal} ₽`;
+  if (delEl) delEl.innerText = `${delivery} ₽`;
+  if (finEl) finEl.innerText = `${currentFinalOrderAmount} ₽`;
 }
 
 function openOrderModal() {
+  triggerHaptic('medium');
   generateDynamicDeliveryTimeSlots();
   const savedBox = document.getElementById('order-saved-address-container');
   const pillsBox = document.getElementById('order-saved-address-pills');
   if (savedAddresses && savedAddresses.length > 0) {
     pillsBox.innerHTML = savedAddresses.map((a, idx) => `
-      <div class="addr-pill" onclick="applySavedAddressToOrder(${idx}, this)">🏠 ${a.label}</div>
+      <div class="addr-pill" onclick="triggerHaptic('light'); applySavedAddressToOrder(${idx}, this)">🏠 ${a.label}</div>
     `).join('');
     savedBox.style.display = 'block';
   } else {
@@ -139,7 +150,7 @@ function openOrderModal() {
   document.getElementById('order-modal').classList.add('open');
 }
 
-function closeOrderModal() { document.getElementById('order-modal').classList.remove('open'); }
+function closeOrderModal() { triggerHaptic('light'); document.getElementById('order-modal').classList.remove('open'); }
 
 function applySavedAddressToOrder(idx, btn) {
   document.querySelectorAll('.addr-pill').forEach(p => p.classList.remove('active'));
@@ -177,6 +188,7 @@ function applySavedAddressToOrder(idx, btn) {
 }
 
 function setDeliveryType(type) {
+  triggerHaptic('light');
   orderDelType = type;
   document.getElementById('btn-del').classList.toggle('active', type === 'delivery');
   document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
@@ -186,14 +198,15 @@ function setDeliveryType(type) {
 }
 
 function setRecipientType(type) {
+  triggerHaptic('light');
   orderRecType = type;
   document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
   document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
   document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
 }
 
-// Оформление заказа с передачей unit, variant, color и сбросом корзины
 async function submitFinalOrder() {
+  triggerHaptic('heavy');
   const needAssembly = isAssemblyMode && Object.values(cartAssemblyItems).some(Boolean);
 
   let orderItems = [];
@@ -320,11 +333,13 @@ function openAssemblyCallModal(orderId) {
 }
 
 function closeAssemblyModal() {
+  triggerHaptic('light');
   document.getElementById('assembly-call-modal').classList.remove('open');
   navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
 }
 
 function openPaymentModal(orderId, amount, createdAtStr = null) {
+  triggerHaptic('medium');
   activePaymentOrderId = orderId;
   document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
   document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
@@ -343,6 +358,7 @@ function openPaymentModal(orderId, amount, createdAtStr = null) {
 }
 
 function closePaymentModal() {
+  triggerHaptic('light');
   clearInterval(paymentTimerInterval);
   document.getElementById('payment-modal').classList.remove('open');
 }
@@ -365,7 +381,7 @@ function setPaymentActiveState(isActive) {
     }
     if (timerBox) {
       timerBox.style.background = 'rgba(239,68,68,0.25)';
-      timerBox.innerHTML = '❌ <b>Заказ отменён (время вышло)</b>';
+      timerBox.innerHTML = '❌ <b>Заказ отменен (время вышло)</b>';
     }
   } else {
     if (sbpBtn) {
@@ -429,6 +445,7 @@ function startPaymentTimer(durationSec, orderId) {
 }
 
 function copyPaymentAmount() {
+  triggerHaptic('light');
   const el = document.getElementById('pay-modal-amount');
   const txt = el ? el.innerText.replace(/[^\d]/g, '') : '';
   if (txt && navigator.clipboard) {
@@ -438,6 +455,7 @@ function copyPaymentAmount() {
 }
 
 async function confirmPaymentByClient() {
+  triggerHaptic('heavy');
   if (!activePaymentOrderId) return;
   toast("Отправка подтверждения...");
   try {
