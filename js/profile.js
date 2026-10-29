@@ -2,8 +2,6 @@ let selectedSavedAddrSuggestion = null;
 
 function renderSavedAddresses() {
   const box = document.getElementById('saved-addresses-profile-list');
-  if (!box) return;
-
   if (!savedAddresses.length) {
     box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
     return;
@@ -14,7 +12,7 @@ function renderSavedAddresses() {
         <b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="color:var(--gold-light); cursor:pointer; font-size:13px;" onclick="openEditSavedAddressModal(${idx})">✏️</span>
+        <span style="color:var(--accent-gold); cursor:pointer; font-size:13px;" onclick="openEditSavedAddressModal(${idx})">✏️</span>
         <span style="color:var(--red); cursor:pointer; font-size:14px;" onclick="deleteSavedAddress(${idx})">✕</span>
       </div>
     </div>
@@ -22,8 +20,8 @@ function renderSavedAddresses() {
 }
 
 function openAddSavedAddressModal() {
+  hapticFeedback('light');
   if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
-  hapticImpact('light');
   editingSavedAddrIdx = null;
   selectedSavedAddrSuggestion = null;
   document.getElementById('saved-addr-modal-title').innerText = "Новый сохраненный адрес";
@@ -38,7 +36,7 @@ function openAddSavedAddressModal() {
 }
 
 function openEditSavedAddressModal(idx) {
-  hapticSelect();
+  hapticFeedback('light');
   editingSavedAddrIdx = idx;
   const a = savedAddresses[idx];
   if (!a) return;
@@ -59,7 +57,7 @@ function openEditSavedAddressModal(idx) {
 }
 
 function closeAddSavedAddressModal() { 
-  hapticSelect();
+  hapticFeedback('light');
   document.getElementById('add-saved-addr-modal').classList.remove('open'); 
 }
 
@@ -94,7 +92,7 @@ function onSavedAddrSuggestInput(query) {
 }
 
 function selectSavedAddrItem(idx) {
-  hapticSelect();
+  hapticFeedback('light');
   const s = window.savedAddrSuggestions?.[idx];
   if (!s) return;
   document.getElementById('new-addr-suggest').value = s.value;
@@ -122,6 +120,7 @@ function saveNewAddressFromModal() {
     return;
   }
 
+  hapticFeedback('medium');
   const addrObj = {
     label: label,
     address: addr,
@@ -141,14 +140,13 @@ function saveNewAddressFromModal() {
     toast("Адрес сохранен");
   }
 
-  hapticNotify('success');
   syncSavedAddresses();
   closeAddSavedAddressModal();
   renderSavedAddresses();
 }
 
 function deleteSavedAddress(idx) {
-  hapticImpact('medium');
+  hapticFeedback('medium');
   savedAddresses.splice(idx, 1);
   syncSavedAddresses();
   renderSavedAddresses();
@@ -165,15 +163,14 @@ function syncSavedAddresses() {
 }
 
 function openEditProfileModal() {
+  hapticFeedback('light');
   if (!currentUser) return;
-  hapticImpact('light');
   document.getElementById('edit-prof-name').value = currentUser.name || '';
   document.getElementById('edit-prof-phone').value = currentUser.phone || '';
   document.getElementById('edit-profile-modal').classList.add('open');
 }
-
 function closeEditProfileModal() { 
-  hapticSelect();
+  hapticFeedback('light');
   document.getElementById('edit-profile-modal').classList.remove('open'); 
 }
 
@@ -182,6 +179,7 @@ async function saveUserProfileChanges() {
   const phone = document.getElementById('edit-prof-phone').value.trim();
   if (!name || phone.length < 17) { toast("Заполните имя и номер полностью: 8 (***) ***-**-**"); return; }
 
+  hapticFeedback('success');
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
@@ -192,7 +190,6 @@ async function saveUserProfileChanges() {
   localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
   renderProfileUI();
   closeEditProfileModal();
-  hapticNotify('success');
   toast("Профиль обновлен");
 }
 
@@ -243,6 +240,7 @@ async function submitRegistration() {
     return;
   }
 
+  hapticFeedback('success');
   toast("Сохранение профиля...");
   try {
     const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
@@ -251,10 +249,8 @@ async function submitRegistration() {
     localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
     document.getElementById('reg-modal').classList.remove('open');
     renderProfileUI();
-    hapticNotify('success');
     toast("Регистрация завершена");
   } catch (e) {
-    hapticNotify('error');
     toast("Ошибка связи с базой");
   }
 }
@@ -282,45 +278,59 @@ function renderProfileUI() {
   if (pReg) pReg.innerText = regdate;
 }
 
-// Генерация визуального трекера этапов заказа (4 шага)
-function renderOrderStepper(status) {
-  if (status.startsWith('Отменен')) return '';
+// Построение графического 4-шагового прогресс-бара по статусу заказа
+function renderOrderProgressBar(status, deliveryType) {
+  const isPickup = (deliveryType === 'pickup');
+  const isCancelled = status.startsWith('Отменен');
 
-  let step = 1;
-  if (status === 'Собирается') step = 2;
-  else if (status === 'В пути' || status === 'Готов к выдаче') step = 3;
-  else if (status === 'Завершен') step = 4;
+  if (isCancelled) {
+    return `
+      <div style="margin: 8px 0; padding: 6px 10px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; color: var(--red); font-weight: 700;">
+        ✕ Заказ отменен (позиции возвращены на витрину)
+      </div>
+    `;
+  }
 
-  const fillPercent = ((step - 1) / 3) * 100;
+  // Определение уровня прогресса от 1 до 4
+  let currentStep = 1;
+  if (status === 'Ожидает оплаты' || status === 'Ожидает согласования упаковки' || status === 'Ожидает подтверждения оплаты') {
+    currentStep = 1;
+  } else if (status === 'Собирается') {
+    currentStep = 2;
+  } else if (status === 'В пути' || status === 'Готов к выдаче') {
+    currentStep = 3;
+  } else if (status === 'Завершен') {
+    currentStep = 4;
+  }
+
+  const stepLabels = [
+    'Оформлен',
+    'Сборка',
+    isPickup ? 'Готов к выдаче' : 'В пути',
+    'Выполнен'
+  ];
 
   return `
     <div class="order-progress-stepper">
-      <div class="order-progress-bar-fill" style="width: calc(${fillPercent}% - 40px * ${(step - 1) / 3});"></div>
-      
-      <div class="order-step-node ${step === 1 ? 'active' : (step > 1 ? 'completed' : '')}">
-        <div class="order-step-circle">${step > 1 ? '✓' : '1'}</div>
-        <div class="order-step-label">Принят</div>
-      </div>
+      ${stepLabels.map((lbl, idx) => {
+        const stepNum = idx + 1;
+        const isDone = stepNum < currentStep;
+        const isCurrent = stepNum === currentStep;
+        const barClass = isDone ? 'completed' : (isCurrent ? 'active' : '');
+        const lblClass = (isDone || isCurrent) ? 'active' : '';
 
-      <div class="order-step-node ${step === 2 ? 'active' : (step > 2 ? 'completed' : '')}">
-        <div class="order-step-circle">${step > 2 ? '✓' : '2'}</div>
-        <div class="order-step-label">Сборка</div>
-      </div>
-
-      <div class="order-step-node ${step === 3 ? 'active' : (step > 3 ? 'completed' : '')}">
-        <div class="order-step-circle">${step > 3 ? '✓' : '3'}</div>
-        <div class="order-step-label">Доставка</div>
-      </div>
-
-      <div class="order-step-node ${step === 4 ? 'active completed' : ''}">
-        <div class="order-step-circle">4</div>
-        <div class="order-step-label">Выполнен</div>
-      </div>
+        return `
+          <div class="order-step-node">
+            <div class="order-step-bar ${barClass}"></div>
+            <div class="order-step-label ${lblClass}">${lbl}</div>
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
 }
 
-// Загрузка заказов с визуальной шкалой и автоотменой таймаута
+// Загрузка заказов клиента с автоотменой, полным шаблоном названия и визуальным прогресс-баром
 async function loadUserOrders() {
   const container = document.getElementById('user-orders-list');
   try {
@@ -367,43 +377,39 @@ async function loadUserOrders() {
       else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
       else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
 
-      const stepperHtml = renderOrderStepper(ord.status);
-
       return `
-        <div class="box-card" style="margin-bottom:10px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <div class="box-card" style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
             <span class="status-badge ${badgeCls}">${ord.status}</span>
           </div>
 
-          ${stepperHtml}
+          <!-- Пошаговый трекер статуса -->
+          ${renderOrderProgressBar(ord.status, ord.delivery_type)}
 
-          <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin:8px 0;">
+          <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
             ${ord.items.map(i => {
               const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
-              const packTag = i.in_bouquet ? ' <b style="color:var(--gold-light);">[в букет]</b>' : '';
+              const packTag = i.in_bouquet ? ' <b>[в букет]</b>' : '';
               return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
             }).join('<br>')}
           </div>
-
           ${isAwaitingPay ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+              <button class="btn-metro" style="font-size:12px; padding:8px; flex:1; background:linear-gradient(135deg, #b48e26 0%, #8a6a16 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
             </div>
           ` : ''}
-
           ${isAwaitingAssembly ? `
-            <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:9px; margin-bottom:8px; text-decoration:none;">
+            <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:8px; margin-bottom:8px; text-decoration:none;">
               📞 Позвонить флористу для согласования
             </a>
           ` : ''}
-
-          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px; font-size:11px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
             <span style="color:var(--text-muted);">${ord.date_time}</span>
-            <span style="font-weight:900; font-size:14px; color:var(--text);">${ord.total_amount} ₽</span>
+            <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
           </div>
         </div>
       `;
