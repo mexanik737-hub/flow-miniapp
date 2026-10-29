@@ -1,3 +1,5 @@
+let currentGallerySlideIdx = 0;
+
 function formatFullItemTitle(title, unit, variant, color) {
   const parts = [];
   if (unit && String(unit).trim() && String(unit).trim() !== "1 шт.") {
@@ -193,23 +195,53 @@ function resetFilters() {
 }
 window.resetFilters = resetFilters;
 
-async function loadCatalog() {
+function applyLoadedCatalogData(items) {
+  catalog = items;
+  localStorage.setItem('flw_catalog_cache', JSON.stringify(catalog));
+  buildDisplayCatalog();
+  filteredCatalog = [...displayCatalog];
+  setupFilterDropdown();
+  renderDailyBloom();
+  renderCatalog(filteredCatalog);
+  if (typeof updateCartUI === 'function') updateCartUI();
+  if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
+}
+
+async function loadCatalog(force = false) {
+  const cached = localStorage.getItem('flw_catalog_cache');
+  if (cached && !force) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        applyLoadedCatalogData(parsed);
+      }
+    } catch (e) {}
+  }
+
   try {
     const res = await fetch(`${API_URL}?action=catalog`);
-    catalog = await res.json();
-    buildDisplayCatalog();
-    filteredCatalog = [...displayCatalog];
-    setupFilterDropdown();
-    renderDailyBloom();
-    renderCatalog(filteredCatalog);
-    if (typeof updateCartUI === 'function') updateCartUI();
-    if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
+    const serverCatalog = await res.json();
+    if (Array.isArray(serverCatalog)) {
+      const newHash = JSON.stringify(serverCatalog);
+      const oldHash = cached ? cached : "";
+      if (force || newHash !== oldHash || !catalog.length) {
+        applyLoadedCatalogData(serverCatalog);
+      }
+    }
   } catch (e) {
-    console.error("loadCatalog error:", e);
-    toast("Ошибка загрузки каталога");
+    if (!catalog.length) toast("Ошибка загрузки каталога");
   }
 }
 window.loadCatalog = loadCatalog;
+
+function forceSyncCatalogManual() {
+  triggerHaptic('medium');
+  toast("Синхронизация каталога...");
+  loadCatalog(true).then(() => {
+    toast("Каталог обновлен");
+  });
+}
+window.forceSyncCatalogManual = forceSyncCatalogManual;
 
 function getCartItemQuantity(id) {
   return Object.entries(cart || {}).reduce((sum, [key, qty]) => {
@@ -357,6 +389,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
 
   activePopItem = item;
   popQty = 1;
+  currentGallerySlideIdx = 0; // Сброс позиции фото строго на 1-й слайд при каждом новом открытии карточки
 
   const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
   fetch(API_URL, {
@@ -366,7 +399,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   }).catch(() => {});
 
   setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
-  updateSelectedGroupVariantUI();
+  updateSelectedGroupVariantUI(false); // При открытии карточки сбрасываем скролл на 1-й слайд
 
   const m = document.getElementById('product-modal');
   if (m) m.classList.add('open');
@@ -458,11 +491,11 @@ function selectProductChip(type, value) {
   if (type === 'color') selectedGroupColor = value;
 
   setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
-  updateSelectedGroupVariantUI();
+  updateSelectedGroupVariantUI(true); // При смене характеристик сохраняем позицию фото
 }
 window.selectProductChip = selectProductChip;
 
-function updateSelectedGroupVariantUI() {
+function updateSelectedGroupVariantUI(preserveSlide = false) {
   if (!activePopItem) return;
 
   let matchedVariant = null;
@@ -508,7 +541,7 @@ function updateSelectedGroupVariantUI() {
       addBtn.disabled = true;
     }
     if (qtyBox) qtyBox.style.display = 'none';
-    renderPopGallery(activePopItem.photo_url);
+    renderPopGallery(activePopItem.photo_url, preserveSlide);
   } else {
     if (popP) popP.innerText = `${matchedVariant.price} ₽`;
     if (popD) popD.innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
@@ -519,11 +552,11 @@ function updateSelectedGroupVariantUI() {
       addBtn.disabled = false;
     }
     if (qtyBox) qtyBox.style.display = 'flex';
-    renderPopGallery(matchedVariant.photo_url || activePopItem.photo_url);
+    renderPopGallery(matchedVariant.photo_url || activePopItem.photo_url, preserveSlide);
   }
 }
 
-function renderPopGallery(photosStr) {
+function renderPopGallery(photosStr, preserveSlide = false) {
   const gallery = document.getElementById('pop-gallery');
   const placeholder = document.getElementById('pop-placeholder');
   const counter = document.getElementById('pop-gallery-counter');
@@ -534,19 +567,33 @@ function renderPopGallery(photosStr) {
   if (photos.length) {
     gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
     gallery.style.display = 'flex';
-    gallery.scrollLeft = 0;
     placeholder.style.display = 'none';
+
+    let targetIdx = 0;
+    if (preserveSlide && currentGallerySlideIdx > 0 && currentGallerySlideIdx < photos.length) {
+      targetIdx = currentGallerySlideIdx;
+    } else {
+      currentGallerySlideIdx = 0;
+      targetIdx = 0;
+    }
+
+    // Восстанавливаем позицию фото без анимационного рывка
+    setTimeout(() => {
+      const itemWidth = gallery.clientWidth || 1;
+      gallery.scrollLeft = targetIdx * itemWidth;
+    }, 10);
 
     if (photos.length > 1) {
       if (counter) {
-        counter.innerText = `1 / ${photos.length}`;
+        counter.innerText = `${targetIdx + 1} / ${photos.length}`;
         counter.style.display = 'block';
       }
       gallery.onscroll = () => {
         const itemWidth = gallery.clientWidth || 1;
         const currentIdx = Math.round(gallery.scrollLeft / itemWidth);
+        currentGallerySlideIdx = Math.min(photos.length - 1, Math.max(0, currentIdx));
         if (counter) {
-          counter.innerText = `${Math.min(photos.length, Math.max(1, currentIdx + 1))} / ${photos.length}`;
+          counter.innerText = `${currentGallerySlideIdx + 1} / ${photos.length}`;
         }
       };
     } else {
@@ -559,6 +606,7 @@ function renderPopGallery(photosStr) {
     placeholder.style.display = 'flex';
     if (counter) counter.style.display = 'none';
     gallery.onscroll = null;
+    currentGallerySlideIdx = 0;
   }
 }
 
@@ -568,6 +616,9 @@ function closeProductModal() {
   if (m) m.classList.remove('open');
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
+  const gallery = document.getElementById('pop-gallery');
+  if (gallery) gallery.scrollLeft = 0;
+  currentGallerySlideIdx = 0; // Сбрасываем позицию фото при закрытии модалки
 }
 window.closeProductModal = closeProductModal;
 
