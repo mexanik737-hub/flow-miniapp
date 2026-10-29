@@ -2,26 +2,25 @@ let selectedSavedAddrSuggestion = null;
 
 function renderSavedAddresses() {
   const box = document.getElementById('saved-addresses-profile-list');
-  if (!box) return;
   if (!savedAddresses.length) {
     box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
     return;
   }
   box.innerHTML = savedAddresses.map((a, idx) => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px;">
       <div style="max-width:75%;">
-        <b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span>
+        <b style="color:var(--gold);">${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="color:var(--gold); cursor:pointer; font-size:13px;" onclick="triggerHaptic('light'); openEditSavedAddressModal(${idx})">✏️</span>
-        <span style="color:var(--red); cursor:pointer; font-size:14px;" onclick="triggerHaptic('medium'); deleteSavedAddress(${idx})">✕</span>
+        <span style="color:var(--gold); cursor:pointer; font-size:14px;" onclick="triggerHaptic('selection'); openEditSavedAddressModal(${idx})">✏️</span>
+        <span style="color:var(--red); cursor:pointer; font-size:15px;" onclick="triggerHaptic('medium'); deleteSavedAddress(${idx})">✕</span>
       </div>
     </div>
   `).join('');
 }
 
 function openAddSavedAddressModal() {
-  triggerHaptic('light');
+  triggerHaptic('selection');
   if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
   editingSavedAddrIdx = null;
   selectedSavedAddrSuggestion = null;
@@ -37,7 +36,7 @@ function openAddSavedAddressModal() {
 }
 
 function openEditSavedAddressModal(idx) {
-  triggerHaptic('light');
+  triggerHaptic('selection');
   editingSavedAddrIdx = idx;
   const a = savedAddresses[idx];
   if (!a) return;
@@ -57,14 +56,17 @@ function openEditSavedAddressModal(idx) {
   document.getElementById('add-saved-addr-modal').classList.add('open');
 }
 
-function closeAddSavedAddressModal() { triggerHaptic('light'); document.getElementById('add-saved-addr-modal').classList.remove('open'); }
+function closeAddSavedAddressModal() { 
+  triggerHaptic('light');
+  document.getElementById('add-saved-addr-modal').classList.remove('open'); 
+}
 
 function onSavedAddrSuggestInput(query) {
   clearTimeout(suggestDebounceTimer);
   const box = document.getElementById('new-addr-suggest-list');
   selectedSavedAddrSuggestion = null;
 
-  if (!query || query.trim().length < 2) { if (box) box.style.display = 'none'; return; }
+  if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
 
   suggestDebounceTimer = setTimeout(async () => {
     try {
@@ -79,20 +81,18 @@ function onSavedAddrSuggestInput(query) {
       });
       const data = await res.json();
       const items = data.suggestions || [];
-      if (!items.length) { if (box) box.style.display = 'none'; return; }
-      if (box) {
-        box.innerHTML = items.map((s, idx) => `
-          <div class="suggest-item" onclick="selectSavedAddrItem(${idx})">${s.value}</div>
-        `).join('');
-        box.style.display = 'block';
-      }
+      if (!items.length) { box.style.display = 'none'; return; }
+      box.innerHTML = items.map((s, idx) => `
+        <div class="suggest-item" onclick="selectSavedAddrItem(${idx})">${s.value}</div>
+      `).join('');
+      box.style.display = 'block';
       window.savedAddrSuggestions = items;
     } catch (e) {}
   }, 250);
 }
 
 function selectSavedAddrItem(idx) {
-  triggerHaptic('light');
+  triggerHaptic('selection');
   const s = window.savedAddrSuggestions?.[idx];
   if (!s) return;
   document.getElementById('new-addr-suggest').value = s.value;
@@ -117,7 +117,7 @@ function saveNewAddressFromModal() {
   }
 
   if (!ent || !flr || !apt || !intc) {
-    toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон (если нет — укажите «нет»)");
+    toast("Заполните все поля адреса: подъезд, этаж, квартиру и домофон");
     return;
   }
 
@@ -162,13 +162,16 @@ function syncSavedAddresses() {
 }
 
 function openEditProfileModal() {
-  triggerHaptic('light');
   if (!currentUser) return;
+  triggerHaptic('selection');
   document.getElementById('edit-prof-name').value = currentUser.name || '';
   document.getElementById('edit-prof-phone').value = currentUser.phone || '';
   document.getElementById('edit-profile-modal').classList.add('open');
 }
-function closeEditProfileModal() { triggerHaptic('light'); document.getElementById('edit-profile-modal').classList.remove('open'); }
+function closeEditProfileModal() { 
+  triggerHaptic('light');
+  document.getElementById('edit-profile-modal').classList.remove('open'); 
+}
 
 async function saveUserProfileChanges() {
   triggerHaptic('medium');
@@ -214,25 +217,21 @@ async function checkUserSession() {
       renderProfileUI();
       renderSavedAddresses();
     } else if (!currentUser) {
-      const regName = document.getElementById('reg-name');
-      if (regName) regName.value = tgFirstName;
-      const regModal = document.getElementById('reg-modal');
-      if (regModal) regModal.classList.add('open');
+      document.getElementById('reg-name').value = tgFirstName;
+      document.getElementById('reg-modal').classList.add('open');
     }
   } catch (e) {
     if (currentUser) {
       renderProfileUI();
     } else {
-      const regName = document.getElementById('reg-name');
-      if (regName) regName.value = tgFirstName;
-      const regModal = document.getElementById('reg-modal');
-      if (regModal) regModal.classList.add('open');
+      document.getElementById('reg-name').value = tgFirstName;
+      document.getElementById('reg-modal').classList.add('open');
     }
   }
 }
 
 async function submitRegistration() {
-  triggerHaptic('heavy');
+  triggerHaptic('medium');
   const name = document.getElementById('reg-name').value.trim() || tgFirstName;
   const phone = document.getElementById('reg-phone').value.trim();
 
@@ -278,41 +277,59 @@ function renderProfileUI() {
   if (pReg) pReg.innerText = regdate;
 }
 
-// Генерация HTML для прогресс-бара статуса заказа
-function getOrderProgressBarHtml(status) {
+// Генерация визуального трекера этапов заказа
+function renderOrderTrackerHtml(status) {
+  if (status.startsWith('Отменен')) {
+    return `
+      <div style="background:rgba(185,28,28,0.12); border:1px solid rgba(185,28,28,0.3); border-radius:8px; padding:6px 10px; margin:8px 0; font-size:11px; color:#ef4444; font-weight:700; text-align:center;">
+        ✕ Заказ отменен (позиции возвращены на витрину)
+      </div>
+    `;
+  }
+
   let step = 1;
-  const st = String(status || "").toLowerCase();
+  let fillPercent = 0;
 
-  if (st.includes('завершен')) step = 4;
-  else if (st.includes('пути') || st.includes('выдаче') || st.includes('собирается') || st.includes('подтверждения')) step = 3;
-  else if (st.includes('оплаты') || st.includes('согласования')) step = 2;
-  else if (st.includes('отменен')) step = 0;
-
-  if (step === 0) return `<div style="font-size:11px; color:var(--red); font-weight:700; margin:6px 0;">Заказ отменен</div>`;
-
-  const getStepClass = (sNum) => {
-    if (step > sNum) return 'completed';
-    if (step === sNum) return 'current';
-    return '';
-  };
+  if (status === 'Ожидает оплаты' || status === 'Ожидает согласования упаковки') {
+    step = 1;
+    fillPercent = 10;
+  } else if (status === 'Ожидает подтверждения оплаты') {
+    step = 2;
+    fillPercent = 35;
+  } else if (status === 'Собирается') {
+    step = 3;
+    fillPercent = 65;
+  } else if (status === 'В пути' || status === 'Готов к выдаче') {
+    step = 4;
+    fillPercent = 88;
+  } else if (status === 'Завершен') {
+    step = 5;
+    fillPercent = 100;
+  }
 
   return `
-    <div class="order-progress-steps">
-      <div class="order-progress-step ${getStepClass(1)}">
+    <div class="order-tracker-wrap">
+      <div class="order-tracker-line"></div>
+      <div class="order-tracker-fill" style="width: ${fillPercent}%;"></div>
+
+      <div class="order-step-node ${step > 1 ? 'completed' : (step === 1 ? 'active' : '')}">
         <div class="order-step-dot">${step > 1 ? '✓' : '1'}</div>
         <div class="order-step-label">Создан</div>
       </div>
-      <div class="order-progress-step ${getStepClass(2)}">
+
+      <div class="order-step-node ${step > 2 ? 'completed' : (step === 2 ? 'active' : '')}">
         <div class="order-step-dot">${step > 2 ? '✓' : '2'}</div>
         <div class="order-step-label">Оплата</div>
       </div>
-      <div class="order-progress-step ${getStepClass(3)}">
+
+      <div class="order-step-node ${step > 3 ? 'completed' : (step === 3 ? 'active' : '')}">
         <div class="order-step-dot">${step > 3 ? '✓' : '3'}</div>
-        <div class="order-step-label">Сборка / Доставка</div>
+        <div class="order-step-label">Сборка</div>
       </div>
-      <div class="order-progress-step ${getStepClass(4)}">
-        <div class="order-step-dot">${step >= 4 ? '✓' : '4'}</div>
-        <div class="order-step-label">Готов</div>
+
+      <div class="order-step-node ${step >= 4 ? (step === 5 ? 'completed' : 'active') : ''}">
+        <div class="order-step-dot">${step === 5 ? '✓' : '4'}</div>
+        <div class="order-step-label">Доставка</div>
       </div>
     </div>
   `;
@@ -320,7 +337,6 @@ function getOrderProgressBarHtml(status) {
 
 async function loadUserOrders() {
   const container = document.getElementById('user-orders-list');
-  if (!container) return;
   try {
     const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
     const orders = await res.json();
@@ -353,7 +369,7 @@ async function loadUserOrders() {
           } else {
             const m = Math.floor(leftSec / 60);
             const s = leftSec % 60;
-            timerCardBadge = `⏳ Осталось: ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+            timerCardBadge = `⏳ ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
           }
         }
       }
@@ -365,40 +381,42 @@ async function loadUserOrders() {
       else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
       else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
 
-      const progressBarHtml = getOrderProgressBarHtml(ord.status);
-
       return `
         <div class="box-card" style="margin-bottom:10px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
             <span class="status-badge ${badgeCls}">${ord.status}</span>
           </div>
 
-          ${progressBarHtml}
+          <!-- Визуальный трекер процесса заказа -->
+          ${renderOrderTrackerHtml(ord.status)}
 
-          <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
+          <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
             ${ord.items.map(i => {
               const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
-              const packTag = i.in_bouquet ? ' <b>[в букет]</b>' : '';
+              const packTag = i.in_bouquet ? ' <b style="color:var(--gold);">[в букет]</b>' : '';
               return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
             }).join('<br>')}
           </div>
-          ${isAwaiting ? `
+
+          ${isAwaitingPay ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro" style="font-size:12px; padding:8px; flex:1; background:linear-gradient(135deg, #d4af37 0%, #b8860b 100%);" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
             </div>
           ` : ''}
+
           ${isAwaitingAssembly ? `
-            <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:8px; margin-bottom:8px; text-decoration:none;">
+            <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:9px; margin-bottom:8px; text-decoration:none;">
               📞 Позвонить флористу для согласования
             </a>
           ` : ''}
+
           <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
             <span style="color:var(--text-muted);">${ord.date_time}</span>
-            <span style="font-weight:800; font-size:13px; color:var(--text);">${ord.total_amount} ₽</span>
+            <span style="font-weight:900; font-size:14px; color:var(--gold);">${ord.total_amount} ₽</span>
           </div>
         </div>
       `;
