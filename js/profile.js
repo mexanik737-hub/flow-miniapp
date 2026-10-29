@@ -2,6 +2,7 @@ let selectedSavedAddrSuggestion = null;
 
 function renderSavedAddresses() {
   const box = document.getElementById('saved-addresses-profile-list');
+  if (!box) return;
   if (!savedAddresses.length) {
     box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
     return;
@@ -12,15 +13,15 @@ function renderSavedAddresses() {
         <b>${a.label}:</b> <span style="color:var(--text-muted);">${a.address}</span>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="color:var(--accent-gold); cursor:pointer; font-size:13px;" onclick="openEditSavedAddressModal(${idx})">✏️</span>
-        <span style="color:var(--red); cursor:pointer; font-size:14px;" onclick="deleteSavedAddress(${idx})">✕</span>
+        <span style="color:var(--gold); cursor:pointer; font-size:13px;" onclick="triggerHaptic('light'); openEditSavedAddressModal(${idx})">✏️</span>
+        <span style="color:var(--red); cursor:pointer; font-size:14px;" onclick="triggerHaptic('medium'); deleteSavedAddress(${idx})">✕</span>
       </div>
     </div>
   `).join('');
 }
 
 function openAddSavedAddressModal() {
-  hapticFeedback('light');
+  triggerHaptic('light');
   if (savedAddresses.length >= 3) { toast("Максимум 3 адреса"); return; }
   editingSavedAddrIdx = null;
   selectedSavedAddrSuggestion = null;
@@ -36,7 +37,7 @@ function openAddSavedAddressModal() {
 }
 
 function openEditSavedAddressModal(idx) {
-  hapticFeedback('light');
+  triggerHaptic('light');
   editingSavedAddrIdx = idx;
   const a = savedAddresses[idx];
   if (!a) return;
@@ -56,17 +57,14 @@ function openEditSavedAddressModal(idx) {
   document.getElementById('add-saved-addr-modal').classList.add('open');
 }
 
-function closeAddSavedAddressModal() { 
-  hapticFeedback('light');
-  document.getElementById('add-saved-addr-modal').classList.remove('open'); 
-}
+function closeAddSavedAddressModal() { triggerHaptic('light'); document.getElementById('add-saved-addr-modal').classList.remove('open'); }
 
 function onSavedAddrSuggestInput(query) {
   clearTimeout(suggestDebounceTimer);
   const box = document.getElementById('new-addr-suggest-list');
   selectedSavedAddrSuggestion = null;
 
-  if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+  if (!query || query.trim().length < 2) { if (box) box.style.display = 'none'; return; }
 
   suggestDebounceTimer = setTimeout(async () => {
     try {
@@ -81,18 +79,20 @@ function onSavedAddrSuggestInput(query) {
       });
       const data = await res.json();
       const items = data.suggestions || [];
-      if (!items.length) { box.style.display = 'none'; return; }
-      box.innerHTML = items.map((s, idx) => `
-        <div class="suggest-item" onclick="selectSavedAddrItem(${idx})">${s.value}</div>
-      `).join('');
-      box.style.display = 'block';
+      if (!items.length) { if (box) box.style.display = 'none'; return; }
+      if (box) {
+        box.innerHTML = items.map((s, idx) => `
+          <div class="suggest-item" onclick="selectSavedAddrItem(${idx})">${s.value}</div>
+        `).join('');
+        box.style.display = 'block';
+      }
       window.savedAddrSuggestions = items;
     } catch (e) {}
   }, 250);
 }
 
 function selectSavedAddrItem(idx) {
-  hapticFeedback('light');
+  triggerHaptic('light');
   const s = window.savedAddrSuggestions?.[idx];
   if (!s) return;
   document.getElementById('new-addr-suggest').value = s.value;
@@ -101,6 +101,7 @@ function selectSavedAddrItem(idx) {
 }
 
 function saveNewAddressFromModal() {
+  triggerHaptic('medium');
   const label = document.getElementById('new-addr-label').value.trim() || "Дом";
   const addr = document.getElementById('new-addr-suggest').value.trim();
   const ent = document.getElementById('new-addr-entrance').value.trim();
@@ -120,7 +121,6 @@ function saveNewAddressFromModal() {
     return;
   }
 
-  hapticFeedback('medium');
   const addrObj = {
     label: label,
     address: addr,
@@ -146,7 +146,6 @@ function saveNewAddressFromModal() {
 }
 
 function deleteSavedAddress(idx) {
-  hapticFeedback('medium');
   savedAddresses.splice(idx, 1);
   syncSavedAddresses();
   renderSavedAddresses();
@@ -163,23 +162,20 @@ function syncSavedAddresses() {
 }
 
 function openEditProfileModal() {
-  hapticFeedback('light');
+  triggerHaptic('light');
   if (!currentUser) return;
   document.getElementById('edit-prof-name').value = currentUser.name || '';
   document.getElementById('edit-prof-phone').value = currentUser.phone || '';
   document.getElementById('edit-profile-modal').classList.add('open');
 }
-function closeEditProfileModal() { 
-  hapticFeedback('light');
-  document.getElementById('edit-profile-modal').classList.remove('open'); 
-}
+function closeEditProfileModal() { triggerHaptic('light'); document.getElementById('edit-profile-modal').classList.remove('open'); }
 
 async function saveUserProfileChanges() {
+  triggerHaptic('medium');
   const name = document.getElementById('edit-prof-name').value.trim();
   const phone = document.getElementById('edit-prof-phone').value.trim();
   if (!name || phone.length < 17) { toast("Заполните имя и номер полностью: 8 (***) ***-**-**"); return; }
 
-  hapticFeedback('success');
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
@@ -218,20 +214,25 @@ async function checkUserSession() {
       renderProfileUI();
       renderSavedAddresses();
     } else if (!currentUser) {
-      document.getElementById('reg-name').value = tgFirstName;
-      document.getElementById('reg-modal').classList.add('open');
+      const regName = document.getElementById('reg-name');
+      if (regName) regName.value = tgFirstName;
+      const regModal = document.getElementById('reg-modal');
+      if (regModal) regModal.classList.add('open');
     }
   } catch (e) {
     if (currentUser) {
       renderProfileUI();
     } else {
-      document.getElementById('reg-name').value = tgFirstName;
-      document.getElementById('reg-modal').classList.add('open');
+      const regName = document.getElementById('reg-name');
+      if (regName) regName.value = tgFirstName;
+      const regModal = document.getElementById('reg-modal');
+      if (regModal) regModal.classList.add('open');
     }
   }
 }
 
 async function submitRegistration() {
+  triggerHaptic('heavy');
   const name = document.getElementById('reg-name').value.trim() || tgFirstName;
   const phone = document.getElementById('reg-phone').value.trim();
 
@@ -240,7 +241,6 @@ async function submitRegistration() {
     return;
   }
 
-  hapticFeedback('success');
   toast("Сохранение профиля...");
   try {
     const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
@@ -278,61 +278,49 @@ function renderProfileUI() {
   if (pReg) pReg.innerText = regdate;
 }
 
-// Построение графического 4-шагового прогресс-бара по статусу заказа
-function renderOrderProgressBar(status, deliveryType) {
-  const isPickup = (deliveryType === 'pickup');
-  const isCancelled = status.startsWith('Отменен');
+// Генерация HTML для прогресс-бара статуса заказа
+function getOrderProgressBarHtml(status) {
+  let step = 1;
+  const st = String(status || "").toLowerCase();
 
-  if (isCancelled) {
-    return `
-      <div style="margin: 8px 0; padding: 6px 10px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; color: var(--red); font-weight: 700;">
-        ✕ Заказ отменен (позиции возвращены на витрину)
-      </div>
-    `;
-  }
+  if (st.includes('завершен')) step = 4;
+  else if (st.includes('пути') || st.includes('выдаче') || st.includes('собирается') || st.includes('подтверждения')) step = 3;
+  else if (st.includes('оплаты') || st.includes('согласования')) step = 2;
+  else if (st.includes('отменен')) step = 0;
 
-  // Определение уровня прогресса от 1 до 4
-  let currentStep = 1;
-  if (status === 'Ожидает оплаты' || status === 'Ожидает согласования упаковки' || status === 'Ожидает подтверждения оплаты') {
-    currentStep = 1;
-  } else if (status === 'Собирается') {
-    currentStep = 2;
-  } else if (status === 'В пути' || status === 'Готов к выдаче') {
-    currentStep = 3;
-  } else if (status === 'Завершен') {
-    currentStep = 4;
-  }
+  if (step === 0) return `<div style="font-size:11px; color:var(--red); font-weight:700; margin:6px 0;">Заказ отменен</div>`;
 
-  const stepLabels = [
-    'Оформлен',
-    'Сборка',
-    isPickup ? 'Готов к выдаче' : 'В пути',
-    'Выполнен'
-  ];
+  const getStepClass = (sNum) => {
+    if (step > sNum) return 'completed';
+    if (step === sNum) return 'current';
+    return '';
+  };
 
   return `
-    <div class="order-progress-stepper">
-      ${stepLabels.map((lbl, idx) => {
-        const stepNum = idx + 1;
-        const isDone = stepNum < currentStep;
-        const isCurrent = stepNum === currentStep;
-        const barClass = isDone ? 'completed' : (isCurrent ? 'active' : '');
-        const lblClass = (isDone || isCurrent) ? 'active' : '';
-
-        return `
-          <div class="order-step-node">
-            <div class="order-step-bar ${barClass}"></div>
-            <div class="order-step-label ${lblClass}">${lbl}</div>
-          </div>
-        `;
-      }).join('')}
+    <div class="order-progress-steps">
+      <div class="order-progress-step ${getStepClass(1)}">
+        <div class="order-step-dot">${step > 1 ? '✓' : '1'}</div>
+        <div class="order-step-label">Создан</div>
+      </div>
+      <div class="order-progress-step ${getStepClass(2)}">
+        <div class="order-step-dot">${step > 2 ? '✓' : '2'}</div>
+        <div class="order-step-label">Оплата</div>
+      </div>
+      <div class="order-progress-step ${getStepClass(3)}">
+        <div class="order-step-dot">${step > 3 ? '✓' : '3'}</div>
+        <div class="order-step-label">Сборка / Доставка</div>
+      </div>
+      <div class="order-progress-step ${getStepClass(4)}">
+        <div class="order-step-dot">${step >= 4 ? '✓' : '4'}</div>
+        <div class="order-step-label">Готов</div>
+      </div>
     </div>
   `;
 }
 
-// Загрузка заказов клиента с автоотменой, полным шаблоном названия и визуальным прогресс-баром
 async function loadUserOrders() {
   const container = document.getElementById('user-orders-list');
+  if (!container) return;
   try {
     const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
     const orders = await res.json();
@@ -365,7 +353,7 @@ async function loadUserOrders() {
           } else {
             const m = Math.floor(leftSec / 60);
             const s = leftSec % 60;
-            timerCardBadge = `⏳ ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+            timerCardBadge = `⏳ Осталось: ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
           }
         }
       }
@@ -377,15 +365,16 @@ async function loadUserOrders() {
       else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
       else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
 
+      const progressBarHtml = getOrderProgressBarHtml(ord.status);
+
       return `
-        <div class="box-card" style="margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <div class="box-card" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
             <span class="status-badge ${badgeCls}">${ord.status}</span>
           </div>
 
-          <!-- Пошаговый трекер статуса -->
-          ${renderOrderProgressBar(ord.status, ord.delivery_type)}
+          ${progressBarHtml}
 
           <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:8px;">
             ${ord.items.map(i => {
@@ -394,9 +383,9 @@ async function loadUserOrders() {
               return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
             }).join('<br>')}
           </div>
-          ${isAwaitingPay ? `
+          ${isAwaiting ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro" style="font-size:12px; padding:8px; flex:1; background:linear-gradient(135deg, #b48e26 0%, #8a6a16 100%);" onclick="openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+              <button class="btn-metro" style="font-size:12px; padding:8px; flex:1; background:linear-gradient(135deg, #d4af37 0%, #b8860b 100%);" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
