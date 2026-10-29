@@ -62,59 +62,56 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
-// ==================== МЕХАНИКА: БУКЕТ ДНЯ ====================
-function getDailyBloomItem() {
-  const now = new Date();
-  const currentHour = now.getHours();
-
-  // Показываем только после 09:00
-  if (currentHour < 9) return null;
-
-  const activeItems = catalog.filter(i => i.is_active);
-  if (!activeItems.length) return null;
-
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  const dateKey = `${y}-${m}-${d}`;
-
-  // Детерминированный хэш от userId + даты для персонального стабильного выбора на весь день
-  const seedStr = `${userId || 'client'}_${dateKey}`;
-  let hash = 0;
-  for (let i = 0; i < seedStr.length; i++) {
-    hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
-    hash |= 0;
-  }
-
-  const chosenIndex = Math.abs(hash) % activeItems.length;
-  return activeItems[chosenIndex];
-}
-
-function renderDailyBloom() {
+// ----------------- МЕХАНИКА «БУКЕТ ДНЯ» (ОБНОВЛЕНИЕ В 09:00) -----------------
+function initDailyBloom() {
   const container = document.getElementById('daily-bloom-container');
-  if (!container) return;
+  if (!container || !catalog || !catalog.length) return;
 
-  const item = getDailyBloomItem();
-  if (!item) {
-    container.innerHTML = '';
+  const now = new Date();
+  const curHour = now.getHours();
+
+  // Если текущее время меньше 09:00, цикл относится к предыдущему дню (суточный срез с 9:00 до 9:00)
+  const cycleDate = new Date(now);
+  if (curHour < 9) {
+    cycleDate.setDate(cycleDate.getDate() - 1);
+  }
+  const cycleKey = `${cycleDate.getFullYear()}-${cycleDate.getMonth() + 1}-${cycleDate.getDate()}`;
+
+  const storedCycle = localStorage.getItem('flw_daily_bloom_cycle');
+  let bloomId = localStorage.getItem('flw_daily_bloom_id');
+
+  const inStockItems = catalog.filter(i => i.is_active);
+  if (!inStockItems.length) {
+    container.style.display = 'none';
     return;
   }
 
+  // Если наступил новый 9-часовой цикл или сохраненного цветка нет в наличии — выбираем случайный
+  let bloomItem = inStockItems.find(i => String(i.id) === String(bloomId));
+  if (storedCycle !== cycleKey || !bloomItem) {
+    const randomIndex = Math.floor(Math.random() * inStockItems.length);
+    bloomItem = inStockItems[randomIndex];
+    bloomId = String(bloomItem.id);
+    localStorage.setItem('flw_daily_bloom_cycle', cycleKey);
+    localStorage.setItem('flw_daily_bloom_id', bloomId);
+  }
+
+  const photos = (bloomItem.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+  const thumb = photos[0] || "";
+
   container.innerHTML = `
-    <div class="daily-bloom-banner" onclick="openProductModal('${item.id}')">
-      <div>
-        <div class="daily-bloom-tag">✨ Букет дня</div>
-        <div class="daily-bloom-title">${item.title}</div>
-        <div style="font-size:11px; color:var(--gold-light); font-weight:700; margin-top:2px;">
-          ${item.price} ₽ ${item.unit ? '· ' + item.unit : ''}
-        </div>
+    <div class="daily-bloom-card" onclick="hapticFeedback('medium'); openProductModal('${bloomItem.id}')">
+      ${thumb ? `<img src="${thumb}" class="daily-bloom-thumb" alt="${bloomItem.title}">` : '<div class="daily-bloom-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--card-inner);font-size:24px;">🌸</div>'}
+      <div style="flex:1;">
+        <div class="daily-bloom-badge">✨ Выбор флориста сегодня</div>
+        <div class="daily-bloom-title">${bloomItem.title}</div>
+        <div class="daily-bloom-price">${bloomItem.price} ₽ <span style="font-size:11px; color:var(--text-muted); font-weight:600;">(${bloomItem.unit || '1 шт.'})</span></div>
       </div>
-      <button class="daily-bloom-btn">Выбрать ➔</button>
     </div>
   `;
+  container.style.display = 'block';
 }
 
-// ==================== ФИЛЬТРЫ КАТАЛОГА ====================
 function setupFilterDropdown() {
   const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
   const optionsBox = document.getElementById('filter-cat-options');
@@ -139,24 +136,23 @@ function setupFilterDropdown() {
 }
 
 function selectFilterCategory(cat) {
-  hapticSelect();
+  hapticFeedback('light');
   selectedFilterCategoryValue = cat;
   document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
   document.getElementById('filter-cat-box').classList.remove('open');
 }
 
 function openFilterModal() { 
-  hapticImpact('light');
+  hapticFeedback('light');
   document.getElementById('filter-modal').classList.add('open'); 
 }
-
 function closeFilterModal() { 
-  hapticSelect();
+  hapticFeedback('light');
   document.getElementById('filter-modal').classList.remove('open'); 
 }
 
 function applyFilters() {
-  hapticImpact('medium');
+  hapticFeedback('medium');
   const cat = selectedFilterCategoryValue;
   const maxPrice = parseFloat(document.getElementById('filter-price-input').value) || 10000;
 
@@ -173,7 +169,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  hapticImpact('light');
+  hapticFeedback('light');
   selectFilterCategory('Все');
   const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
   const maxP = prices.length ? Math.max(...prices) : 10000;
@@ -192,11 +188,9 @@ async function loadCatalog() {
     buildDisplayCatalog();
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
+    initDailyBloom();
     renderCatalog(filteredCatalog);
     
-    // Отрисовка персонального букета дня
-    renderDailyBloom();
-
     // Синхронизация сохраненной корзины сразу после появления актуального каталога
     updateCartUI();
 
@@ -213,7 +207,7 @@ function getCartItemQuantity(id) {
   }, 0);
 }
 
-// Отрисовка каталога с заменой корзинки на «–» при количестве > 1
+// Отрисовка каталога с элегантным переливом хита и степпером 🗑️ / «–»
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
   el.innerHTML = items.map(p => {
@@ -225,9 +219,9 @@ function renderCatalog(items) {
     const isGroup = p.is_group;
 
     return `
-      <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="openProductModal('${p.id}')">
+      <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="hapticFeedback('light'); openProductModal('${p.id}')">
         <div class="product-thumb">
-          ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
+          ${isHit ? `<div class="hit-badge">✨ Хит</div>` : ''}
           ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
           <div class="thumb-placeholder-box" style="${firstPhoto ? 'display:none;' : ''}">
             <span class="thumb-placeholder-icon">🌸</span>
@@ -244,7 +238,7 @@ function renderCatalog(items) {
               <span class="product-price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
               <div id="product-action-${p.id}">
                 ${isGroup ? `
-                  <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${p.id}')">Выбрать</button>
+                  <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); hapticFeedback('light'); openProductModal('${p.id}')">Выбрать</button>
                 ` : (inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
                     ${inCartQty === 1 ? `
@@ -269,9 +263,8 @@ function renderCatalog(items) {
   }).join('');
 }
 
-// Пошаговое уменьшение единицы товара в каталоге
 function quickDecrease(id) {
-  hapticImpact('light');
+  hapticFeedback('medium');
   const targetKey = Object.keys(cart).find(k => {
     const [itemId] = k.split(':::');
     return String(itemId) === String(id);
@@ -282,7 +275,6 @@ function quickDecrease(id) {
   }
 }
 
-// Обновление состояния кнопки в карточке товара каталога
 function updateProductCardAction(id) {
   const directItem = catalog.find(i => String(i.id) === String(id));
   if (directItem) {
@@ -291,7 +283,7 @@ function updateProductCardAction(id) {
       const groupActionEl = document.getElementById(`product-action-${groupParent.id}`);
       if (groupActionEl) {
         const hasItems = isGroupInCart(groupParent.id);
-        groupActionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${groupParent.id}')">Выбрать</button>`;
+        groupActionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); hapticFeedback('light'); openProductModal('${groupParent.id}')">Выбрать</button>`;
       }
     }
   }
@@ -302,7 +294,7 @@ function updateProductCardAction(id) {
   const groupParent = displayCatalog.find(g => String(g.id) === String(id));
   if (groupParent && groupParent.is_group) {
     const hasItems = isGroupInCart(groupParent.id);
-    actionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); openProductModal('${groupParent.id}')">Выбрать</button>`;
+    actionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); hapticFeedback('light'); openProductModal('${groupParent.id}')">Выбрать</button>`;
     return;
   }
 
@@ -324,9 +316,8 @@ function updateProductCardAction(id) {
   }
 }
 
-// Открытие модалки карточки букета со сбором статистики просмотров
 function openProductModal(id, targetVariant = null, targetUnit = null, targetColor = null) {
-  hapticImpact('light');
+  hapticFeedback('medium');
   let item = null;
   let matchedInGroup = false;
 
@@ -436,7 +427,7 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
 }
 
 function selectProductChip(type, value) {
-  hapticSelect();
+  hapticFeedback('light');
   if (type === 'pack') selectedGroupPack = value;
   if (type === 'variant') selectedGroupVariant = value;
   if (type === 'color') selectedGroupColor = value;
@@ -487,7 +478,7 @@ function updateSelectedGroupVariantUI() {
     document.getElementById('pop-price').innerText = `${matchedVariant.price} ₽`;
     document.getElementById('pop-desc').innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
     addBtn.innerText = "Добавить в заказ";
-    addBtn.style.background = "var(--green)";
+    addBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
     addBtn.style.color = "#fff";
     addBtn.disabled = false;
     qtyBox.style.display = 'flex';
@@ -533,14 +524,14 @@ function renderPopGallery(photosStr) {
 }
 
 function closeProductModal() {
-  hapticSelect();
+  hapticFeedback('light');
   document.getElementById('product-modal').classList.remove('open');
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
 }
 
 function adjustPopQty(delta) { 
-  hapticSelect();
+  hapticFeedback('light');
   popQty = Math.max(1, popQty + delta); 
   document.getElementById('pop-qty').innerText = popQty; 
 }
