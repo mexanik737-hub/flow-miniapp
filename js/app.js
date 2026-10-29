@@ -50,19 +50,24 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
+// Авторизация и доступ в Root по 5 тапам
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  if (currentUser && (currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
+  // 1. Если ячейка в базе явно содержит FALSE/ЛОЖЬ — запрет администратора
+  if (currentUser && (currentUser.is_blocked_admin === true || currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
     toast("Доступ запрещен администратором");
     return;
   }
 
-  if (isAdmin) {
+  // 2. Если ID создателя (8900179932) или в базе TRUE — вход сразу без паролей
+  if (String(userId) === ADMIN_TELEGRAM_ID || isAdmin || (currentUser && currentUser.is_admin === true)) {
+    isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
+  // 3. Если ячейка пустая, клиент новый или анонимный — считаем 5 тапов за 2 секунды
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
@@ -72,6 +77,7 @@ function handleHudRootTap() {
     const pass = prompt("Код доступа Root:");
     if (pass) {
       sessionPasscode = pass.trim();
+      toast("Проверка доступа...");
       fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
         .then(r => r.json())
         .then(data => {
@@ -84,7 +90,7 @@ function handleHudRootTap() {
             toast("Неверный код доступа");
           }
         })
-        .catch(() => toast("Ошибка проверки"));
+        .catch(() => toast("Ошибка проверки доступа"));
     }
   }
 }
@@ -106,42 +112,56 @@ function toggleEditorFabVisibility(forceState = null) {
 }
 window.toggleEditorFabVisibility = toggleEditorFabVisibility;
 
-async function loadConfig() {
+function applyConfigToUI(cfg) {
+  SERVER_CONFIG = cfg;
+  localStorage.setItem('flw_config_cache', JSON.stringify(cfg));
+
+  const sbpBtn = document.getElementById('pay-sbp-btn');
+  if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
+
+  const qrImg = document.getElementById('sbp-qr-image-tag');
+  if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
+
+  if (cfg.shop_phone_tel) {
+    const telLink = 'tel:' + cfg.shop_phone_tel;
+    const callBtn = document.getElementById('shop-call-btn');
+    if (callBtn) callBtn.href = telLink;
+
+    const asmBtn = document.getElementById('assembly-call-btn');
+    if (asmBtn) {
+      asmBtn.href = telLink;
+      asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
+    }
+  }
+
+  if (cfg.store_lat && cfg.store_lon) {
+    const mapIframe = document.getElementById('yandex-map-iframe');
+    if (mapIframe) {
+      mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
+    }
+  }
+
+  Object.keys(cfg).forEach(key => {
+    document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
+      el.innerText = cfg[key];
+    });
+  });
+}
+
+async function loadConfig(force = false) {
+  const cached = localStorage.getItem('flw_config_cache');
+  if (cached && !force) {
+    try {
+      applyConfigToUI(JSON.parse(cached));
+    } catch (e) {}
+  }
+
   try {
     const res = await fetch(`${API_URL}?action=get_config`);
     const cfg = await res.json();
-    SERVER_CONFIG = cfg;
-
-    const sbpBtn = document.getElementById('pay-sbp-btn');
-    if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
-
-    const qrImg = document.getElementById('sbp-qr-image-tag');
-    if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
-
-    if (cfg.shop_phone_tel) {
-      const telLink = 'tel:' + cfg.shop_phone_tel;
-      const callBtn = document.getElementById('shop-call-btn');
-      if (callBtn) callBtn.href = telLink;
-
-      const asmBtn = document.getElementById('assembly-call-btn');
-      if (asmBtn) {
-        asmBtn.href = telLink;
-        asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
-      }
+    if (cfg && !cfg.error) {
+      applyConfigToUI(cfg);
     }
-
-    if (cfg.store_lat && cfg.store_lon) {
-      const mapIframe = document.getElementById('yandex-map-iframe');
-      if (mapIframe) {
-        mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
-      }
-    }
-
-    Object.keys(cfg).forEach(key => {
-      document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
-        el.innerText = cfg[key];
-      });
-    });
   } catch (e) {}
 }
 window.loadConfig = loadConfig;
@@ -193,6 +213,10 @@ document.addEventListener('click', async (e) => {
           value: cleanVal
         })
       });
+      if (SERVER_CONFIG) {
+        SERVER_CONFIG[key] = cleanVal;
+        localStorage.setItem('flw_config_cache', JSON.stringify(SERVER_CONFIG));
+      }
       toast("Текст сохранен!");
     } catch (err) {
       toast("Ошибка сохранения");
@@ -282,6 +306,14 @@ async function toggleAboutFaqSection() {
   container.style.display = 'block';
   if (arrow) arrow.style.transform = 'rotate(180deg)';
 
+  const cached = localStorage.getItem('flw_faq_cache');
+  if (cached) {
+    try {
+      window.cachedFaqData = JSON.parse(cached);
+      renderFaqList(window.cachedFaqData);
+    } catch (e) {}
+  }
+
   if (window.cachedFaqData) {
     renderFaqList(window.cachedFaqData);
     return;
@@ -292,6 +324,7 @@ async function toggleAboutFaqSection() {
   try {
     const res = await fetch(`${API_URL}?action=faq`);
     window.cachedFaqData = await res.json();
+    localStorage.setItem('flw_faq_cache', JSON.stringify(window.cachedFaqData));
     renderFaqList(window.cachedFaqData);
   } catch (e) {
     container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--red); font-size:12px;">Ошибка загрузки FAQ</div>`;
@@ -343,11 +376,25 @@ function contactSupport() {
 }
 window.contactSupport = contactSupport;
 
-async function loadNotifications() {
+// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
+
+async function loadNotifications(force = false) {
+  const cached = localStorage.getItem('flw_notifs_cache');
+  if (cached && !force) {
+    try {
+      clientNotifications = JSON.parse(cached);
+      if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
+    } catch (e) {}
+  }
+
   try {
     const res = await fetch(`${API_URL}?action=get_notifications`);
-    clientNotifications = await res.json();
-    if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
+    const serverNotifs = await res.json();
+    if (Array.isArray(serverNotifs)) {
+      clientNotifications = serverNotifs;
+      localStorage.setItem('flw_notifs_cache', JSON.stringify(clientNotifications));
+      if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
+    }
   } catch (e) {}
 }
 window.loadNotifications = loadNotifications;
@@ -444,6 +491,35 @@ function markAllNotificationsAsRead() {
 }
 window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 
+// Фоновая сверка версий данных для разгрузки запросов
+async function checkDataHashesAndSync() {
+  try {
+    const res = await fetch(`${API_URL}?action=get_data_hashes`);
+    const serverHashes = await res.json();
+    if (!serverHashes) return;
+
+    const savedHashesStr = localStorage.getItem('flw_data_hashes');
+    const localHashes = savedHashesStr ? JSON.parse(savedHashesStr) : {};
+
+    if (localHashes.catalog_hash !== serverHashes.catalog_hash) {
+      if (typeof loadCatalog === 'function') loadCatalog(true);
+    }
+    if (localHashes.faq_hash !== serverHashes.faq_hash) {
+      const faqRes = await fetch(`${API_URL}?action=faq`);
+      window.cachedFaqData = await faqRes.json();
+      localStorage.setItem('flw_faq_cache', JSON.stringify(window.cachedFaqData));
+    }
+    if (localHashes.notifs_hash !== serverHashes.notifs_hash) {
+      loadNotifications(true);
+    }
+    if (localHashes.config_hash !== serverHashes.config_hash) {
+      loadConfig(true);
+    }
+
+    localStorage.setItem('flw_data_hashes', JSON.stringify(serverHashes));
+  } catch (e) {}
+}
+
 // Инициализация при полной готовности DOM
 function initApp() {
   try {
@@ -452,6 +528,7 @@ function initApp() {
     loadConfig();
     loadNotifications();
     if (typeof updateCartUI === 'function') updateCartUI();
+    checkDataHashesAndSync();
   } catch (e) {
     console.error("App init error:", e);
   }
@@ -463,7 +540,7 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// Фоновый опрос заказов и уведомлений каждые 3 минуты (180 000 мс)
+// Фоновый опрос заказов и проверка хэшей каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
@@ -473,5 +550,5 @@ setInterval(() => {
     const secOrders = document.getElementById('root-sec-orders')?.style.display !== 'none';
     if (secOrders && typeof loadRootOrders === 'function') loadRootOrders(false);
   }
-  if (typeof loadNotifications === 'function') loadNotifications();
+  checkDataHashesAndSync();
 }, 180000);
