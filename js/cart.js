@@ -11,10 +11,11 @@ function clearCartStorage() {
   localStorage.removeItem('flw_cart');
   localStorage.removeItem('flw_cart_assembly');
   localStorage.removeItem('flw_is_assembly_mode');
-  if (window.PetalsEngine) window.PetalsEngine.stop();
+  if (typeof updatePetalsCanvasState === 'function') updatePetalsCanvasState();
 }
 
 function addPopToCart() {
+  triggerHaptic('medium');
   if (!activePopItem) return;
 
   let targetItem = null;
@@ -36,13 +37,11 @@ function addPopToCart() {
     });
 
     if (!targetItem || !targetItem.is_active) {
-      hapticFeedback('error');
       toast("Выбранный товар отсутствует в наличии");
       return;
     }
   } else {
     if (!activePopItem.is_active) {
-      hapticFeedback('error');
       toast("Товар отсутствует в наличии");
       return;
     }
@@ -52,7 +51,6 @@ function addPopToCart() {
     if (!finalColor) finalColor = targetItem.color || "";
   }
 
-  hapticFeedback('medium');
   const cartKey = `${targetItem.id}:::${finalUnit}:::${finalVariant}:::${finalColor}`;
   cart[cartKey] = (cart[cartKey] || 0) + popQty;
   cartAssemblyItems[cartKey] = true;
@@ -64,6 +62,7 @@ function addPopToCart() {
 }
 
 function quickAdd(id) {
+  triggerHaptic('medium');
   let item = catalog.find(i => String(i.id) === String(id));
   if (!item) {
     const group = displayCatalog.find(g => String(g.id) === String(id));
@@ -73,8 +72,6 @@ function quickAdd(id) {
   }
 
   if (!item || !item.is_active) return;
-
-  hapticFeedback('light');
 
   let chosenUnit = item.unit || "";
   if (chosenUnit.includes('/')) chosenUnit = chosenUnit.split('/')[0].trim();
@@ -95,7 +92,7 @@ function quickAdd(id) {
 }
 
 function modifyCartByKey(cartKey, delta) {
-  hapticFeedback('light');
+  triggerHaptic('light');
   cart[cartKey] = (cart[cartKey] || 0) + delta;
   const [itemId] = cartKey.split(':::');
   if (cart[cartKey] <= 0) {
@@ -107,7 +104,7 @@ function modifyCartByKey(cartKey, delta) {
 }
 
 function removeAllOfItemFromCart(id) {
-  hapticFeedback('medium');
+  triggerHaptic('medium');
   Object.keys(cart).forEach(key => {
     const [itemId] = key.split(':::');
     if (String(itemId) === String(id)) {
@@ -121,15 +118,15 @@ function removeAllOfItemFromCart(id) {
 }
 
 function toggleItemAssemblySelection(cartKey) {
-  hapticFeedback('light');
+  triggerHaptic('light');
   cartAssemblyItems[cartKey] = !cartAssemblyItems[cartKey];
   renderCartItems();
   saveCartToStorage();
 }
 
-// Обновление корзины с управлением живыми лепестками
 function updateCartUI() {
   saveCartToStorage();
+  if (typeof updatePetalsCanvasState === 'function') updatePetalsCanvasState();
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
   const counterEl = document.getElementById('cart-counter');
@@ -145,26 +142,18 @@ function updateCartUI() {
     }
     if (checkoutCard) checkoutCard.style.display = 'none';
     currentFlowersSubtotal = 0;
-
-    // Плавно гасим лепестки при опустевшей корзине
-    if (window.PetalsEngine) window.PetalsEngine.stop();
   } else {
-    // Плавно активируем лепестки роз при наличии позиций
-    if (window.PetalsEngine) window.PetalsEngine.start();
-
     if (!catalog || !catalog.length) return;
-
     if (checkoutCard) checkoutCard.style.display = 'block';
     renderCartItems();
   }
 
-  // Обновление красных точек на группах
   displayCatalog.forEach(g => {
     if (g.is_group) {
       const el = document.getElementById(`product-action-${g.id}`);
       if (el) {
         const hasItems = isGroupInCart(g.id);
-        el.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); hapticFeedback('light'); openProductModal('${g.id}')">Выбрать</button>`;
+        el.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('light'); openProductModal('${g.id}')">Выбрать</button>`;
       }
     }
   });
@@ -194,13 +183,13 @@ function renderCartItems() {
           ${isAssemblyMode ? `
             <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
           ` : ''}
-          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}')">
-            <div style="width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
+          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="triggerHaptic('light'); openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}')">
+            <div style="width:44px; height:44px; border-radius:10px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent);">
               ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
             </div>
             <div>
               <div style="font-size:12px; font-weight:700; line-height:1.25; color:var(--text);">${fullTitle}</div>
-              <div style="font-size:11px; color:var(--accent-gold); margin-top:2px;">${item.price} ₽ × ${qty} шт. = ${item.price * qty} ₽</div>
+              <div style="font-size:11px; color:var(--gold); margin-top:2px;">${item.price} ₽ × ${qty} шт. = ${item.price * qty} ₽</div>
             </div>
           </div>
         </div>
