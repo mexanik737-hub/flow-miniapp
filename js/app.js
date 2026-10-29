@@ -23,7 +23,7 @@ function navigateTab(screenId, btn) {
     setTimeout(() => btn.classList.remove('spinning'), 450);
   }
 
-  // Управление опадающими лепестками: активны строго на экране наполненной корзины
+  // Лепестки роз активны строго во вкладке корзины при наличии товаров
   if (screenId === 'cart') {
     const cartCount = Object.values(cart || {}).reduce((a, b) => a + b, 0);
     if (cartCount > 0 && typeof startCartPetals === 'function') {
