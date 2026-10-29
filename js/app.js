@@ -1,7 +1,8 @@
 let cachedFaqData = null;
 
 function navigateTab(screenId, btn) {
-  triggerHaptic('light');
+  triggerHaptic('selection');
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.dock-tab').forEach(b => b.classList.remove('active'));
   
@@ -22,15 +23,32 @@ function navigateTab(screenId, btn) {
     setTimeout(() => btn.classList.remove('spinning'), 450);
   }
 
+  // Управление опадающими лепестками: активны строго на экране наполненной корзины
+  if (screenId === 'cart') {
+    const cartCount = Object.values(cart || {}).reduce((a, b) => a + b, 0);
+    if (cartCount > 0 && typeof startCartPetals === 'function') {
+      startCartPetals();
+    } else if (typeof stopCartPetals === 'function') {
+      stopCartPetals();
+    }
+  } else {
+    if (typeof stopCartPetals === 'function') {
+      stopCartPetals();
+    }
+  }
+
   if (screenId === 'profile') {
     renderSavedAddresses();
     loadUserOrders();
   }
-  if (screenId === 'root') loadRootOrders(true);
+  if (screenId === 'root' && typeof loadRootOrders === 'function') {
+    loadRootOrders(true);
+  }
 }
 
 function handleHudRootTap() {
   triggerHaptic('light');
+
   if (currentUser && (currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
     toast("Доступ запрещен администратором");
     return;
@@ -68,15 +86,12 @@ function handleHudRootTap() {
 }
 
 function toggleEditorFabVisibility(forceState = null) {
-  triggerHaptic('light');
   isFabVisible = (forceState !== null) ? forceState : !isFabVisible;
   const fab = document.getElementById('floating-editor-btn');
-  if (fab) fab.style.display = isFabVisible ? 'flex' : 'none';
+  fab.style.display = isFabVisible ? 'flex' : 'none';
   const chk = document.getElementById('root-toggle-editor-btn');
-  if (chk) {
-    chk.classList.toggle('checked', isFabVisible);
-    chk.innerText = isFabVisible ? '✓' : '';
-  }
+  chk.classList.toggle('checked', isFabVisible);
+  chk.innerText = isFabVisible ? '✓' : '';
 
   if (!isFabVisible && isTextEditActive) {
     toggleTextEditingMode(false);
@@ -123,13 +138,10 @@ async function loadConfig() {
 }
 
 function toggleTextEditingMode(forcedState = null) {
-  triggerHaptic('medium');
   isTextEditActive = (forcedState !== null) ? forcedState : !isTextEditActive;
   const btn = document.getElementById('floating-editor-btn');
-  if (btn) {
-    btn.classList.toggle('active', isTextEditActive);
-    btn.innerText = isTextEditActive ? '✓' : '✏️';
-  }
+  btn.classList.toggle('active', isTextEditActive);
+  btn.innerText = isTextEditActive ? '✓' : '✏️';
   document.body.classList.toggle('in-text-edit-mode', isTextEditActive);
 
   if (isTextEditActive) {
@@ -161,7 +173,13 @@ document.addEventListener('click', async (e) => {
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "admin_save_config", admin_id: userId, admin_passcode: sessionPasscode, key: key, value: cleanVal })
+        body: JSON.stringify({
+          action: "admin_save_config",
+          admin_id: userId,
+          admin_passcode: sessionPasscode,
+          key: key,
+          value: cleanVal
+        })
       });
       toast("Текст сохранен!");
     } catch (err) {
@@ -172,7 +190,6 @@ document.addEventListener('click', async (e) => {
 
 (function initDraggableFab() {
   const fab = document.getElementById('floating-editor-btn');
-  if (!fab) return;
   let isDragging = false;
   let startX = 0, startY = 0;
   let initialLeft = 0, initialTop = 0;
@@ -199,7 +216,9 @@ document.addEventListener('click', async (e) => {
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) hasMoved = true;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      hasMoved = true;
+    }
     if (!hasMoved) return;
 
     let newLeft = Math.max(10, Math.min(window.innerWidth - 60, initialLeft + dx));
@@ -227,13 +246,14 @@ document.addEventListener('click', async (e) => {
   fab.addEventListener('touchstart', onStart, { passive: true });
   window.addEventListener('touchmove', onMove, { passive: true });
   fab.addEventListener('touchend', onEnd, { passive: false });
+
   fab.addEventListener('mousedown', onStart);
   window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', onEnd);
 })();
 
 async function toggleAboutFaqSection() {
-  triggerHaptic('light');
+  triggerHaptic('selection');
   const container = document.getElementById('about-faq-container');
   const arrow = document.getElementById('faq-section-arrow');
   if (!container) return;
@@ -293,14 +313,14 @@ function toggleFaqPill(el) {
 }
 
 function openYandexRoute() {
-  triggerHaptic('light');
+  triggerHaptic('selection');
   const url = SERVER_CONFIG.yandex_org_url || `https://yandex.ru/maps/org/tsvety/18169538769?si=w0t417tmmfzn5zadubrew3uker`;
   if (tg && tg.openLink) tg.openLink(url);
   else window.open(url, '_blank');
 }
 
 function contactSupport() {
-  triggerHaptic('medium');
+  triggerHaptic('selection');
   const url = SERVER_CONFIG.support_url || "https://t.me/";
   if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
   else window.open(url, '_blank');
@@ -317,7 +337,7 @@ async function loadNotifications() {
 }
 
 function openNotificationsModal() {
-  triggerHaptic('medium');
+  triggerHaptic('selection');
   const container = document.getElementById('notifications-list');
   if (!container) return;
 
@@ -402,106 +422,22 @@ function markAllNotificationsAsRead() {
   toast("Все уведомления прочитаны");
 }
 
-// ------------------- ЖИВЫЕ ЛЕПЕСТКИ И ГИРОСКОП -------------------
-
-let petalsAnimId = null;
-let tiltGamma = 0;
-
-function initPetalsGyroscope() {
-  const canvas = document.getElementById('petals-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  window.addEventListener('deviceorientation', (e) => {
-    if (e.gamma !== null) {
-      tiltGamma = e.gamma; // Наклон влево/вправо (-90 до 90)
-    }
-  });
-
-  const petalsCount = 22;
-  const petals = [];
-
-  for (let i = 0; i < petalsCount; i++) {
-    petals.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height - canvas.height,
-      size: Math.random() * 8 + 6,
-      speedY: Math.random() * 1.2 + 0.8,
-      speedX: Math.random() * 0.6 - 0.3,
-      angle: Math.random() * Math.PI * 2,
-      spin: Math.random() * 0.03 - 0.015,
-      opacity: Math.random() * 0.5 + 0.3,
-      color: Math.random() > 0.4 ? '#f43f5e' : '#fb7185' // Розово-рубиновые лепестки роз
-    });
-  }
-
-  function renderPetals() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const windDrift = (tiltGamma / 15); // Коэффициент смещения от гироскопа
-
-    petals.forEach(p => {
-      p.y += p.speedY;
-      p.x += p.speedX + windDrift;
-      p.angle += p.spin;
-
-      if (p.y > canvas.height + 20) {
-        p.y = -20;
-        p.x = Math.random() * canvas.width;
-      }
-      if (p.x > canvas.width + 20) p.x = -20;
-      if (p.x < -20) p.x = canvas.width + 20;
-
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.angle);
-      ctx.globalAlpha = p.opacity;
-      ctx.fillStyle = p.color;
-
-      ctx.beginPath();
-      ctx.ellipse(0, 0, p.size, p.size * 0.6, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-    });
-
-    petalsAnimId = requestAnimationFrame(renderPetals);
-  }
-
-  renderPetals();
-}
-
-function updatePetalsCanvasState() {
-  const canvas = document.getElementById('petals-canvas');
-  if (!canvas) return;
-  const hasItems = Object.keys(cart).length > 0;
-  if (hasItems) {
-    canvas.classList.add('active');
-  } else {
-    canvas.classList.remove('active');
-  }
-}
-
-// Запуск при старте
+// Запуск приложения
 loadCatalog();
 checkUserSession();
 loadConfig();
 loadNotifications();
 updateCartUI();
-initPetalsGyroscope();
 
+// Фоновый опрос заказов и уведомлений каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
-  if (activeScreen === 'screen-profile') loadUserOrders();
+  if (activeScreen === 'screen-profile') {
+    loadUserOrders();
+  }
   if (activeScreen === 'screen-root' && isAdmin) {
     const secOrders = document.getElementById('root-sec-orders')?.style.display !== 'none';
-    if (secOrders) loadRootOrders(false);
+    if (secOrders && typeof loadRootOrders === 'function') loadRootOrders(false);
   }
   loadNotifications();
 }, 180000);
