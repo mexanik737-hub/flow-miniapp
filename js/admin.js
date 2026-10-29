@@ -1,14 +1,17 @@
 window.switchRootSection = function(sec) {
-  triggerHaptic('light');
   const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
 
+  // Шаг 1: Мгновенное и гарантированное переключение подсветки кнопок и экранов
   sections.forEach(s => {
     const btn = document.getElementById('tab-root-' + s);
     const box = document.getElementById('root-sec-' + s);
 
     if (btn) {
-      if (s === sec) btn.classList.add('active');
-      else btn.classList.remove('active');
+      if (s === sec) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
     }
 
     if (box) {
@@ -16,18 +19,27 @@ window.switchRootSection = function(sec) {
     }
   });
 
+  // Шаг 2: Безопасный запуск загрузки данных без риска падения UI
   try {
-    if (sec === 'orders' && typeof loadRootOrders === 'function') loadRootOrders(true);
-    else if (sec === 'catalog' && typeof loadRootCatalog === 'function') loadRootCatalog();
-    else if (sec === 'clients' && typeof loadRootClients === 'function') loadRootClients();
-    else if (sec === 'notifs' && typeof loadRootNotifications === 'function') loadRootNotifications();
-    else if (sec === 'stats' && typeof loadRootStats === 'function') loadRootStats(currentStatsPeriod || 'today');
-    else if (sec === 'faq' && typeof loadRootFaq === 'function') loadRootFaq();
-  } catch (err) {}
+    if (sec === 'orders' && typeof loadRootOrders === 'function') {
+      loadRootOrders(true);
+    } else if (sec === 'catalog' && typeof loadRootCatalog === 'function') {
+      loadRootCatalog();
+    } else if (sec === 'clients' && typeof loadRootClients === 'function') {
+      loadRootClients();
+    } else if (sec === 'notifs' && typeof loadRootNotifications === 'function') {
+      loadRootNotifications();
+    } else if (sec === 'stats' && typeof loadRootStats === 'function') {
+      loadRootStats(currentStatsPeriod || 'today');
+    } else if (sec === 'faq' && typeof loadRootFaq === 'function') {
+      loadRootFaq();
+    }
+  } catch (err) {
+    console.error("Root switch data load error:", err);
+  }
 };
 
 window.switchRootSubTab = function(tab) {
-  triggerHaptic('light');
   currentRootSubTab = tab;
   const tabActive = document.getElementById('tab-root-active');
   const tabArchive = document.getElementById('tab-root-archive');
@@ -37,7 +49,6 @@ window.switchRootSubTab = function(tab) {
 };
 
 window.switchStatsPeriod = function(period) {
-  triggerHaptic('light');
   currentStatsPeriod = period;
   ['today', '7days', 'month'].forEach(p => {
     const el = document.getElementById('tab-stat-' + p);
@@ -47,7 +58,6 @@ window.switchStatsPeriod = function(period) {
 };
 
 window.selectRootNotifTab = function(val, label) {
-  triggerHaptic('light');
   const hiddenInput = document.getElementById('root-notif-tab');
   const displaySpan = document.getElementById('root-notif-tab-display');
   const selectBox = document.getElementById('root-notif-tab-box');
@@ -109,7 +119,7 @@ function renderRootOrders() {
         </div>
         <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
           <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
-          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--gold);">${ord.recipient_info}</span><br>` : ''}
+          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--cyan);">${ord.recipient_info}</span><br>` : ''}
           <b>Адрес:</b> ${ord.address}<br>
           <b>Стоимость доставки:</b> ${deliveryCostText}<br>
           <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
@@ -214,7 +224,9 @@ function openCourierModal(orderId) {
   document.getElementById('courier-modal').classList.add('open');
 }
 
-function closeCourierModal() { document.getElementById('courier-modal').classList.remove('open'); }
+function closeCourierModal() {
+  document.getElementById('courier-modal').classList.remove('open');
+}
 
 function copyCourierSingleField(elId, fieldName) {
   const el = document.getElementById(elId);
@@ -291,7 +303,7 @@ function openEditItemsModal(orderId) {
   const hasDistinct = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
   document.getElementById('edit-order-client-info').innerHTML = `
     <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
-    ${hasDistinct ? `<b>Получатель:</b> <span style="color:var(--gold);">${ord.recipient_info}</span>` : `<b>Получатель:</b> Заказчик лично`}
+    ${hasDistinct ? `<b>Получатель:</b> <span style="color:var(--cyan);">${ord.recipient_info}</span>` : `<b>Получатель:</b> Заказчик лично`}
   `;
  
   document.getElementById('edit-order-delivery-input').value = ord.delivery_cost || 0;
@@ -563,10 +575,10 @@ async function loadRootCatalog() {
       const photoCount = (c.items[0].photo_url ? c.items[0].photo_url.split(',').length : 0);
 
       return `
-        <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--gold);">
+        <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--cyan);">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
-              <b>${c.title}</b> <span style="font-size:10px; background:rgba(212,175,55,0.15); color:var(--gold); padding:2px 6px; border-radius:4px; font-weight:700;">Группа (${c.items.length})</span>
+              <b>${c.title}</b> <span style="font-size:10px; background:rgba(56,189,248,0.15); color:var(--cyan); padding:2px 6px; border-radius:4px; font-weight:700;">Группа (${c.items.length})</span>
               <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Категория: ${c.items[0].category} · Фото: ${photoCount}</div>
               <div style="font-size:11px; color:var(--amber); margin-top:2px;">Наличие: ${activeCount} из ${c.items.length} активны</div>
             </div>
@@ -588,11 +600,11 @@ async function loadRootCatalog() {
             <b>${fullTitle} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
             <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
-          <div style="font-size:11px; color:var(--gold); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
+          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
           <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
           <div style="display:flex; gap:6px;">
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="convertProductToGroup('${it.id}')">+ В группу</button>
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--cyan);" onclick="convertProductToGroup('${it.id}')">+ В группу</button>
             <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
           </div>
         </div>
@@ -857,7 +869,7 @@ function renderRootClients(clients) {
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;">
           <a href="tel:${c.phone}" class="btn-metro btn-emerald" style="font-size:11px; padding:7px; text-decoration:none;">📞 Позвонить</a>
           ${tgLink ? `
-            <a href="${tgLink}" target="_blank" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--gold); text-decoration:none;">💬 Написать</a>
+            <a href="${tgLink}" target="_blank" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--cyan); text-decoration:none;">💬 Написать</a>
           ` : `
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; opacity:0.45;" disabled>💬 Чат скрыт</button>
           `}
@@ -893,6 +905,18 @@ async function deleteUserRoot(uid) {
   loadRootClients();
 }
 
+// ----------------- УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ В ROOT -----------------
+
+function selectRootNotifTab(val, label) {
+  const hiddenInput = document.getElementById('root-notif-tab');
+  const displaySpan = document.getElementById('root-notif-tab-display');
+  const selectBox = document.getElementById('root-notif-tab-box');
+  if (hiddenInput) hiddenInput.value = val;
+  if (displaySpan) displaySpan.innerText = label;
+  if (selectBox) selectBox.classList.remove('open');
+}
+window.selectRootNotifTab = selectRootNotifTab;
+
 async function loadRootNotifications() {
   const container = document.getElementById('root-notifs-container');
   try {
@@ -916,24 +940,24 @@ function renderRootNotifications() {
   container.innerHTML = allRootNotifs.map(n => {
     const targetTitle = getTabDisplayTitle(n.target_tab);
     return `
-      <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--gold)' : 'var(--border)'};">
+      <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--cyan)' : 'var(--border)'};">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
           <div>
             <b style="font-size:13px; color:var(--text);">${n.title}</b>
-            <span style="font-size:10px; margin-left:6px; color:${n.is_active ? 'var(--gold)' : 'var(--text-muted)'}; font-weight:700;">
+            <span style="font-size:10px; margin-left:6px; color:${n.is_active ? 'var(--cyan)' : 'var(--text-muted)'}; font-weight:700;">
               ${n.is_active ? 'АКТИВНО' : 'В АРХИВЕ'}
             </span>
           </div>
           <span style="font-size:10px; color:var(--text-muted);">${n.created_at || ''}</span>
         </div>
         <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:6px;">${n.text}</div>
-        <div style="font-size:11px; color:var(--gold); margin-bottom:8px;">Целевой экран: <b>${targetTitle}</b></div>
+        <div style="font-size:11px; color:var(--cyan); margin-bottom:8px;">Целевой экран: <b>${targetTitle}</b></div>
 
         <div style="display:flex; gap:6px;">
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="toggleNotificationActiveRoot('${n.id}')">
             ${n.is_active ? 'В архив' : 'Восстановить'}
           </button>
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="repeatNotificationRoot('${n.id}')">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--cyan);" onclick="repeatNotificationRoot('${n.id}')">
             Повторить TG
           </button>
           <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteNotificationRoot('${n.id}')">
@@ -946,7 +970,6 @@ function renderRootNotifications() {
 }
 
 async function submitCreateNotification() {
-  triggerHaptic('medium');
   const title = document.getElementById('root-notif-title').value.trim();
   const text = document.getElementById('root-notif-text').value.trim();
   const targetTab = document.getElementById('root-notif-tab').value.trim() || 'catalog';
@@ -1031,6 +1054,18 @@ async function deleteNotificationRoot(id) {
   loadRootNotifications();
 }
 
+// ----------------- СТАТИСТИКА И ДАШБОРД В ROOT -----------------
+
+function switchStatsPeriod(period) {
+  currentStatsPeriod = period;
+  ['today', '7days', 'month'].forEach(p => {
+    const el = document.getElementById('tab-stat-' + p);
+    if (el) el.classList.toggle('active', p === period);
+  });
+  renderRootStats();
+}
+window.switchStatsPeriod = switchStatsPeriod;
+
 async function loadRootStats(period = 'today') {
   currentStatsPeriod = period;
   try {
@@ -1080,7 +1115,7 @@ function renderRootStats() {
       `).join('');
     }
   } else if (currentStatsPeriod === 'month') {
-    if (breakdownBox) breakdwonBox.style.display = 'none';
+    if (breakdownBox) breakdownBox.style.display = 'none';
     const list = cachedStatsData.past7days || [];
     list.forEach(d => {
       totalVisits += d.visits;
@@ -1100,6 +1135,7 @@ function renderRootStats() {
   if (rEl) rEl.innerText = `${totalRevenue} ₽`;
   if (cEl) cEl.innerText = totalCompleted;
 
+  // Рендер просмотров букетов
   const pList = document.getElementById('stats-products-list');
   if (pList) {
     const products = cachedStatsData.products_views || [];
@@ -1109,12 +1145,13 @@ function renderRootStats() {
       pList.innerHTML = products.slice(0, 15).map((p, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
           <div><b>${idx + 1}.</b> ${p.title}</div>
-          <div style="color:var(--gold); font-weight:800;">${p.views} просм.</div>
+          <div style="color:var(--cyan); font-weight:800;">${p.views} просм.</div>
         </div>
       `).join('');
     }
   }
 
+  // Рендер статистики уведомлений
   const nList = document.getElementById('stats-notifs-list');
   if (nList) {
     const notifs = cachedStatsData.notifications_stats || [];
@@ -1126,7 +1163,7 @@ function renderRootStats() {
           <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${n.title}</div>
           <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
             <span>Показов: <b style="color:var(--text);">${n.views}</b></span>
-            <span>Прочтений: <b style="color:var(--gold);">${n.reads}</b></span>
+            <span>Прочтений: <b style="color:var(--cyan);">${n.reads}</b></span>
             <span>Переходов: <b style="color:var(--green);">${n.clicks}</b></span>
           </div>
         </div>
@@ -1135,9 +1172,10 @@ function renderRootStats() {
   }
 }
 
+// ----------------- FAQ (ROOT) -----------------
+
 async function loadRootFaq() {
   const container = document.getElementById('root-faq-container');
-  if (!container) return;
   const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
   allRootFaq = await res.json();
 
@@ -1149,8 +1187,8 @@ async function loadRootFaq() {
           <span style="font-size:10px; font-weight:800; color:${f.is_active ? 'var(--green)' : 'var(--red)'};">
             ${f.is_active ? 'АКТИВЕН' : 'СКРЫТ'}
           </span>
-          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
-          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
         </div>
       </div>
       <div style="font-size:12px; color:var(--text-muted); margin:4px 0;">${f.answer}</div>
@@ -1169,7 +1207,13 @@ async function moveFaqOrder(id, direction) {
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "admin_move_faq", admin_id: userId, admin_passcode: sessionPasscode, id: id, direction: direction })
+    body: JSON.stringify({
+      action: "admin_move_faq",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id,
+      direction: direction
+    })
   });
   loadRootFaq();
   cachedFaqData = null;
@@ -1208,7 +1252,15 @@ async function saveFaqEditor() {
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "admin_update_faq", admin_id: userId, admin_passcode: sessionPasscode, id: editingFaqId || "new", question: q, answer: a, is_active: isActive })
+    body: JSON.stringify({
+      action: "admin_update_faq",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: editingFaqId || "new",
+      question: q,
+      answer: a,
+      is_active: isActive
+    })
   });
   closeFaqEditorModal();
   loadRootFaq();
@@ -1221,7 +1273,15 @@ async function toggleFaqActiveRoot(id, nextState) {
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "admin_update_faq", admin_id: userId, admin_passcode: sessionPasscode, id: f.id, question: f.question, answer: f.answer, is_active: nextState })
+    body: JSON.stringify({
+      action: "admin_update_faq",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: f.id,
+      question: f.question,
+      answer: f.answer,
+      is_active: nextState
+    })
   });
   loadRootFaq();
   cachedFaqData = null;
@@ -1236,4 +1296,4 @@ async function deleteFaqRoot(id) {
   });
   loadRootFaq();
   cachedFaqData = null;
-}
+  }
