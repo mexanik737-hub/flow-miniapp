@@ -1,3 +1,17 @@
+// Функция запуска анимации подпрыгивания и золотого мерцания счетчика корзины
+function triggerCartCounterBounce() {
+  const counter = document.getElementById('cart-counter');
+  if (!counter) return;
+
+  counter.classList.remove('cart-bounce-gold');
+  void counter.offsetWidth; // перезапуск CSS-анимации
+  counter.classList.add('cart-bounce-gold');
+
+  setTimeout(() => {
+    counter.classList.remove('cart-bounce-gold');
+  }, 600);
+}
+
 function saveCartToStorage() {
   localStorage.setItem('flw_cart', JSON.stringify(cart));
   localStorage.setItem('flw_cart_assembly', JSON.stringify(cartAssemblyItems));
@@ -55,6 +69,7 @@ function addPopToCart() {
   cartAssemblyItems[cartKey] = true;
 
   triggerHaptic('medium');
+  triggerCartCounterBounce();
   updateCartUI();
   updateProductCardAction(activePopItem.id);
   closeProductModal();
@@ -86,6 +101,7 @@ function quickAdd(id) {
   cartAssemblyItems[cartKey] = true;
 
   triggerHaptic('medium');
+  triggerCartCounterBounce();
   updateCartUI();
   updateProductCardAction(id);
   toast(`Добавлено: ${formatFullItemTitle(item.title, chosenUnit, chosenVar, chosenColor)}`);
