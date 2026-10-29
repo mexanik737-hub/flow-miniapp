@@ -101,7 +101,7 @@ body {
   opacity: 1;
 }
 
-/* Анимация подпрыгивания и золотой вспышки счетчика корзины */
+/* Анимация золотого подпрыгивания счетчика корзины */
 @keyframes cartBounceGold {
   0% { transform: scale(1); color: inherit; text-shadow: none; }
   30% { transform: scale(1.6) translateY(-4px); color: var(--gold-light); text-shadow: 0 0 14px var(--gold-light); }
@@ -668,7 +668,6 @@ header {
   box-shadow: 0 6px 20px rgba(194, 65, 12, 0.3);
 }
 
-/* Кнопка ручной синхронизации в Root */
 .btn-root-sync {
   width: 100%;
   padding: 9px 12px;
@@ -709,7 +708,7 @@ header {
 }
 .qty-btn:active { transform: scale(0.9); }
 
-/* Компактный капсульный прогресс-бар заказа */
+/* Капсульный прогресс-бар заказа */
 .order-progress-box {
   background: var(--card-inner);
   border: 1px solid var(--border);
@@ -870,7 +869,6 @@ header {
   animation: sheetSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Модалка медиа Google Диска увеличена на 2/3 экрана (72vh) */
 .modal-sheet-drive {
   max-height: 72vh !important;
   height: 72vh !important;
@@ -1202,7 +1200,6 @@ header {
   border-radius: var(--radius-md);
 }
 
-/* Сетка медиа Google Диска с чекбоксами */
 .drive-media-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1253,7 +1250,6 @@ header {
   border-color: var(--gold);
 }
 
-/* Лента фото в карточке товара со стрелками сортировки */
 .prod-photo-strip {
   display: flex;
   gap: 8px;
@@ -1556,7 +1552,6 @@ body.in-text-edit-mode [data-config-key] {
   color: var(--text);
 }
 
-/* Стили модалки управления категориями */
 .category-card-block {
   background: var(--card-inner);
   border: 1px solid var(--border);
