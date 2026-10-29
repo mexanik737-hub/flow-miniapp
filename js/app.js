@@ -25,6 +25,7 @@ function navigateTab(screenId, btn) {
     setTimeout(() => btn.classList.remove('spinning'), 450);
   }
 
+  // Лепестки роз активны строго во вкладке корзины при наличии цветов
   try {
     if (screenId === 'cart') {
       const cartCount = Object.values(cart || {}).reduce((a, b) => a + b, 0);
@@ -42,7 +43,7 @@ function navigateTab(screenId, btn) {
 
   if (screenId === 'profile') {
     if (typeof renderSavedAddresses === 'function') renderSavedAddresses();
-    if (typeof loadUserOrders === 'function') loadUserOrders(false);
+    if (typeof loadUserOrders === 'function') loadUserOrders();
   }
   if (screenId === 'root' && typeof loadRootOrders === 'function') {
     loadRootOrders(true);
@@ -50,24 +51,33 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
-// Проверка доступа к панели Root (строго по ТЗ)
+// ТОЧНАЯ ЛОГИКА ДОСТУПА В ROOT
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  // 1. Если администратор в таблице прямо выставил ЛОЖЬ / FALSE — доступ заблокирован
-  if (currentUser && currentUser.is_admin === false) {
-    toast("Доступ заблокирован администратором");
-    return;
-  }
+  const cleanUid = String(userId).trim();
 
-  // 2. Если уже авторизован как админ (по ID 8900179932 или флагу TRUE)
-  if (isAdmin || String(userId) === ADMIN_TELEGRAM_ID) {
+  // 1. Супер-администратор по ID всегда заходит в 1 клик
+  if (cleanUid === ADMIN_TELEGRAM_ID) {
     isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
-  // 3. Для всех остальных (пустая ячейка, новые клиенты) — счетчик 5 кликов и запрос кода
+  // 2. Если в профиле уже подтвержден админ (true)
+  if (currentUser && (currentUser.is_admin === true || String(currentUser.is_admin).toUpperCase() === 'TRUE')) {
+    isAdmin = true;
+    navigateTab('root', null);
+    return;
+  }
+
+  // 3. Блокировка ТОЛЬКО если в столбце явно стоит FALSE / ЛОЖЬ
+  if (currentUser && (currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
+    toast("Доступ запрещен администратором");
+    return;
+  }
+
+  // 4. Для новых пользователей или с пустым статусом (is_admin === null): 5 быстрых тапов за 2 секунды
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
@@ -76,20 +86,28 @@ function handleHudRootTap() {
     hudTapCount = 0;
     const pass = prompt("Код доступа Root:");
     if (pass) {
-      sessionPasscode = pass.trim();
-      fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            isAdmin = true;
-            toast("Доступ подтвержден");
-            navigateTab('root', null);
-          } else {
-            sessionPasscode = "";
-            toast("Неверный код доступа");
-          }
-        })
-        .catch(() => toast("Ошибка проверки"));
+      const cleanPass = pass.trim();
+      if (cleanPass === ROOT_PASSCODE_DEFAULT) {
+        sessionPasscode = cleanPass;
+        isAdmin = true;
+        toast("Доступ подтвержден");
+        navigateTab('root', null);
+      } else {
+        // Проверка через бэкенд на случай изменения пароля в таблице Конфиг
+        fetch(`${API_URL}?action=admin_orders&admin_id=${encodeURIComponent(cleanUid)}&admin_passcode=${encodeURIComponent(cleanPass)}`)
+          .then(r => r.json())
+          .then(data => {
+            if (Array.isArray(data)) {
+              sessionPasscode = cleanPass;
+              isAdmin = true;
+              toast("Доступ подтвержден");
+              navigateTab('root', null);
+            } else {
+              toast("Неверный код доступа");
+            }
+          })
+          .catch(() => toast("Неверный код доступа"));
+      }
     }
   }
 }
@@ -111,60 +129,27 @@ function toggleEditorFabVisibility(forceState = null) {
 }
 window.toggleEditorFabVisibility = toggleEditorFabVisibility;
 
-// Легкая фоновая проверка обновлений версий через Stale-While-Revalidate
-async function checkServerUpdates() {
-  try {
-    const catVer = localStorage.getItem('flw_ver_catalog') || "0";
-    const cfgVer = localStorage.getItem('flw_ver_config') || "0";
-    const faqVer = localStorage.getItem('flw_ver_faq') || "0";
-
-    const res = await fetch(`${API_URL}?action=check_updates&catalog_ver=${catVer}&config_ver=${cfgVer}&faq_ver=${faqVer}`);
-    const data = await res.json();
-
-    if (data.versions) {
-      if (data.catalog_changed) {
-        localStorage.setItem('flw_ver_catalog', data.versions.catalog);
-        if (typeof fetchCatalogFromNetwork === 'function') fetchCatalogFromNetwork();
-      }
-      if (data.config_changed) {
-        localStorage.setItem('flw_ver_config', data.versions.config);
-        fetchConfigFromNetwork();
-      }
-      if (data.faq_changed) {
-        localStorage.setItem('flw_ver_faq', data.versions.faq);
-        window.cachedFaqData = null;
-        localStorage.removeItem('flw_faq_cache');
-      }
-    }
-  } catch (e) {}
-}
-window.checkServerUpdates = checkServerUpdates;
-
-// Загрузка настроек с приоритетом локального кеша
+// Загрузка настроек с кешированием Stale-While-Revalidate
 async function loadConfig() {
-  const cached = localStorage.getItem('flw_config_cache');
+  const cached = localStorage.getItem('flw_about_config_cache');
   if (cached) {
     try {
-      SERVER_CONFIG = JSON.parse(cached);
-      applyConfigToUI(SERVER_CONFIG);
+      applyConfigToDom(JSON.parse(cached));
     } catch (e) {}
-  } else {
-    fetchConfigFromNetwork();
   }
-}
-window.loadConfig = loadConfig;
 
-async function fetchConfigFromNetwork() {
   try {
     const res = await fetch(`${API_URL}?action=get_config`);
     const cfg = await res.json();
     SERVER_CONFIG = cfg;
-    localStorage.setItem('flw_config_cache', JSON.stringify(cfg));
-    applyConfigToUI(cfg);
+    localStorage.setItem('flw_about_config_cache', JSON.stringify(cfg));
+    applyConfigToDom(cfg);
   } catch (e) {}
 }
+window.loadConfig = loadConfig;
 
-function applyConfigToUI(cfg) {
+function applyConfigToDom(cfg) {
+  if (!cfg) return;
   const sbpBtn = document.getElementById('pay-sbp-btn');
   if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
 
@@ -207,7 +192,7 @@ function toggleTextEditingMode(forcedState = null) {
   document.body.classList.toggle('in-text-edit-mode', isTextEditActive);
 
   if (isTextEditActive) {
-    toast("Режим редактирования: нажмите на любой текст");
+    toast("Режим редактирования: нажмите на любой выделенный текст");
   } else {
     toast("Режим редактирования выключен");
   }
@@ -231,7 +216,7 @@ document.addEventListener('click', async (e) => {
   if (newVal !== null && newVal.trim() !== "" && newVal.trim() !== curVal) {
     const cleanVal = newVal.trim();
     target.innerText = cleanVal;
-    toast("Сохранение...");
+    toast("Сохранение в таблицу...");
     try {
       await fetch(API_URL, {
         method: 'POST',
@@ -244,8 +229,6 @@ document.addEventListener('click', async (e) => {
           value: cleanVal
         })
       });
-      SERVER_CONFIG[key] = cleanVal;
-      localStorage.setItem('flw_config_cache', JSON.stringify(SERVER_CONFIG));
       toast("Текст сохранен!");
     } catch (err) {
       toast("Ошибка сохранения");
@@ -282,7 +265,9 @@ document.addEventListener('click', async (e) => {
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) hasMoved = true;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      hasMoved = true;
+    }
     if (!hasMoved) return;
 
     let newLeft = Math.max(10, Math.min(window.innerWidth - 60, initialLeft + dx));
@@ -333,17 +318,14 @@ async function toggleAboutFaqSection() {
   container.style.display = 'block';
   if (arrow) arrow.style.transform = 'rotate(180deg)';
 
+  // Сначала читаем FAQ из локального кеша
   const cachedFaq = localStorage.getItem('flw_faq_cache');
-  if (cachedFaq && !window.cachedFaqData) {
-    try { window.cachedFaqData = JSON.parse(cachedFaq); } catch (e) {}
+  if (cachedFaq) {
+    try {
+      window.cachedFaqData = JSON.parse(cachedFaq);
+      renderFaqList(window.cachedFaqData);
+    } catch (e) {}
   }
-
-  if (window.cachedFaqData) {
-    renderFaqList(window.cachedFaqData);
-    return;
-  }
-
-  container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12px;">Загрузка вопросов...</div>`;
 
   try {
     const res = await fetch(`${API_URL}?action=faq`);
@@ -351,7 +333,9 @@ async function toggleAboutFaqSection() {
     localStorage.setItem('flw_faq_cache', JSON.stringify(window.cachedFaqData));
     renderFaqList(window.cachedFaqData);
   } catch (e) {
-    container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--red); font-size:12px;">Ошибка загрузки FAQ</div>`;
+    if (!window.cachedFaqData) {
+      container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--red); font-size:12px;">Ошибка загрузки FAQ</div>`;
+    }
   }
 }
 window.toggleAboutFaqSection = toggleAboutFaqSection;
@@ -400,6 +384,7 @@ function contactSupport() {
 }
 window.contactSupport = contactSupport;
 
+// Уведомления клиента
 async function loadNotifications() {
   try {
     const res = await fetch(`${API_URL}?action=get_notifications`);
@@ -501,13 +486,13 @@ function markAllNotificationsAsRead() {
 }
 window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 
+// Инициализация приложения
 function initApp() {
   try {
     loadCatalog();
     checkUserSession();
     loadConfig();
     loadNotifications();
-    checkServerUpdates();
     if (typeof updateCartUI === 'function') updateCartUI();
   } catch (e) {
     console.error("App init error:", e);
@@ -520,16 +505,15 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// Фоновый опрос заказов и легкая проверка версий каждые 3 минуты
+// Фоновый опрос заказов и уведомлений каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
-    if (typeof loadUserOrders === 'function') loadUserOrders(true);
+    if (typeof loadUserOrders === 'function') loadUserOrders();
   }
   if (activeScreen === 'screen-root' && isAdmin) {
     const secOrders = document.getElementById('root-sec-orders')?.style.display !== 'none';
     if (secOrders && typeof loadRootOrders === 'function') loadRootOrders(false);
   }
-  checkServerUpdates();
-  loadNotifications();
+  if (typeof loadNotifications === 'function') loadNotifications();
 }, 180000);
