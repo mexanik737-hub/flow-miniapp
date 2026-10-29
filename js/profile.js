@@ -211,14 +211,9 @@ async function saveUserProfileChanges() {
 window.saveUserProfileChanges = saveUserProfileChanges;
 
 async function checkUserSession() {
-  // Мгновенная отрисовка из памяти телефона
-  const cachedProfile = localStorage.getItem('flw_user_profile');
-  if (cachedProfile) {
-    try {
-      currentUser = JSON.parse(cachedProfile);
-      isAdmin = (currentUser.is_admin === true || String(userId) === ADMIN_TELEGRAM_ID);
-      renderProfileUI();
-    } catch (e) {}
+  if (currentUser && currentUser.phone) {
+    renderProfileUI();
+    if (typeof renderSavedAddresses === 'function') renderSavedAddresses();
   }
 
   try {
@@ -228,7 +223,13 @@ async function checkUserSession() {
 
     if (user && user.exists && !user.error) {
       currentUser = user;
-      isAdmin = (user.is_admin === true || String(userId) === ADMIN_TELEGRAM_ID);
+      // Определение прав
+      if (String(cleanUid) === ADMIN_TELEGRAM_ID || user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE') {
+        isAdmin = true;
+      } else {
+        isAdmin = false;
+      }
+
       localStorage.setItem('flw_user_profile', JSON.stringify(user));
 
       if (user.address && String(user.address).startsWith('[')) {
@@ -243,8 +244,10 @@ async function checkUserSession() {
     } else {
       currentUser = null;
       localStorage.removeItem('flw_user_profile');
+      
       const regNameInput = document.getElementById('reg-name');
       if (regNameInput) regNameInput.value = tgFirstName || "";
+      
       const regModal = document.getElementById('reg-modal');
       if (regModal) regModal.classList.add('open');
     }
@@ -275,7 +278,7 @@ async function submitRegistration() {
   try {
     const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
     currentUser = await res.json();
-    isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser.is_admin === true);
+    isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser.is_admin === true || String(currentUser.is_admin).toUpperCase() === 'TRUE');
     localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
     document.getElementById('reg-modal').classList.remove('open');
     renderProfileUI();
@@ -374,112 +377,93 @@ function renderOrderTrackerHtml(status) {
 }
 window.renderOrderTrackerHtml = renderOrderTrackerHtml;
 
-async function loadUserOrders(forceNetwork = false) {
+async function loadUserOrders() {
   const container = document.getElementById('user-orders-list');
   if (!container) return;
-
-  const cachedOrders = localStorage.getItem('flw_user_orders_cache');
-  if (cachedOrders && !forceNetwork) {
-    try {
-      const orders = JSON.parse(cachedOrders);
-      renderUserOrdersHtml(orders);
-      // Если все заказы завершены или отменены, лишний сетевой запрос не делаем
-      const hasActive = orders.some(o => o.status !== 'Завершен' && !o.status.startsWith('Отменен'));
-      if (!hasActive) return;
-    } catch (e) {}
-  }
 
   try {
     const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
     const orders = await res.json();
-    localStorage.setItem('flw_user_orders_cache', JSON.stringify(orders));
-    renderUserOrdersHtml(orders);
+    if (!orders || !orders.length) {
+      container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>';
+      return;
+    }
+
+    const nowTs = Date.now();
+
+    container.innerHTML = orders.map(ord => {
+      let isAwaitingPay = (ord.status === 'Ожидает оплаты');
+      const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
+
+      let timerCardBadge = "";
+      if (isAwaitingPay) {
+        const createdTs = parseOrderDateToTs(ord.date_time);
+        if (createdTs) {
+          const elapsedSec = Math.floor((nowTs - createdTs) / 1000);
+          const leftSec = (15 * 60) - elapsedSec;
+
+          if (leftSec <= 0) {
+            ord.status = 'Отменен (таймаут)';
+            isAwaitingPay = false;
+            fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ action: "cancel_order_timeout", order_id: ord.order_id })
+            }).catch(() => {});
+          } else {
+            const m = Math.floor(leftSec / 60);
+            const s = leftSec % 60;
+            timerCardBadge = `⏳ ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+          }
+        }
+      }
+
+      let badgeCls = 'st-await-pay';
+      if (ord.status.includes('Собирается')) badgeCls = 'st-building';
+      else if (ord.status.includes('В пути') || ord.status.includes('выдаче')) badgeCls = 'st-transit';
+      else if (ord.status.includes('Завершен')) badgeCls = 'st-completed';
+      else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
+      else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
+
+      return `
+        <div class="box-card" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
+            <span class="status-badge ${badgeCls}">${ord.status}</span>
+          </div>
+
+          ${renderOrderTrackerHtml(ord.status)}
+
+          <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
+            ${(ord.items || []).map(i => {
+              const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
+              const packTag = i.in_bouquet ? ' <b style="color:var(--gold);">[в букет]</b>' : '';
+              return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
+            }).join('<br>')}
+          </div>
+
+          ${isAwaitingPay ? `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+                💳 Оплатить ${ord.total_amount} ₽ (СБП)
+              </button>
+              <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
+            </div>
+          ` : ''}
+
+          ${isAwaitingAssembly ? `
+            <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:9px; margin-bottom:8px; text-decoration:none;">
+              📞 Позвонить флористу для согласования
+            </a>
+          ` : ''}
+
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
+            <span style="color:var(--text-muted);">${ord.date_time}</span>
+            <span style="font-weight:900; font-size:14px; color:var(--gold);">${ord.total_amount} ₽</span>
+          </div>
+        </div>
+      `;
+    }).join('');
   } catch (e) {}
 }
 window.loadUserOrders = loadUserOrders;
-
-function renderUserOrdersHtml(orders) {
-  const container = document.getElementById('user-orders-list');
-  if (!container) return;
-
-  if (!orders || !orders.length) {
-    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Заказов пока нет</div>';
-    return;
-  }
-
-  const nowTs = Date.now();
-
-  container.innerHTML = orders.map(ord => {
-    let isAwaitingPay = (ord.status === 'Ожидает оплаты');
-    const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
-
-    let timerCardBadge = "";
-    if (isAwaitingPay) {
-      const createdTs = parseOrderDateToTs(ord.date_time);
-      if (createdTs) {
-        const elapsedSec = Math.floor((nowTs - createdTs) / 1000);
-        const leftSec = (15 * 60) - elapsedSec;
-
-        if (leftSec <= 0) {
-          ord.status = 'Отменен (таймаут)';
-          isAwaitingPay = false;
-          fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "cancel_order_timeout", order_id: ord.order_id })
-          }).catch(() => {});
-        } else {
-          const m = Math.floor(leftSec / 60);
-          const s = leftSec % 60;
-          timerCardBadge = `⏳ ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
-        }
-      }
-    }
-
-    let badgeCls = 'st-await-pay';
-    if (ord.status.includes('Собирается')) badgeCls = 'st-building';
-    else if (ord.status.includes('В пути') || ord.status.includes('выдаче')) badgeCls = 'st-transit';
-    else if (ord.status.includes('Завершен')) badgeCls = 'st-completed';
-    else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
-    else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
-
-    return `
-      <div class="box-card" style="margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <span style="font-size:13px; font-weight:800; color:var(--text);">${ord.order_id}</span>
-          <span class="status-badge ${badgeCls}">${ord.status}</span>
-        </div>
-
-        ${renderOrderTrackerHtml(ord.status)}
-
-        <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
-          ${(ord.items || []).map(i => {
-            const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
-            const packTag = i.in_bouquet ? ' <b style="color:var(--gold);">[в букет]</b>' : '';
-            return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
-          }).join('<br>')}
-        </div>
-
-        ${isAwaitingPay ? `
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-            <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
-              💳 Оплатить ${ord.total_amount} ₽ (СБП)
-            </button>
-            <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
-          </div>
-        ` : ''}
-
-        ${isAwaitingAssembly ? `
-          <a class="btn-metro btn-emerald" href="tel:89162257117" style="font-size:12px; padding:9px; margin-bottom:8px; text-decoration:none;">
-            📞 Позвонить флористу для согласования
-          </a>
-        ` : ''}
-
-        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:6px; font-size:11px;">
-          <span style="color:var(--text-muted);">${ord.date_time}</span>
-          <span style="font-weight:900; font-size:14px; color:var(--gold);">${ord.total_amount} ₽</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
