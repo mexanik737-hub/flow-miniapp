@@ -1,7 +1,9 @@
-let cachedFaqData = null;
+window.cachedFaqData = window.cachedFaqData || null;
 
 function navigateTab(screenId, btn) {
-  triggerHaptic('selection');
+  try {
+    if (typeof triggerHaptic === 'function') triggerHaptic('selection');
+  } catch (e) {}
 
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.dock-tab').forEach(b => b.classList.remove('active'));
@@ -23,28 +25,30 @@ function navigateTab(screenId, btn) {
     setTimeout(() => btn.classList.remove('spinning'), 450);
   }
 
-  // Лепестки роз активны строго во вкладке корзины при наличии товаров
-  if (screenId === 'cart') {
-    const cartCount = Object.values(cart || {}).reduce((a, b) => a + b, 0);
-    if (cartCount > 0 && typeof startCartPetals === 'function') {
-      startCartPetals();
-    } else if (typeof stopCartPetals === 'function') {
-      stopCartPetals();
+  try {
+    if (screenId === 'cart') {
+      const cartCount = Object.values(cart || {}).reduce((a, b) => a + b, 0);
+      if (cartCount > 0 && typeof startCartPetals === 'function') {
+        startCartPetals();
+      } else if (typeof stopCartPetals === 'function') {
+        stopCartPetals();
+      }
+    } else {
+      if (typeof stopCartPetals === 'function') {
+        stopCartPetals();
+      }
     }
-  } else {
-    if (typeof stopCartPetals === 'function') {
-      stopCartPetals();
-    }
-  }
+  } catch (e) {}
 
   if (screenId === 'profile') {
-    renderSavedAddresses();
-    loadUserOrders();
+    if (typeof renderSavedAddresses === 'function') renderSavedAddresses();
+    if (typeof loadUserOrders === 'function') loadUserOrders();
   }
   if (screenId === 'root' && typeof loadRootOrders === 'function') {
     loadRootOrders(true);
   }
 }
+window.navigateTab = navigateTab;
 
 function handleHudRootTap() {
   triggerHaptic('light');
@@ -84,19 +88,23 @@ function handleHudRootTap() {
     }
   }
 }
+window.handleHudRootTap = handleHudRootTap;
 
 function toggleEditorFabVisibility(forceState = null) {
   isFabVisible = (forceState !== null) ? forceState : !isFabVisible;
   const fab = document.getElementById('floating-editor-btn');
-  fab.style.display = isFabVisible ? 'flex' : 'none';
+  if (fab) fab.style.display = isFabVisible ? 'flex' : 'none';
   const chk = document.getElementById('root-toggle-editor-btn');
-  chk.classList.toggle('checked', isFabVisible);
-  chk.innerText = isFabVisible ? '✓' : '';
+  if (chk) {
+    chk.classList.toggle('checked', isFabVisible);
+    chk.innerText = isFabVisible ? '✓' : '';
+  }
 
   if (!isFabVisible && isTextEditActive) {
     toggleTextEditingMode(false);
   }
 }
+window.toggleEditorFabVisibility = toggleEditorFabVisibility;
 
 async function loadConfig() {
   try {
@@ -136,12 +144,15 @@ async function loadConfig() {
     });
   } catch (e) {}
 }
+window.loadConfig = loadConfig;
 
 function toggleTextEditingMode(forcedState = null) {
   isTextEditActive = (forcedState !== null) ? forcedState : !isTextEditActive;
   const btn = document.getElementById('floating-editor-btn');
-  btn.classList.toggle('active', isTextEditActive);
-  btn.innerText = isTextEditActive ? '✓' : '✏️';
+  if (btn) {
+    btn.classList.toggle('active', isTextEditActive);
+    btn.innerText = isTextEditActive ? '✓' : '✏️';
+  }
   document.body.classList.toggle('in-text-edit-mode', isTextEditActive);
 
   if (isTextEditActive) {
@@ -150,6 +161,7 @@ function toggleTextEditingMode(forcedState = null) {
     toast("Режим редактирования выключен");
   }
 }
+window.toggleTextEditingMode = toggleTextEditingMode;
 
 document.addEventListener('click', async (e) => {
   if (!isTextEditActive) return;
@@ -190,6 +202,7 @@ document.addEventListener('click', async (e) => {
 
 (function initDraggableFab() {
   const fab = document.getElementById('floating-editor-btn');
+  if (!fab) return;
   let isDragging = false;
   let startX = 0, startY = 0;
   let initialLeft = 0, initialTop = 0;
@@ -269,8 +282,8 @@ async function toggleAboutFaqSection() {
   container.style.display = 'block';
   if (arrow) arrow.style.transform = 'rotate(180deg)';
 
-  if (cachedFaqData) {
-    renderFaqList(cachedFaqData);
+  if (window.cachedFaqData) {
+    renderFaqList(window.cachedFaqData);
     return;
   }
 
@@ -278,12 +291,13 @@ async function toggleAboutFaqSection() {
 
   try {
     const res = await fetch(`${API_URL}?action=faq`);
-    cachedFaqData = await res.json();
-    renderFaqList(cachedFaqData);
+    window.cachedFaqData = await res.json();
+    renderFaqList(window.cachedFaqData);
   } catch (e) {
     container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--red); font-size:12px;">Ошибка загрузки FAQ</div>`;
   }
 }
+window.toggleAboutFaqSection = toggleAboutFaqSection;
 
 function renderFaqList(faq) {
   const container = document.getElementById('about-faq-container');
@@ -311,6 +325,7 @@ function toggleFaqPill(el) {
   document.querySelectorAll('.faq-pill-item').forEach(p => p.classList.remove('open'));
   if (!isOpen) el.classList.add('open');
 }
+window.toggleFaqPill = toggleFaqPill;
 
 function openYandexRoute() {
   triggerHaptic('selection');
@@ -318,6 +333,7 @@ function openYandexRoute() {
   if (tg && tg.openLink) tg.openLink(url);
   else window.open(url, '_blank');
 }
+window.openYandexRoute = openYandexRoute;
 
 function contactSupport() {
   triggerHaptic('selection');
@@ -325,27 +341,27 @@ function contactSupport() {
   if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
   else window.open(url, '_blank');
 }
-
-// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
+window.contactSupport = contactSupport;
 
 async function loadNotifications() {
   try {
     const res = await fetch(`${API_URL}?action=get_notifications`);
     clientNotifications = await res.json();
-    updateNotificationsBadge();
+    if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
   } catch (e) {}
 }
+window.loadNotifications = loadNotifications;
 
 function openNotificationsModal() {
   triggerHaptic('selection');
   const container = document.getElementById('notifications-list');
   if (!container) return;
 
-  if (!clientNotifications.length) {
+  if (!clientNotifications || !clientNotifications.length) {
     container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px 0; font-size:12px;">Новых уведомлений нет</div>';
   } else {
     container.innerHTML = clientNotifications.map(n => {
-      const isUnread = !readNotificationIds.includes(String(n.id));
+      const isUnread = !(readNotificationIds || []).includes(String(n.id));
       const targetTitle = getTabDisplayTitle(n.target_tab);
 
       return `
@@ -369,21 +385,25 @@ function openNotificationsModal() {
     });
   }
 
-  document.getElementById('notifications-modal').classList.add('open');
+  const m = document.getElementById('notifications-modal');
+  if (m) m.classList.add('open');
 }
+window.openNotificationsModal = openNotificationsModal;
 
 function closeNotificationsModal() {
   triggerHaptic('light');
-  document.getElementById('notifications-modal').classList.remove('open');
+  const m = document.getElementById('notifications-modal');
+  if (m) m.classList.remove('open');
 }
+window.closeNotificationsModal = closeNotificationsModal;
 
 function clickNotificationItem(id, targetTab) {
   triggerHaptic('medium');
   const strId = String(id);
-  if (!readNotificationIds.includes(strId)) {
+  if (!(readNotificationIds || []).includes(strId)) {
     readNotificationIds.push(strId);
     localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
-    updateNotificationsBadge();
+    if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
 
     fetch(API_URL, {
       method: 'POST',
@@ -401,12 +421,13 @@ function clickNotificationItem(id, targetTab) {
   closeNotificationsModal();
   navigateTab(targetTab || 'catalog', null);
 }
+window.clickNotificationItem = clickNotificationItem;
 
 function markAllNotificationsAsRead() {
   triggerHaptic('medium');
-  clientNotifications.forEach(n => {
+  (clientNotifications || []).forEach(n => {
     const strId = String(n.id);
-    if (!readNotificationIds.includes(strId)) {
+    if (!(readNotificationIds || []).includes(strId)) {
       readNotificationIds.push(strId);
       fetch(API_URL, {
         method: 'POST',
@@ -417,27 +438,40 @@ function markAllNotificationsAsRead() {
   });
 
   localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
-  updateNotificationsBadge();
+  if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
   openNotificationsModal();
   toast("Все уведомления прочитаны");
 }
+window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 
-// Запуск приложения
-loadCatalog();
-checkUserSession();
-loadConfig();
-loadNotifications();
-updateCartUI();
+// Инициализация при полной готовности DOM
+function initApp() {
+  try {
+    loadCatalog();
+    checkUserSession();
+    loadConfig();
+    loadNotifications();
+    if (typeof updateCartUI === 'function') updateCartUI();
+  } catch (e) {
+    console.error("App init error:", e);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 // Фоновый опрос заказов и уведомлений каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
-    loadUserOrders();
+    if (typeof loadUserOrders === 'function') loadUserOrders();
   }
   if (activeScreen === 'screen-root' && isAdmin) {
     const secOrders = document.getElementById('root-sec-orders')?.style.display !== 'none';
     if (secOrders && typeof loadRootOrders === 'function') loadRootOrders(false);
   }
-  loadNotifications();
+  if (typeof loadNotifications === 'function') loadNotifications();
 }, 180000);
