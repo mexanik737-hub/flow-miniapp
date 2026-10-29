@@ -211,7 +211,7 @@ async function saveUserProfileChanges() {
 window.saveUserProfileChanges = saveUserProfileChanges;
 
 async function checkUserSession() {
-  if (currentUser) {
+  if (currentUser && currentUser.phone) {
     renderProfileUI();
   }
 
@@ -220,7 +220,8 @@ async function checkUserSession() {
     const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${encodeURIComponent(cleanUid)}`);
     const user = await res.json();
 
-    if (user && !user.error) {
+    // Пользователь существует в базе, если exists === true или у него есть телефон
+    if (user && user.exists && !user.error) {
       currentUser = user;
       isAdmin = (user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
       localStorage.setItem('flw_user_profile', JSON.stringify(user));
@@ -233,17 +234,26 @@ async function checkUserSession() {
       }
 
       renderProfileUI();
-      renderSavedAddresses();
-    } else if (!currentUser) {
-      document.getElementById('reg-name').value = tgFirstName;
-      document.getElementById('reg-modal').classList.add('open');
+      if (typeof renderSavedAddresses === 'function') renderSavedAddresses();
+    } else {
+      // Пользователь новый (exists === false) -> открываем окно регистрации
+      currentUser = null;
+      localStorage.removeItem('flw_user_profile');
+      
+      const regNameInput = document.getElementById('reg-name');
+      if (regNameInput) regNameInput.value = tgFirstName || "";
+      
+      const regModal = document.getElementById('reg-modal');
+      if (regModal) regModal.classList.add('open');
     }
   } catch (e) {
-    if (currentUser) {
+    if (currentUser && currentUser.phone) {
       renderProfileUI();
     } else {
-      document.getElementById('reg-name').value = tgFirstName;
-      document.getElementById('reg-modal').classList.add('open');
+      const regNameInput = document.getElementById('reg-name');
+      if (regNameInput) regNameInput.value = tgFirstName || "";
+      const regModal = document.getElementById('reg-modal');
+      if (regModal) regModal.classList.add('open');
     }
   }
 }
