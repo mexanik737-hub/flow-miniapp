@@ -198,19 +198,33 @@ window.resetFilters = resetFilters;
 // Мгновенная отрисовка из кэша телефона + фоновый запрос в сеть
 async function loadCatalog() {
   const cached = localStorage.getItem('flw_catalog_cache');
+  let hasRenderedFromCache = false;
+
   if (cached) {
     try {
-      catalog = JSON.parse(cached);
-      buildDisplayCatalog();
-      filteredCatalog = [...displayCatalog];
-      setupFilterDropdown();
-      renderDailyBloom();
-      renderCatalog(filteredCatalog);
-      if (typeof updateCartUI === 'function') updateCartUI();
-      if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
-    } catch (e) {}
-  } else {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        catalog = parsed;
+        buildDisplayCatalog();
+        filteredCatalog = [...displayCatalog];
+        setupFilterDropdown();
+        renderDailyBloom();
+        renderCatalog(filteredCatalog);
+        if (typeof updateCartUI === 'function') updateCartUI();
+        if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
+        hasRenderedFromCache = true;
+      }
+    } catch (e) {
+      localStorage.removeItem('flw_catalog_cache');
+    }
+  }
+
+  // Если кэша не было или он был пуст — ждем сеть
+  if (!hasRenderedFromCache) {
     await fetchCatalogFromNetwork();
+  } else {
+    // Если из кэша уже отрисовали, в фоне тихо сверяем с сервером
+    fetchCatalogFromNetwork();
   }
 }
 window.loadCatalog = loadCatalog;
@@ -218,12 +232,23 @@ window.loadCatalog = loadCatalog;
 async function fetchCatalogFromNetwork() {
   try {
     const res = await fetch(`${API_URL}?action=catalog`);
+    if (!res.ok) throw new Error("HTTP error " + res.status);
+    
     const data = await res.json();
     
-    // Поддержка формата с версией { items: [...], version: ... } или стандартного массива [...]
-    const items = Array.isArray(data) ? data : (data.items || []);
-    if (data.version) {
-      localStorage.setItem('flw_ver_catalog', String(data.version));
+    // Бронебойный парсинг любого формата (массив или объект с items)
+    let items = [];
+    if (Array.isArray(data)) {
+      items = data;
+    } else if (data && Array.isArray(data.items)) {
+      items = data.items;
+      if (data.version) {
+        localStorage.setItem('flw_ver_catalog', String(data.version));
+      }
+    }
+
+    if (!Array.isArray(items)) {
+      throw new Error("Неверный формат данных каталога");
     }
 
     catalog = items;
@@ -238,6 +263,10 @@ async function fetchCatalogFromNetwork() {
     if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
   } catch (e) {
     console.error("fetchCatalogFromNetwork error:", e);
+    // Выводим тост только если витрина вообще пустая
+    if (!catalog || catalog.length === 0) {
+      toast("Ошибка загрузки каталога. Проверьте интернет");
+    }
   }
 }
 window.fetchCatalogFromNetwork = fetchCatalogFromNetwork;
