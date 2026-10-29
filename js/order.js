@@ -8,7 +8,7 @@ function generateDynamicDeliveryTimeSlots() {
   let slots = [];
 
   if (curHour < 19) {
-    if (curHour >= 9 && curHour < 18 || (curHour === 18 && curMin <= 30)) {
+    if ((curHour >= 9 && curHour < 18) || (curHour === 18 && curMin <= 30)) {
       slots.push({ label: "Как можно скорее (в течение 1–2 часов с учетом сборки)", val: "Как можно скорее (1-2 часа)" });
     }
 
@@ -39,6 +39,7 @@ function selectDeliveryTime(val) {
   document.getElementById('selected-time-display').innerText = val;
   document.getElementById('time-select-box').classList.remove('open');
 }
+window.selectDeliveryTime = selectDeliveryTime;
 
 function onAddressInput(query) {
   clearTimeout(suggestDebounceTimer);
@@ -46,7 +47,7 @@ function onAddressInput(query) {
   selectedGeoAddress = null;
 
   if (!query || query.trim().length < 2) { 
-    box.style.display = 'none'; 
+    if (box) box.style.display = 'none'; 
     return; 
   }
 
@@ -67,15 +68,18 @@ function onAddressInput(query) {
       });
       const data = await res.json();
       const items = data.suggestions || [];
-      if (!items.length) { box.style.display = 'none'; return; }
-      box.innerHTML = items.map((s, idx) => `
-        <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
-      `).join('');
-      box.style.display = 'block';
+      if (!items.length) { if (box) box.style.display = 'none'; return; }
+      if (box) {
+        box.innerHTML = items.map((s, idx) => `
+          <div class="suggest-item" onclick="selectSuggestion(${idx})">${s.value}</div>
+        `).join('');
+        box.style.display = 'block';
+      }
       window.lastSuggestions = items;
     } catch (e) {}
   }, 250);
 }
+window.onAddressInput = onAddressInput;
 
 function selectSuggestion(idx) {
   triggerHaptic('selection');
@@ -115,6 +119,7 @@ function selectSuggestion(idx) {
 
   recalcOrderFinalTotal();
 }
+window.selectSuggestion = selectSuggestion;
 
 function recalcOrderFinalTotal() {
   const delivery = orderDelType === 'delivery' ? currentDeliveryCost : 0;
@@ -124,6 +129,7 @@ function recalcOrderFinalTotal() {
   document.getElementById('order-delivery-val').innerText = `${delivery} ₽`;
   document.getElementById('order-final-val').innerText = `${currentFinalOrderAmount} ₽`;
 }
+window.recalcOrderFinalTotal = recalcOrderFinalTotal;
 
 function openOrderModal() {
   triggerHaptic('selection');
@@ -141,11 +147,13 @@ function openOrderModal() {
   recalcOrderFinalTotal();
   document.getElementById('order-modal').classList.add('open');
 }
+window.openOrderModal = openOrderModal;
 
 function closeOrderModal() { 
   triggerHaptic('light');
   document.getElementById('order-modal').classList.remove('open'); 
 }
+window.closeOrderModal = closeOrderModal;
 
 function applySavedAddressToOrder(idx, btn) {
   triggerHaptic('selection');
@@ -182,6 +190,7 @@ function applySavedAddressToOrder(idx, btn) {
     onAddressInput(a.address);
   }
 }
+window.applySavedAddressToOrder = applySavedAddressToOrder;
 
 function setDeliveryType(type) {
   triggerHaptic('selection');
@@ -192,6 +201,7 @@ function setDeliveryType(type) {
   document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
   recalcOrderFinalTotal();
 }
+window.setDeliveryType = setDeliveryType;
 
 function setRecipientType(type) {
   triggerHaptic('selection');
@@ -200,6 +210,7 @@ function setRecipientType(type) {
   document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
   document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
 }
+window.setRecipientType = setRecipientType;
 
 async function submitFinalOrder() {
   triggerHaptic('medium');
@@ -323,6 +334,7 @@ async function submitFinalOrder() {
     toast("Ошибка связи");
   }
 }
+window.submitFinalOrder = submitFinalOrder;
 
 function openAssemblyCallModal(orderId) {
   document.getElementById('asm-modal-order-id').innerText = orderId;
@@ -334,6 +346,7 @@ function closeAssemblyModal() {
   document.getElementById('assembly-call-modal').classList.remove('open');
   navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
 }
+window.closeAssemblyModal = closeAssemblyModal;
 
 function openPaymentModal(orderId, amount, createdAtStr = null) {
   activePaymentOrderId = orderId;
@@ -352,12 +365,14 @@ function openPaymentModal(orderId, amount, createdAtStr = null) {
   startPaymentTimer(durationSec, orderId);
   document.getElementById('payment-modal').classList.add('open');
 }
+window.openPaymentModal = openPaymentModal;
 
 function closePaymentModal() {
   triggerHaptic('light');
   clearInterval(paymentTimerInterval);
   document.getElementById('payment-modal').classList.remove('open');
 }
+window.closePaymentModal = closePaymentModal;
 
 function setPaymentActiveState(isActive) {
   const sbpBtn = document.getElementById('pay-sbp-btn');
@@ -433,7 +448,7 @@ function startPaymentTimer(durationSec, orderId) {
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: "cancel_order_timeout", order_id: orderId })
       }).catch(() => {});
-      loadUserOrders();
+      if (typeof loadUserOrders === 'function') loadUserOrders();
     } else {
       updateDisplay();
     }
@@ -449,6 +464,7 @@ function copyPaymentAmount() {
     toast(`Сумма ${txt} ₽ скопирована`);
   }
 }
+window.copyPaymentAmount = copyPaymentAmount;
 
 async function confirmPaymentByClient() {
   if (!activePaymentOrderId) return;
@@ -468,3 +484,4 @@ async function confirmPaymentByClient() {
     toast("Сбой отправки");
   }
 }
+window.confirmPaymentByClient = confirmPaymentByClient;
