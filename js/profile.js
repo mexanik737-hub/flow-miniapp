@@ -211,8 +211,20 @@ async function saveUserProfileChanges() {
 window.saveUserProfileChanges = saveUserProfileChanges;
 
 async function checkUserSession() {
-  if (currentUser && currentUser.phone) {
-    renderProfileUI();
+  const cachedProfile = localStorage.getItem('flw_user_profile');
+  if (cachedProfile) {
+    try {
+      currentUser = JSON.parse(cachedProfile);
+      renderProfileUI();
+    } catch (e) {}
+  }
+
+  const cachedAddresses = localStorage.getItem('flw_saved_addresses');
+  if (cachedAddresses) {
+    try {
+      savedAddresses = JSON.parse(cachedAddresses);
+      renderSavedAddresses();
+    } catch (e) {}
   }
 
   try {
@@ -220,10 +232,9 @@ async function checkUserSession() {
     const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${encodeURIComponent(cleanUid)}`);
     const user = await res.json();
 
-    // Пользователь существует в базе, если exists === true или у него есть телефон
     if (user && user.exists && !user.error) {
       currentUser = user;
-      isAdmin = (user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
+      isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
       localStorage.setItem('flw_user_profile', JSON.stringify(user));
 
       if (user.address && String(user.address).startsWith('[')) {
@@ -234,27 +245,19 @@ async function checkUserSession() {
       }
 
       renderProfileUI();
-      if (typeof renderSavedAddresses === 'function') renderSavedAddresses();
+      renderSavedAddresses();
     } else {
-      // Пользователь новый (exists === false) -> открываем окно регистрации
       currentUser = null;
       localStorage.removeItem('flw_user_profile');
-      
+
       const regNameInput = document.getElementById('reg-name');
       if (regNameInput) regNameInput.value = tgFirstName || "";
-      
+
       const regModal = document.getElementById('reg-modal');
       if (regModal) regModal.classList.add('open');
     }
   } catch (e) {
-    if (currentUser && currentUser.phone) {
-      renderProfileUI();
-    } else {
-      const regNameInput = document.getElementById('reg-name');
-      if (regNameInput) regNameInput.value = tgFirstName || "";
-      const regModal = document.getElementById('reg-modal');
-      if (regModal) regModal.classList.add('open');
-    }
+    if (currentUser) renderProfileUI();
   }
 }
 window.checkUserSession = checkUserSession;
