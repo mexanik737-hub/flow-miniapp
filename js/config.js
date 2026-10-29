@@ -1,11 +1,9 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyVgg5E-dVDS66rVmi_cCBgt7DPaE46RocWXk2wT5HXhc_I95DV6rcvinHB0ksVjdKAvA/exec";
  
-// Константы координат и ID администратора
 const STORE_LAT = 55.966987;
 const STORE_LON = 37.151059;
 const ADMIN_TELEGRAM_ID = "8900179932";
 
-// Динамический защищенный конфиг с сервера
 let SERVER_CONFIG = {
   dadata_token: "",
   sbp_url: "",
@@ -37,35 +35,30 @@ function applyTelegramTheme() {
   const scheme = tg?.colorScheme || 'dark';
   document.documentElement.setAttribute('data-theme', scheme);
   if (tg) {
-    tg.setHeaderColor(scheme === 'light' ? '#ffffff' : '#090c12');
-    tg.setBackgroundColor(scheme === 'light' ? '#f8fafc' : '#090c12');
+    tg.setHeaderColor(scheme === 'light' ? '#ffffff' : '#07090e');
+    tg.setBackgroundColor(scheme === 'light' ? '#f8fafc' : '#07090e');
   }
 }
 applyTelegramTheme();
 if (tg?.onEvent) tg.onEvent('themeChanged', applyTelegramTheme);
 
-// Глобальное состояние каталога
 let catalog = [];
 let displayCatalog = [];
 let filteredCatalog = [];
 let selectedFilterCategoryValue = 'Все';
 
-// Корзина с сохранением в локальное хранилище
 let cart = JSON.parse(localStorage.getItem('flw_cart') || '{}');
 let cartAssemblyItems = JSON.parse(localStorage.getItem('flw_cart_assembly') || '{}');
 let isAssemblyMode = localStorage.getItem('flw_is_assembly_mode') === 'true';
 let ordSaveAddrChecked = false;
 
-// Состояние пользователя и адресов
 let currentUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null');
 let savedAddresses = JSON.parse(localStorage.getItem('flw_saved_addresses') || '[]');
 let isAdmin = (currentUser?.is_admin === true || String(currentUser?.is_admin).toUpperCase() === 'TRUE');
 
-// Состояние уведомлений
 let clientNotifications = [];
 let readNotificationIds = JSON.parse(localStorage.getItem('flw_read_notifs') || '[]');
 
-// Состояние Root-панели
 let allRootOrders = [];
 let allRootCatalog = [];
 let allRootClients = [];
@@ -76,7 +69,6 @@ let cachedStatsData = null;
 let lastRootOrdersHash = "";
 let currentRootSubTab = 'active';
 
-// Состояние модалок и форм
 let activePopItem = null;
 let popQty = 1;
 let selectedGroupPack = "";
