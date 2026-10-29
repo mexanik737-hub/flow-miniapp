@@ -277,59 +277,64 @@ function renderProfileUI() {
   if (pReg) pReg.innerText = regdate;
 }
 
-// Генерация визуального трекера этапов заказа
 function renderOrderTrackerHtml(status) {
   if (status.startsWith('Отменен')) {
     return `
-      <div style="background:rgba(185,28,28,0.12); border:1px solid rgba(185,28,28,0.3); border-radius:8px; padding:6px 10px; margin:8px 0; font-size:11px; color:#ef4444; font-weight:700; text-align:center;">
-        ✕ Заказ отменен (позиции возвращены на витрину)
+      <div style="background:rgba(185,28,28,0.12); border:1px solid rgba(185,28,28,0.3); border-radius:10px; padding:7px 10px; margin:8px 0; font-size:11px; color:#ef4444; font-weight:800; text-align:center;">
+        ✕ Заказ отменен (цветы возвращены на витрину)
       </div>
     `;
   }
 
-  let step = 1;
-  let fillPercent = 0;
+  let stageLabel = "Создание заказа";
+  let percent = 15;
+  let s1 = "done", s2 = "", s3 = "", s4 = "";
 
   if (status === 'Ожидает оплаты' || status === 'Ожидает согласования упаковки') {
-    step = 1;
-    fillPercent = 10;
+    stageLabel = status === 'Ожидает согласования упаковки' ? "Согласование упаковки" : "Ожидает оплаты (СБП)";
+    percent = 25;
+    s1 = "active";
   } else if (status === 'Ожидает подтверждения оплаты') {
-    step = 2;
-    fillPercent = 35;
+    stageLabel = "Проверка банковского платежа";
+    percent = 50;
+    s1 = "done";
+    s2 = "active";
   } else if (status === 'Собирается') {
-    step = 3;
-    fillPercent = 65;
+    stageLabel = "Флорист бережно собирает букет";
+    percent = 75;
+    s1 = "done";
+    s2 = "done";
+    s3 = "active";
   } else if (status === 'В пути' || status === 'Готов к выдаче') {
-    step = 4;
-    fillPercent = 88;
+    stageLabel = status === 'В пути' ? "Курьер везет ваш букет" : "Букет ожидает вас в салоне";
+    percent = 92;
+    s1 = "done";
+    s2 = "done";
+    s3 = "done";
+    s4 = "active";
   } else if (status === 'Завершен') {
-    step = 5;
-    fillPercent = 100;
+    stageLabel = "Заказ успешно доставлен";
+    percent = 100;
+    s1 = "done";
+    s2 = "done";
+    s3 = "done";
+    s4 = "done";
   }
 
   return `
-    <div class="order-tracker-wrap">
-      <div class="order-tracker-line"></div>
-      <div class="order-tracker-fill" style="width: ${fillPercent}%;"></div>
-
-      <div class="order-step-node ${step > 1 ? 'completed' : (step === 1 ? 'active' : '')}">
-        <div class="order-step-dot">${step > 1 ? '✓' : '1'}</div>
-        <div class="order-step-label">Создан</div>
+    <div class="order-progress-box">
+      <div class="order-progress-header">
+        <span class="order-progress-stage">${stageLabel}</span>
+        <span class="order-progress-percent">${percent}%</span>
       </div>
-
-      <div class="order-step-node ${step > 2 ? 'completed' : (step === 2 ? 'active' : '')}">
-        <div class="order-step-dot">${step > 2 ? '✓' : '2'}</div>
-        <div class="order-step-label">Оплата</div>
+      <div class="order-progress-track">
+        <div class="order-progress-bar" style="width: ${percent}%;"></div>
       </div>
-
-      <div class="order-step-node ${step > 3 ? 'completed' : (step === 3 ? 'active' : '')}">
-        <div class="order-step-dot">${step > 3 ? '✓' : '3'}</div>
-        <div class="order-step-label">Сборка</div>
-      </div>
-
-      <div class="order-step-node ${step >= 4 ? (step === 5 ? 'completed' : 'active') : ''}">
-        <div class="order-step-dot">${step === 5 ? '✓' : '4'}</div>
-        <div class="order-step-label">Доставка</div>
+      <div class="order-progress-steps">
+        <span class="${s1}">1. Создан</span>
+        <span class="${s2}">2. Оплата</span>
+        <span class="${s3}">3. Сборка</span>
+        <span class="${s4}">4. Выдача</span>
       </div>
     </div>
   `;
