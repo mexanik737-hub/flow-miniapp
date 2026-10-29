@@ -234,8 +234,9 @@ async function loadCatalog(force = false) {
 }
 window.loadCatalog = loadCatalog;
 
-function forceSyncCatalogManual() {
+function forceSyncCatalogManual(btnEl) {
   triggerHaptic('medium');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   toast("Синхронизация каталога...");
   loadCatalog(true).then(() => {
     toast("Каталог обновлен");
