@@ -1,22 +1,25 @@
-// Функция запуска анимации подпрыгивания и золотого мерцания счетчика корзины
 function triggerCartCounterBounce() {
-  const counter = document.getElementById('cart-counter');
-  if (!counter) return;
+  try {
+    const counter = document.getElementById('cart-counter');
+    if (!counter) return;
 
-  counter.classList.remove('cart-bounce-gold');
-  void counter.offsetWidth; // перезапуск CSS-анимации
-  counter.classList.add('cart-bounce-gold');
-
-  setTimeout(() => {
     counter.classList.remove('cart-bounce-gold');
-  }, 600);
+    void counter.offsetWidth;
+    counter.classList.add('cart-bounce-gold');
+
+    setTimeout(() => {
+      counter.classList.remove('cart-bounce-gold');
+    }, 600);
+  } catch (e) {}
 }
+window.triggerCartCounterBounce = triggerCartCounterBounce;
 
 function saveCartToStorage() {
   localStorage.setItem('flw_cart', JSON.stringify(cart));
   localStorage.setItem('flw_cart_assembly', JSON.stringify(cartAssemblyItems));
   localStorage.setItem('flw_is_assembly_mode', String(isAssemblyMode));
 }
+window.saveCartToStorage = saveCartToStorage;
 
 function clearCartStorage() {
   cart = {};
@@ -25,8 +28,9 @@ function clearCartStorage() {
   localStorage.removeItem('flw_cart');
   localStorage.removeItem('flw_cart_assembly');
   localStorage.removeItem('flw_is_assembly_mode');
-  stopCartPetals();
+  if (typeof stopCartPetals === 'function') stopCartPetals();
 }
+window.clearCartStorage = clearCartStorage;
 
 function addPopToCart() {
   if (!activePopItem) return;
@@ -42,9 +46,9 @@ function addPopToCart() {
       const varParts = (v.variant || '').split('/').map(s => s.trim());
       const colorParts = (v.color || '').split('/').map(s => s.trim());
 
-      const packMatch = !selectedGroupPack || packParts.includes(selectedGroupPack) || v.unit.trim() === selectedGroupPack.trim();
-      const varMatch = !selectedGroupVariant || varParts.includes(selectedGroupVariant) || v.variant.trim() === selectedGroupVariant.trim();
-      const colorMatch = !selectedGroupColor || colorParts.includes(selectedGroupColor) || v.color.trim() === selectedGroupColor.trim();
+      const packMatch = !selectedGroupPack || packParts.includes(selectedGroupPack) || (v.unit || '').trim() === selectedGroupPack.trim();
+      const varMatch = !selectedGroupVariant || varParts.includes(selectedGroupVariant) || (v.variant || '').trim() === selectedGroupVariant.trim();
+      const colorMatch = !selectedGroupColor || colorParts.includes(selectedGroupColor) || (v.color || '').trim() === selectedGroupColor.trim();
 
       return packMatch && varMatch && colorMatch;
     });
@@ -75,6 +79,7 @@ function addPopToCart() {
   closeProductModal();
   toast(`Добавлено: ${formatFullItemTitle(targetItem.title, finalUnit, finalVariant, finalColor)}`);
 }
+window.addPopToCart = addPopToCart;
 
 function quickAdd(id) {
   let item = catalog.find(i => String(i.id) === String(id));
@@ -106,6 +111,7 @@ function quickAdd(id) {
   updateProductCardAction(id);
   toast(`Добавлено: ${formatFullItemTitle(item.title, chosenUnit, chosenVar, chosenColor)}`);
 }
+window.quickAdd = quickAdd;
 
 function modifyCartByKey(cartKey, delta) {
   triggerHaptic('medium');
@@ -118,10 +124,11 @@ function modifyCartByKey(cartKey, delta) {
   updateCartUI();
   updateProductCardAction(itemId);
 }
+window.modifyCartByKey = modifyCartByKey;
 
 function removeAllOfItemFromCart(id) {
   triggerHaptic('medium');
-  Object.keys(cart).forEach(key => {
+  Object.keys(cart || {}).forEach(key => {
     const [itemId] = key.split(':::');
     if (String(itemId) === String(id)) {
       delete cart[key];
@@ -132,6 +139,7 @@ function removeAllOfItemFromCart(id) {
   updateProductCardAction(id);
   toast("Удалено из корзины");
 }
+window.removeAllOfItemFromCart = removeAllOfItemFromCart;
 
 function toggleItemAssemblySelection(cartKey) {
   triggerHaptic('light');
@@ -139,16 +147,17 @@ function toggleItemAssemblySelection(cartKey) {
   renderCartItems();
   saveCartToStorage();
 }
+window.toggleItemAssemblySelection = toggleItemAssemblySelection;
 
 function updateCartUI() {
   saveCartToStorage();
 
-  const count = Object.values(cart).reduce((a, b) => a + b, 0);
+  const count = Object.values(cart || {}).reduce((a, b) => a + b, 0);
   const counterEl = document.getElementById('cart-counter');
   if (counterEl) counterEl.innerText = count;
 
   const checkoutCard = document.getElementById('cart-checkout-card');
-  const entries = Object.entries(cart);
+  const entries = Object.entries(cart || {});
 
   if (!entries.length) {
     const container = document.getElementById('cart-items-container');
@@ -157,17 +166,16 @@ function updateCartUI() {
     }
     if (checkoutCard) checkoutCard.style.display = 'none';
     currentFlowersSubtotal = 0;
-    stopCartPetals();
+    if (typeof stopCartPetals === 'function') stopCartPetals();
   } else {
     if (!catalog || !catalog.length) return;
 
     if (checkoutCard) checkoutCard.style.display = 'block';
     renderCartItems();
 
-    // Запуск лепестков, если пользователь сейчас на экране корзины
     const activeScreen = document.querySelector('.screen.active')?.id;
     if (activeScreen === 'screen-cart') {
-      startCartPetals();
+      if (typeof startCartPetals === 'function') startCartPetals();
     }
   }
 
@@ -181,13 +189,14 @@ function updateCartUI() {
     }
   });
 }
+window.updateCartUI = updateCartUI;
 
 function renderCartItems() {
   const container = document.getElementById('cart-items-container');
   if (!container) return;
 
   let subtotal = 0;
-  const entries = Object.entries(cart);
+  const entries = Object.entries(cart || {});
 
   container.innerHTML = entries.map(([cartKey, qty]) => {
     const [id, selectedUnit, selectedVar, selectedColor] = cartKey.split(':::');
@@ -229,3 +238,4 @@ function renderCartItems() {
   const totalEl = document.getElementById('cart-total');
   if (totalEl) totalEl.innerText = subtotal + ' ₽';
 }
+window.renderCartItems = renderCartItems;
