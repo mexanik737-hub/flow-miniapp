@@ -1,7 +1,9 @@
+let selectedDriveMediaUrls = new Set();
+let selectedCategoryProductsForBatch = new Set();
+
 window.switchRootSection = function(sec) {
   const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
 
-  // Шаг 1: Мгновенное и гарантированное переключение подсветки кнопок и экранов
   sections.forEach(s => {
     const btn = document.getElementById('tab-root-' + s);
     const box = document.getElementById('root-sec-' + s);
@@ -19,20 +21,19 @@ window.switchRootSection = function(sec) {
     }
   });
 
-  // Шаг 2: Безопасный запуск загрузки данных без риска падения UI
   try {
     if (sec === 'orders' && typeof loadRootOrders === 'function') {
-      loadRootOrders(true);
+      loadRootOrders(false);
     } else if (sec === 'catalog' && typeof loadRootCatalog === 'function') {
-      loadRootCatalog();
+      loadRootCatalog(false);
     } else if (sec === 'clients' && typeof loadRootClients === 'function') {
-      loadRootClients();
+      loadRootClients(false);
     } else if (sec === 'notifs' && typeof loadRootNotifications === 'function') {
-      loadRootNotifications();
+      loadRootNotifications(false);
     } else if (sec === 'stats' && typeof loadRootStats === 'function') {
       loadRootStats(currentStatsPeriod || 'today');
     } else if (sec === 'faq' && typeof loadRootFaq === 'function') {
-      loadRootFaq();
+      loadRootFaq(false);
     }
   } catch (err) {
     console.error("Root switch data load error:", err);
@@ -46,24 +47,6 @@ window.switchRootSubTab = function(tab) {
   if (tabActive) tabActive.classList.toggle('active', tab === 'active');
   if (tabArchive) tabArchive.classList.toggle('active', tab === 'archive');
   renderRootOrders();
-};
-
-window.switchStatsPeriod = function(period) {
-  currentStatsPeriod = period;
-  ['today', '7days', 'month'].forEach(p => {
-    const el = document.getElementById('tab-stat-' + p);
-    if (el) el.classList.toggle('active', p === period);
-  });
-  renderRootStats();
-};
-
-window.selectRootNotifTab = function(val, label) {
-  const hiddenInput = document.getElementById('root-notif-tab');
-  const displaySpan = document.getElementById('root-notif-tab-display');
-  const selectBox = document.getElementById('root-notif-tab-box');
-  if (hiddenInput) hiddenInput.value = val;
-  if (displaySpan) displaySpan.innerText = label;
-  if (selectBox) selectBox.classList.remove('open');
 };
 
 async function loadRootOrders(force = false) {
@@ -119,7 +102,7 @@ function renderRootOrders() {
         </div>
         <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
           <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
-          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--cyan);">${ord.recipient_info}</span><br>` : ''}
+          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--gold);">${ord.recipient_info}</span><br>` : ''}
           <b>Адрес:</b> ${ord.address}<br>
           <b>Стоимость доставки:</b> ${deliveryCostText}<br>
           <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
@@ -131,7 +114,7 @@ function renderRootOrders() {
           <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
         </div>
         ${isAssembly ? `
-          <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
+          <div style="background:rgba(197,125,30,0.12); border:1px solid rgba(197,125,30,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
             💐 <b>Требуется сборка букета!</b> Согласуйте упаковку с клиентом, скорректируйте сумму в «Составе заказа» и переведите в «Ожидает оплаты».
           </div>
         ` : ''}
@@ -303,7 +286,7 @@ function openEditItemsModal(orderId) {
   const hasDistinct = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
   document.getElementById('edit-order-client-info').innerHTML = `
     <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
-    ${hasDistinct ? `<b>Получатель:</b> <span style="color:var(--cyan);">${ord.recipient_info}</span>` : `<b>Получатель:</b> Заказчик лично`}
+    ${hasDistinct ? `<b>Получатель:</b> <span style="color:var(--gold);">${ord.recipient_info}</span>` : `<b>Получатель:</b> Заказчик лично`}
   `;
  
   document.getElementById('edit-order-delivery-input').value = ord.delivery_cost || 0;
@@ -416,7 +399,6 @@ function triggerProductPhotoUpload(target) {
   document.getElementById('camera-file-input').click();
 }
 
-// Функция клиентского сжатия фото без потери видимого качества
 function compressImageFile(file, maxSide = 1400, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -515,8 +497,22 @@ function renderProductEditorPhotos(urlsStr) {
     <div class="prod-photo-thumb-wrap">
       <img src="${u}">
       <button class="prod-photo-del-btn" onclick="removeProductPhoto(${idx})">✕</button>
+      ${idx > 0 ? `<button class="prod-photo-move-btn prod-photo-move-left" onclick="moveProductPhoto(${idx}, -1)">◄</button>` : ''}
+      ${idx < urls.length - 1 ? `<button class="prod-photo-move-btn prod-photo-move-right" onclick="moveProductPhoto(${idx}, 1)">►</button>` : ''}
     </div>
   `).join('');
+}
+
+function moveProductPhoto(idx, delta) {
+  const hiddenInput = document.getElementById('prod-edit-photo');
+  const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+  const targetIdx = idx + delta;
+  if (targetIdx < 0 || targetIdx >= urls.length) return;
+
+  const temp = urls[idx];
+  urls[idx] = urls[targetIdx];
+  urls[targetIdx] = temp;
+  renderProductEditorPhotos(urls.join(', '));
 }
 
 function addProductPhotoUrl(url) {
@@ -548,8 +544,22 @@ function renderGroupEditorPhotos(urlsStr) {
     <div class="prod-photo-thumb-wrap">
       <img src="${u}">
       <button class="prod-photo-del-btn" onclick="removeGroupPhoto(${idx})">✕</button>
+      ${idx > 0 ? `<button class="prod-photo-move-btn prod-photo-move-left" onclick="moveGroupPhoto(${idx}, -1)">◄</button>` : ''}
+      ${idx < urls.length - 1 ? `<button class="prod-photo-move-btn prod-photo-move-right" onclick="moveGroupPhoto(${idx}, 1)">►</button>` : ''}
     </div>
   `).join('');
+}
+
+function moveGroupPhoto(idx, delta) {
+  const hiddenInput = document.getElementById('group-edit-photo');
+  const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+  const targetIdx = idx + delta;
+  if (targetIdx < 0 || targetIdx >= urls.length) return;
+
+  const temp = urls[idx];
+  urls[idx] = urls[targetIdx];
+  urls[targetIdx] = temp;
+  renderGroupEditorPhotos(urls.join(', '));
 }
 
 function addGroupPhotoUrl(url) {
@@ -568,42 +578,374 @@ function removeGroupPhoto(idx) {
 
 function openDriveMediaModal(target) {
   driveModalTarget = target;
+  selectedDriveMediaUrls.clear();
+  updateDriveSelectedBtnLabel();
+
   document.getElementById('drive-media-modal').classList.add('open');
-  const box = document.getElementById('drive-media-container');
-  box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
-  fetch(`${API_URL}?action=admin_drive_media&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
-    .then(r => r.json())
-    .then(media => {
-      if (!media.length) { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Папка пуста</div>'; return; }
-      box.innerHTML = media.map(m => `
-        <div class="drive-media-item" onclick="selectDrivePhoto('${m.url}')">
-          <img src="${m.url}" loading="lazy">
-        </div>
-      `).join('');
-    })
-    .catch(() => { box.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Ошибка загрузки</div>'; });
-}
 
-function closeDriveMediaModal() { document.getElementById('drive-media-modal').classList.remove('open'); }
-
-function selectDrivePhoto(url) {
-  if (driveModalTarget === 'group') {
-    addGroupPhotoUrl(url);
+  const cached = localStorage.getItem('flw_drive_media_cache');
+  if (cached) {
+    try {
+      const media = JSON.parse(cached);
+      renderDriveMediaGrid(media);
+    } catch (e) {
+      syncDriveMediaCache();
+    }
   } else {
-    addProductPhotoUrl(url);
+    syncDriveMediaCache();
   }
-  closeDriveMediaModal();
-  toast("Фото прикреплено");
+}
+window.openDriveMediaModal = openDriveMediaModal;
+
+function closeDriveMediaModal() { 
+  document.getElementById('drive-media-modal').classList.remove('open'); 
+}
+window.closeDriveMediaModal = closeDriveMediaModal;
+
+async function syncDriveMediaCache(showToast = false) {
+  const box = document.getElementById('drive-media-container');
+  if (showToast) toast("Синхронизация с Google Диском...");
+  else box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_drive_media&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    const media = await res.json();
+    localStorage.setItem('flw_drive_media_cache', JSON.stringify(media));
+    renderDriveMediaGrid(media);
+    if (showToast) toast("Фото Google Диска обновлены");
+  } catch (err) {
+    box.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--red);">Ошибка загрузки диска</div>';
+  }
+}
+window.syncDriveMediaCache = syncDriveMediaCache;
+
+function renderDriveMediaGrid(media) {
+  const box = document.getElementById('drive-media-container');
+  if (!media || !media.length) {
+    box.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:20px;">Папка пуста</div>';
+    return;
+  }
+
+  box.innerHTML = media.map(m => {
+    const isSel = selectedDriveMediaUrls.has(m.url);
+    return `
+      <div class="drive-media-item ${isSel ? 'selected' : ''}" onclick="toggleDrivePhotoSelection('${m.url}', this)">
+        <img src="${m.url}" loading="lazy">
+        <div class="drive-media-check">${isSel ? '✓' : ''}</div>
+      </div>
+    `;
+  }).join('');
 }
 
-async function loadRootCatalog() {
+function toggleDrivePhotoSelection(url, el) {
+  triggerHaptic('light');
+  if (selectedDriveMediaUrls.has(url)) {
+    selectedDriveMediaUrls.delete(url);
+    el.classList.remove('selected');
+    el.querySelector('.drive-media-check').innerText = '';
+  } else {
+    selectedDriveMediaUrls.add(url);
+    el.classList.add('selected');
+    el.querySelector('.drive-media-check').innerText = '✓';
+  }
+  updateDriveSelectedBtnLabel();
+}
+
+function updateDriveSelectedBtnLabel() {
+  const btn = document.getElementById('drive-apply-selected-btn');
+  if (btn) btn.innerText = `Прикрепить выбранные (${selectedDriveMediaUrls.size})`;
+}
+
+function applyDriveSelectedPhotos() {
+  triggerHaptic('medium');
+  if (!selectedDriveMediaUrls.size) {
+    toast("Выберите хотя бы одну фотографию");
+    return;
+  }
+
+  const urlsToAdd = Array.from(selectedDriveMediaUrls);
+  urlsToAdd.forEach(url => {
+    if (driveModalTarget === 'group') {
+      addGroupPhotoUrl(url);
+    } else {
+      addProductPhotoUrl(url);
+    }
+  });
+
+  toast(`Прикреплено фото: ${urlsToAdd.length}`);
+  closeDriveMediaModal();
+}
+window.applyDriveSelectedPhotos = applyDriveSelectedPhotos;
+
+function populateCategorySelectBoxes() {
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  if (!categories.includes("Цветы")) categories.unshift("Цветы");
+
+  const pOptions = document.getElementById('prod-edit-cat-options');
+  if (pOptions) {
+    pOptions.innerHTML = categories.map(cat => `
+      <div class="custom-select-option" onclick="selectCategoryForProductEditor('${cat}')">${cat}</div>
+    `).join('');
+  }
+
+  const gOptions = document.getElementById('group-edit-cat-options');
+  if (gOptions) {
+    gOptions.innerHTML = categories.map(cat => `
+      <div class="custom-select-option" onclick="selectCategoryForGroupEditor('${cat}')">${cat}</div>
+    `).join('');
+  }
+}
+
+function selectCategoryForProductEditor(cat) {
+  triggerHaptic('selection');
+  document.getElementById('prod-edit-cat-display').innerText = cat;
+  document.getElementById('prod-edit-cat').value = cat;
+  document.getElementById('prod-edit-cat-box').classList.remove('open');
+}
+window.selectCategoryForProductEditor = selectCategoryForProductEditor;
+
+function selectCategoryForGroupEditor(cat) {
+  triggerHaptic('selection');
+  document.getElementById('group-edit-cat-display').innerText = cat;
+  document.getElementById('group-edit-cat').value = cat;
+  document.getElementById('group-edit-cat-box').classList.remove('open');
+}
+window.selectCategoryForGroupEditor = selectCategoryForGroupEditor;
+
+function openCategoriesManagerModal() {
+  triggerHaptic('selection');
+  selectedCategoryProductsForBatch.clear();
+  renderCategoriesManagerList();
+  document.getElementById('categories-manager-modal').classList.add('open');
+}
+window.openCategoriesManagerModal = openCategoriesManagerModal;
+
+function closeCategoriesManagerModal() {
+  triggerHaptic('light');
+  document.getElementById('categories-manager-modal').classList.remove('open');
+}
+window.closeCategoriesManagerModal = closeCategoriesManagerModal;
+
+function renderCategoriesManagerList() {
+  const container = document.getElementById('categories-manager-list');
+  if (!container) return;
+
+  const catMap = {};
+  allRootCatalog.forEach(item => {
+    const cat = item.category || "Без категории";
+    if (!catMap[cat]) catMap[cat] = [];
+    catMap[cat].push(item);
+  });
+
+  const cats = Object.keys(catMap).sort();
+
+  if (!cats.length) {
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; text-align:center; padding:16px;">Каталог пуст</div>';
+    return;
+  }
+
+  container.innerHTML = cats.map(catName => {
+    const items = catMap[catName];
+    return `
+      <div class="cat-item-card" id="cat-card-${encodeURIComponent(catName)}">
+        <div class="cat-item-header" onclick="toggleCatCardAccordion('${encodeURIComponent(catName)}')">
+          <div class="cat-item-title-box">
+            <span class="cat-item-name">${catName}</span>
+            <span class="cat-item-count">${items.length}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation();">
+            <button class="btn-trash-mini" style="font-size:14px; color:var(--gold);" onclick="renameCategoryPrompt('${encodeURIComponent(catName)}')">✏️</button>
+            <span style="font-size:12px; color:var(--gold);">▼</span>
+          </div>
+        </div>
+        <div class="cat-item-products-list">
+          ${items.map(it => {
+            const isChecked = selectedCategoryProductsForBatch.has(String(it.id));
+            const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
+            return `
+              <div class="cat-prod-row">
+                <div style="display:flex; align-items:center; gap:8px; max-width:80%;">
+                  <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:16px; height:16px; font-size:10px;" onclick="toggleCatBatchProduct('${it.id}', this)">${isChecked ? '✓' : ''}</div>
+                  <span style="color:var(--text);">${fullTitle} (${it.price} ₽)</span>
+                </div>
+                <button class="btn-trash-mini" style="color:var(--gold); font-size:11px;" onclick="moveSingleProductCategory('${it.id}')">Перенести</button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updateBatchCategoryBtnLabel();
+}
+
+function toggleCatCardAccordion(encodedCat) {
+  triggerHaptic('light');
+  const card = document.getElementById('cat-card-' + encodedCat);
+  if (card) card.classList.toggle('open');
+}
+window.toggleCatCardAccordion = toggleCatCardAccordion;
+
+function toggleCatBatchProduct(id, el) {
+  triggerHaptic('light');
+  const strId = String(id);
+  if (selectedCategoryProductsForBatch.has(strId)) {
+    selectedCategoryProductsForBatch.delete(strId);
+    el.classList.remove('checked');
+    el.innerText = '';
+  } else {
+    selectedCategoryProductsForBatch.add(strId);
+    el.classList.add('checked');
+    el.innerText = '✓';
+  }
+  updateBatchCategoryBtnLabel();
+}
+window.toggleCatBatchProduct = toggleCatBatchProduct;
+
+function updateBatchCategoryBtnLabel() {
+  const btn = document.getElementById('cat-batch-move-btn');
+  if (!btn) return;
+  const count = selectedCategoryProductsForBatch.size;
+  if (count > 0) {
+    btn.style.display = 'block';
+    btn.innerText = `Перенести выбранные (${count})`;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function createNewCategoryFromManager() {
+  const input = document.getElementById('new-category-name-input');
+  const newCat = input.value.trim();
+  if (!newCat) {
+    toast("Введите название категории");
+    return;
+  }
+  input.value = "";
+  populateCategorySelectBoxes();
+  toast(`Категория «${newCat}» доступна при выборе в товарах`);
+}
+window.createNewCategoryFromManager = createNewCategoryFromManager;
+
+async function renameCategoryPrompt(encodedOldCat) {
+  const oldCat = decodeURIComponent(encodedOldCat);
+  const newCat = prompt(`Новое название для категории «${oldCat}»:`, oldCat);
+  if (!newCat || !newCat.trim() || newCat.trim() === oldCat) return;
+
+  toast("Переименование категории...");
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_rename_category",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        old_category: oldCat,
+        new_category: newCat.trim()
+      })
+    });
+    const d = await res.json();
+    if (d.success) {
+      toast(`Обновлено товаров: ${d.updated || 0}`);
+      await forceSyncRootCatalog();
+      renderCategoriesManagerList();
+    }
+  } catch (e) {
+    toast("Ошибка связи");
+  }
+}
+window.renameCategoryPrompt = renameCategoryPrompt;
+
+async function moveSingleProductCategory(productId) {
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  const targetCat = prompt(`Укажите категорию для переноса товара:\nДоступные: ${categories.join(', ')}`);
+  if (!targetCat || !targetCat.trim()) return;
+
+  toast("Перенос товара...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_batch_change_category",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      target_category: targetCat.trim(),
+      product_ids_json: JSON.stringify([productId])
+    })
+  });
+  toast("Товар перенесен");
+  await forceSyncRootCatalog();
+  renderCategoriesManagerList();
+}
+window.moveSingleProductCategory = moveSingleProductCategory;
+
+async function openBatchMoveCategoryDialog() {
+  if (!selectedCategoryProductsForBatch.size) return;
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  const targetCat = prompt(`Укажите целевую категорию для ${selectedCategoryProductsForBatch.size} товаров:\nДоступные: ${categories.join(', ')}`);
+  if (!targetCat || !targetCat.trim()) return;
+
+  toast("Массовый перенос товаров...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_batch_change_category",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      target_category: targetCat.trim(),
+      product_ids_json: JSON.stringify(Array.from(selectedCategoryProductsForBatch))
+    })
+  });
+  toast("Товары успешно перенесены");
+  selectedCategoryProductsForBatch.clear();
+  await forceSyncRootCatalog();
+  renderCategoriesManagerList();
+}
+window.openBatchMoveCategoryDialog = openBatchMoveCategoryDialog;
+
+async function loadRootCatalog(force = false) {
   const container = document.getElementById('root-catalog-container');
-  const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
-  allRootCatalog = await res.json();
+  const cached = localStorage.getItem('flw_root_catalog_cache');
+
+  if (cached && !force) {
+    try {
+      allRootCatalog = JSON.parse(cached);
+      renderRootCatalogUI();
+      populateCategorySelectBoxes();
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootCatalog = await res.json();
+    localStorage.setItem('flw_root_catalog_cache', JSON.stringify(allRootCatalog));
+    renderRootCatalogUI();
+    populateCategorySelectBoxes();
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки каталога</div>';
+  }
+}
+window.loadRootCatalog = loadRootCatalog;
+
+async function forceSyncRootCatalog() {
+  triggerHaptic('medium');
+  toast("Синхронизация каталога...");
+  await loadRootCatalog(true);
+  if (typeof loadCatalog === 'function') loadCatalog(true);
+  toast("Каталог обновлен");
+}
+window.forceSyncRootCatalog = forceSyncRootCatalog;
+
+function renderRootCatalogUI() {
+  const container = document.getElementById('root-catalog-container');
+  if (!container) return;
 
   const groups = {};
   allRootCatalog.forEach(item => {
-    const titleKey = item.title.trim();
+    const titleKey = (item.title || '').trim();
     if (!groups[titleKey]) groups[titleKey] = [];
     groups[titleKey].push(item);
   });
@@ -627,10 +969,10 @@ async function loadRootCatalog() {
       const photoCount = (c.items[0].photo_url ? c.items[0].photo_url.split(',').length : 0);
 
       return `
-        <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--cyan);">
+        <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--gold);">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
-              <b>${c.title}</b> <span style="font-size:10px; background:rgba(56,189,248,0.15); color:var(--cyan); padding:2px 6px; border-radius:4px; font-weight:700;">Группа (${c.items.length})</span>
+              <b>${c.title}</b> <span style="font-size:10px; background:rgba(197,160,89,0.18); color:var(--gold); padding:2px 6px; border-radius:4px; font-weight:800;">Группа (${c.items.length})</span>
               <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Категория: ${c.items[0].category} · Фото: ${photoCount}</div>
               <div style="font-size:11px; color:var(--amber); margin-top:2px;">Наличие: ${activeCount} из ${c.items.length} активны</div>
             </div>
@@ -652,11 +994,11 @@ async function loadRootCatalog() {
             <b>${fullTitle} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
             <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
-          <div style="font-size:11px; color:var(--cyan); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
-          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
+          <div style="font-size:11px; color:var(--gold); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Категория: ${it.category} · На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
           <div style="display:flex; gap:6px;">
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--cyan);" onclick="convertProductToGroup('${it.id}')">+ В группу</button>
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="convertProductToGroup('${it.id}')">+ В группу</button>
             <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
           </div>
         </div>
@@ -672,6 +1014,7 @@ function convertProductToGroup(id) {
   editingGroupName = it.title;
   document.getElementById('group-edit-title').innerText = `Группа: ${it.title}`;
   document.getElementById('group-edit-name').value = it.title;
+  document.getElementById('group-edit-cat-display').innerText = it.category;
   document.getElementById('group-edit-cat').value = it.category;
   document.getElementById('group-edit-desc').value = it.description || "";
  
@@ -686,6 +1029,7 @@ function convertProductToGroup(id) {
   addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", color: it.color || "", price: it.price, is_active: it.is_active });
   addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", color: "", price: it.price, is_active: true });
 
+  checkGroupDisbandCheckboxVisibility();
   document.getElementById('group-editor-modal').classList.add('open');
   toast("Создание группы на базе цветка");
 }
@@ -694,6 +1038,7 @@ function openAddGroupModal() {
   editingGroupName = null;
   document.getElementById('group-edit-title').innerText = "Создать группу вариаций";
   document.getElementById('group-edit-name').value = "";
+  document.getElementById('group-edit-cat-display').innerText = "Цветы";
   document.getElementById('group-edit-cat').value = "Цветы";
   document.getElementById('group-edit-desc').value = "";
  
@@ -706,17 +1051,20 @@ function openAddGroupModal() {
   tbody.innerHTML = "";
   addGroupVariantRow({ unit: "15 шт.", variant: "50 см", color: "Красный", price: 3500, is_active: true });
   addGroupVariantRow({ unit: "15 шт.", variant: "60 см", color: "Красный", price: 4000, is_active: true });
+
+  checkGroupDisbandCheckboxVisibility();
   document.getElementById('group-editor-modal').classList.add('open');
 }
 
 function openEditGroupModal(encodedTitle) {
   const title = decodeURIComponent(encodedTitle);
   editingGroupName = title;
-  const groupItems = allRootCatalog.filter(i => i.title.trim() === title.trim());
+  const groupItems = allRootCatalog.filter(i => (i.title || '').trim() === title.trim());
   if (!groupItems.length) return;
 
   document.getElementById('group-edit-title').innerText = `Группа: ${title}`;
   document.getElementById('group-edit-name').value = title;
+  document.getElementById('group-edit-cat-display').innerText = groupItems[0].category;
   document.getElementById('group-edit-cat').value = groupItems[0].category;
   document.getElementById('group-edit-desc').value = groupItems[0].description || "";
  
@@ -734,6 +1082,7 @@ function openEditGroupModal(encodedTitle) {
     addGroupVariantRow(item);
   });
 
+  checkGroupDisbandCheckboxVisibility();
   document.getElementById('group-editor-modal').classList.add('open');
 }
 
@@ -747,57 +1096,99 @@ function addGroupVariantRow(data = {}) {
     <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
     <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см"></td>
     <td><input type="text" class="gv-color" value="${data.color || ''}" placeholder="Красный"></td>
-    <td><input type="number" class="gv-price" value="${data.price || 3500}"></td>
+    <td><input type="number" class="gv-price" value="${data.price || ''}" placeholder="3500"></td>
     <td style="text-align:center;">
       <div class="custom-checkbox ${data.is_active !== false ? 'checked' : ''}" style="width:18px; height:18px; margin:0 auto;" onclick="this.classList.toggle('checked'); this.innerText = this.classList.contains('checked') ? '✓' : '';">${data.is_active !== false ? '✓' : ''}</div>
     </td>
-    <td><button class="btn-trash-mini" style="color:var(--red); font-size:14px;" onclick="this.closest('tr').remove()">✕</button></td>
+    <td><button class="btn-trash-mini" style="color:var(--red); font-size:14px;" onclick="this.closest('tr').remove(); checkGroupDisbandCheckboxVisibility();">✕</button></td>
   `;
   tbody.appendChild(tr);
+  checkGroupDisbandCheckboxVisibility();
+}
+
+function checkGroupDisbandCheckboxVisibility() {
+  const count = document.querySelectorAll('#group-variants-tbody tr').length;
+  const wrap = document.getElementById('group-disband-checkbox-wrap');
+  if (wrap) {
+    wrap.style.display = (count === 1) ? 'flex' : 'none';
+  }
 }
 
 async function saveGroupEditor() {
   const title = document.getElementById('group-edit-name').value.trim();
-  const cat = document.getElementById('group-edit-cat').value.trim();
+  const cat = document.getElementById('group-edit-cat').value.trim() || document.getElementById('group-edit-cat-display').innerText.trim();
   const photo = document.getElementById('group-edit-photo').value.trim();
   const desc = document.getElementById('group-edit-desc').value.trim();
   const isPop = document.getElementById('group-edit-popular-ui').classList.contains('checked');
 
   if (!title) { toast("Укажите базовое название группы"); return; }
+  if (!cat) { toast("Укажите категорию товара"); return; }
 
   const rows = Array.from(document.querySelectorAll('#group-variants-tbody tr'));
   if (!rows.length) { toast("Добавьте хотя бы одну вариацию"); return; }
 
-  const variants = rows.map(r => ({
-    id: r.dataset.id || null,
-    unit: r.querySelector('.gv-unit').value.trim() || '1 шт.',
-    variant: r.querySelector('.gv-variant').value.trim(),
-    color: r.querySelector('.gv-color').value.trim(),
-    price: parseFloat(r.querySelector('.gv-price').value) || 0,
-    is_active: r.querySelector('.custom-checkbox').classList.contains('checked')
-  }));
-
-  toast("Сохранение группы...");
-  await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      action: "admin_save_group",
-      admin_id: userId,
-      admin_passcode: sessionPasscode,
-      title: title,
-      category: cat,
-      photo_url: photo,
-      description: desc,
-      is_popular: isPop,
-      variants_json: JSON.stringify(variants)
-    })
+  let hasPriceError = false;
+  const variants = rows.map(r => {
+    const pVal = parseFloat(r.querySelector('.gv-price').value) || 0;
+    if (pVal <= 0) hasPriceError = true;
+    return {
+      id: r.dataset.id || null,
+      unit: r.querySelector('.gv-unit').value.trim() || '1 шт.',
+      variant: r.querySelector('.gv-variant').value.trim(),
+      color: r.querySelector('.gv-color').value.trim(),
+      price: pVal,
+      is_active: r.querySelector('.custom-checkbox').classList.contains('checked')
+    };
   });
 
-  toast("Группа товаров сохранена!");
+  if (hasPriceError) {
+    toast("Укажите цену для всех вариаций товара (не может быть пустой или 0)");
+    return;
+  }
+
+  const shouldDisband = (rows.length === 1) && document.getElementById('group-disband-ui').classList.contains('checked');
+
+  if (shouldDisband) {
+    toast("Расформирование группы...");
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_disband_group",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        group_title: editingGroupName || title,
+        title: title,
+        category: cat,
+        photo_url: photo,
+        description: desc,
+        is_popular: isPop,
+        keep_variant_json: JSON.stringify(variants[0])
+      })
+    });
+    toast("Группа расформирована в одиночный товар!");
+  } else {
+    toast("Сохранение группы...");
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_save_group",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        title: title,
+        category: cat,
+        photo_url: photo,
+        description: desc,
+        is_popular: isPop,
+        variants_json: JSON.stringify(variants)
+      })
+    });
+    toast("Группа товаров сохранена!");
+  }
+
   closeGroupEditorModal();
-  loadRootCatalog();
-  loadCatalog();
+  forceSyncRootCatalog();
 }
 
 function openAddProductModal() {
@@ -807,6 +1198,7 @@ function openAddProductModal() {
   document.getElementById('prod-edit-unit').value = "1 шт.";
   document.getElementById('prod-edit-variant').value = "";
   document.getElementById('prod-edit-color').value = "";
+  document.getElementById('prod-edit-cat-display').innerText = "Цветы";
   document.getElementById('prod-edit-cat').value = "Цветы";
   document.getElementById('prod-edit-price').value = "";
   document.getElementById('prod-edit-desc').value = "";
@@ -829,7 +1221,8 @@ function openEditProductModal(id) {
   document.getElementById('prod-edit-unit').value = item.unit || "1 шт.";
   document.getElementById('prod-edit-variant').value = item.variant || "";
   document.getElementById('prod-edit-color').value = item.color || "";
-  document.getElementById('prod-edit-cat').value = item.category;
+  document.getElementById('prod-edit-cat-display').innerText = item.category || "Цветы";
+  document.getElementById('prod-edit-cat').value = item.category || "Цветы";
   document.getElementById('prod-edit-price').value = item.price;
   document.getElementById('prod-edit-desc').value = item.description || "";
  
@@ -847,6 +1240,14 @@ function openEditProductModal(id) {
 function closeProductEditorModal() { document.getElementById('product-editor-modal').classList.remove('open'); }
 
 async function saveProductEditor() {
+  const priceVal = parseFloat(document.getElementById('prod-edit-price').value) || 0;
+  if (priceVal <= 0) {
+    toast("Укажите цену товара (не может быть 0 или пустой)");
+    return;
+  }
+
+  const catVal = document.getElementById('prod-edit-cat').value.trim() || document.getElementById('prod-edit-cat-display').innerText.trim();
+
   const payload = {
     action: editingProductId ? "admin_update_product" : "admin_add_product",
     admin_id: userId, admin_passcode: sessionPasscode,
@@ -855,8 +1256,8 @@ async function saveProductEditor() {
     unit: document.getElementById('prod-edit-unit').value.trim(),
     variant: document.getElementById('prod-edit-variant').value.trim(),
     color: document.getElementById('prod-edit-color').value.trim(),
-    category: document.getElementById('prod-edit-cat').value.trim(),
-    price: parseFloat(document.getElementById('prod-edit-price').value) || 0,
+    category: catVal,
+    price: priceVal,
     photo_url: document.getElementById('prod-edit-photo').value.trim(),
     description: document.getElementById('prod-edit-desc').value.trim(),
     is_active: document.getElementById('prod-edit-active-ui').classList.contains('checked'),
@@ -865,8 +1266,7 @@ async function saveProductEditor() {
   await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
   toast("Каталог обновлен");
   closeProductEditorModal();
-  loadRootCatalog();
-  loadCatalog();
+  forceSyncRootCatalog();
 }
 
 async function deleteProductRoot(id) {
@@ -876,16 +1276,30 @@ async function deleteProductRoot(id) {
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: "admin_delete_product", admin_id: userId, admin_passcode: sessionPasscode, id: id })
   });
-  loadRootCatalog();
-  loadCatalog();
+  forceSyncRootCatalog();
 }
 
-async function loadRootClients() {
+async function loadRootClients(force = false) {
   const container = document.getElementById('root-clients-container');
-  const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
-  allRootClients = await res.json();
-  renderRootClients(allRootClients);
+  const cached = localStorage.getItem('flw_root_clients_cache');
+
+  if (cached && !force) {
+    try {
+      allRootClients = JSON.parse(cached);
+      renderRootClients(allRootClients);
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootClients = await res.json();
+    localStorage.setItem('flw_root_clients_cache', JSON.stringify(allRootClients));
+    renderRootClients(allRootClients);
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки клиентов</div>';
+  }
 }
+window.loadRootClients = loadRootClients;
 
 function filterRootClients() {
   const q = document.getElementById('root-client-search').value.toLowerCase().trim();
@@ -911,7 +1325,7 @@ function renderRootClients(clients) {
       <div class="box-card" style="margin-bottom:8px;">
         <div style="display:flex; justify-content:space-between;">
           <div>
-            <b>${c.name}</b> ${isClientAdmin ? '<span style="font-size:10px; background:rgba(16,185,129,0.15); color:var(--green); padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}<br>
+            <b>${c.name}</b> ${isClientAdmin ? '<span style="font-size:10px; background:rgba(13,148,104,0.18); color:var(--green); padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}<br>
             <span style="font-size:12px; color:var(--text-muted);">${c.phone}</span>
           </div>
           <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${c.total_spent} ₽</span></div>
@@ -921,7 +1335,7 @@ function renderRootClients(clients) {
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;">
           <a href="tel:${c.phone}" class="btn-metro btn-emerald" style="font-size:11px; padding:7px; text-decoration:none;">📞 Позвонить</a>
           ${tgLink ? `
-            <a href="${tgLink}" target="_blank" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--cyan); text-decoration:none;">💬 Написать</a>
+            <a href="${tgLink}" target="_blank" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--gold); text-decoration:none;">💬 Написать</a>
           ` : `
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; opacity:0.45;" disabled>💬 Чат скрыт</button>
           `}
@@ -944,7 +1358,7 @@ async function editSpentPrompt(uid, current) {
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: "admin_update_spent", admin_id: userId, admin_passcode: sessionPasscode, target_user_id: uid, total_spent: parseFloat(val) })
   });
-  loadRootClients();
+  loadRootClients(true);
 }
 
 async function deleteUserRoot(uid) {
@@ -954,10 +1368,8 @@ async function deleteUserRoot(uid) {
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: "admin_delete_user", admin_id: userId, admin_passcode: sessionPasscode, target_user_id: uid })
   });
-  loadRootClients();
+  loadRootClients(true);
 }
-
-// ----------------- УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ В ROOT -----------------
 
 function selectRootNotifTab(val, label) {
   const hiddenInput = document.getElementById('root-notif-tab');
@@ -969,16 +1381,27 @@ function selectRootNotifTab(val, label) {
 }
 window.selectRootNotifTab = selectRootNotifTab;
 
-async function loadRootNotifications() {
+async function loadRootNotifications(force = false) {
   const container = document.getElementById('root-notifs-container');
+  const cached = localStorage.getItem('flw_root_notifs_cache');
+
+  if (cached && !force) {
+    try {
+      allRootNotifs = JSON.parse(cached);
+      renderRootNotifications();
+    } catch (e) {}
+  }
+
   try {
     const res = await fetch(`${API_URL}?action=admin_notifications&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
     allRootNotifs = await res.json();
+    localStorage.setItem('flw_root_notifs_cache', JSON.stringify(allRootNotifs));
     renderRootNotifications();
   } catch (e) {
     if (container) container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px 0;">Ошибка загрузки уведомлений</div>';
   }
 }
+window.loadRootNotifications = loadRootNotifications;
 
 function renderRootNotifications() {
   const container = document.getElementById('root-notifs-container');
@@ -992,24 +1415,24 @@ function renderRootNotifications() {
   container.innerHTML = allRootNotifs.map(n => {
     const targetTitle = getTabDisplayTitle(n.target_tab);
     return `
-      <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--cyan)' : 'var(--border)'};">
+      <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--gold)' : 'var(--border)'};">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
           <div>
             <b style="font-size:13px; color:var(--text);">${n.title}</b>
-            <span style="font-size:10px; margin-left:6px; color:${n.is_active ? 'var(--cyan)' : 'var(--text-muted)'}; font-weight:700;">
+            <span style="font-size:10px; margin-left:6px; color:${n.is_active ? 'var(--gold)' : 'var(--text-muted)'}; font-weight:800;">
               ${n.is_active ? 'АКТИВНО' : 'В АРХИВЕ'}
             </span>
           </div>
           <span style="font-size:10px; color:var(--text-muted);">${n.created_at || ''}</span>
         </div>
         <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:6px;">${n.text}</div>
-        <div style="font-size:11px; color:var(--cyan); margin-bottom:8px;">Целевой экран: <b>${targetTitle}</b></div>
+        <div style="font-size:11px; color:var(--gold); margin-bottom:8px;">Целевой экран: <b>${targetTitle}</b></div>
 
         <div style="display:flex; gap:6px;">
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="toggleNotificationActiveRoot('${n.id}')">
             ${n.is_active ? 'В архив' : 'Восстановить'}
           </button>
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--cyan);" onclick="repeatNotificationRoot('${n.id}')">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="repeatNotificationRoot('${n.id}')">
             Повторить TG
           </button>
           <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteNotificationRoot('${n.id}')">
@@ -1052,7 +1475,7 @@ async function submitCreateNotification() {
       document.getElementById('root-notif-title').value = '';
       document.getElementById('root-notif-text').value = '';
       toast(sendTg ? "Уведомление отправлено всем клиентам!" : "Уведомление добавлено в приложение!");
-      loadRootNotifications();
+      loadRootNotifications(true);
     }
   } catch (e) {
     toast("Ошибка создания уведомления");
@@ -1071,7 +1494,7 @@ async function toggleNotificationActiveRoot(id) {
       id: id
     })
   });
-  loadRootNotifications();
+  loadRootNotifications(true);
 }
 
 async function repeatNotificationRoot(id) {
@@ -1103,10 +1526,8 @@ async function deleteNotificationRoot(id) {
       id: id
     })
   });
-  loadRootNotifications();
+  loadRootNotifications(true);
 }
-
-// ----------------- СТАТИСТИКА И ДАШБОРД В ROOT -----------------
 
 function switchStatsPeriod(period) {
   currentStatsPeriod = period;
@@ -1128,6 +1549,7 @@ async function loadRootStats(period = 'today') {
     toast("Ошибка загрузки аналитики");
   }
 }
+window.loadRootStats = loadRootStats;
 
 function renderRootStats() {
   if (!cachedStatsData) return;
@@ -1187,7 +1609,6 @@ function renderRootStats() {
   if (rEl) rEl.innerText = `${totalRevenue} ₽`;
   if (cEl) cEl.innerText = totalCompleted;
 
-  // Рендер просмотров букетов
   const pList = document.getElementById('stats-products-list');
   if (pList) {
     const products = cachedStatsData.products_views || [];
@@ -1197,13 +1618,12 @@ function renderRootStats() {
       pList.innerHTML = products.slice(0, 15).map((p, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
           <div><b>${idx + 1}.</b> ${p.title}</div>
-          <div style="color:var(--cyan); font-weight:800;">${p.views} просм.</div>
+          <div style="color:var(--gold); font-weight:800;">${p.views} просм.</div>
         </div>
       `).join('');
     }
   }
 
-  // Рендер статистики уведомлений
   const nList = document.getElementById('stats-notifs-list');
   if (nList) {
     const notifs = cachedStatsData.notifications_stats || [];
@@ -1215,7 +1635,7 @@ function renderRootStats() {
           <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${n.title}</div>
           <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
             <span>Показов: <b style="color:var(--text);">${n.views}</b></span>
-            <span>Прочтений: <b style="color:var(--cyan);">${n.reads}</b></span>
+            <span>Прочтений: <b style="color:var(--gold);">${n.reads}</b></span>
             <span>Переходов: <b style="color:var(--green);">${n.clicks}</b></span>
           </div>
         </div>
@@ -1224,12 +1644,31 @@ function renderRootStats() {
   }
 }
 
-// ----------------- FAQ (ROOT) -----------------
-
-async function loadRootFaq() {
+async function loadRootFaq(force = false) {
   const container = document.getElementById('root-faq-container');
-  const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
-  allRootFaq = await res.json();
+  const cached = localStorage.getItem('flw_root_faq_cache');
+
+  if (cached && !force) {
+    try {
+      allRootFaq = JSON.parse(cached);
+      renderRootFaqUI();
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootFaq = await res.json();
+    localStorage.setItem('flw_root_faq_cache', JSON.stringify(allRootFaq));
+    renderRootFaqUI();
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки FAQ</div>';
+  }
+}
+window.loadRootFaq = loadRootFaq;
+
+function renderRootFaqUI() {
+  const container = document.getElementById('root-faq-container');
+  if (!container) return;
 
   container.innerHTML = allRootFaq.map(f => `
     <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${f.is_active ? 'var(--green)' : 'var(--red)'};">
@@ -1239,8 +1678,8 @@ async function loadRootFaq() {
           <span style="font-size:10px; font-weight:800; color:${f.is_active ? 'var(--green)' : 'var(--red)'};">
             ${f.is_active ? 'АКТИВЕН' : 'СКРЫТ'}
           </span>
-          <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
-          <button class="btn-trash-mini" style="font-size:14px; color:var(--cyan); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
         </div>
       </div>
       <div style="font-size:12px; color:var(--text-muted); margin:4px 0;">${f.answer}</div>
@@ -1267,8 +1706,9 @@ async function moveFaqOrder(id, direction) {
       direction: direction
     })
   });
-  loadRootFaq();
+  loadRootFaq(true);
   cachedFaqData = null;
+  localStorage.removeItem('flw_faq_cache');
 }
 
 function openAddFaqModal() {
@@ -1315,8 +1755,9 @@ async function saveFaqEditor() {
     })
   });
   closeFaqEditorModal();
-  loadRootFaq();
+  loadRootFaq(true);
   cachedFaqData = null;
+  localStorage.removeItem('flw_faq_cache');
 }
 
 async function toggleFaqActiveRoot(id, nextState) {
@@ -1335,8 +1776,9 @@ async function toggleFaqActiveRoot(id, nextState) {
       is_active: nextState
     })
   });
-  loadRootFaq();
+  loadRootFaq(true);
   cachedFaqData = null;
+  localStorage.removeItem('flw_faq_cache');
 }
 
 async function deleteFaqRoot(id) {
@@ -1346,6 +1788,7 @@ async function deleteFaqRoot(id) {
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: "admin_delete_faq", admin_id: userId, admin_passcode: sessionPasscode, id: id })
   });
-  loadRootFaq();
+  loadRootFaq(true);
   cachedFaqData = null;
-  }
+  localStorage.removeItem('flw_faq_cache');
+}
