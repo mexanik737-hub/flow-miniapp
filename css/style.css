@@ -82,7 +82,7 @@ body {
   position: relative;
 }
 
-/* Холст опадающих лепестков роз поверх корзины */
+/* Холст опадающих лепестков роз */
 #cart-petals-canvas {
   position: fixed;
   top: 0;
@@ -103,26 +103,10 @@ body {
 
 /* Анимация подпрыгивания и золотой вспышки счетчика корзины */
 @keyframes cartBounceGold {
-  0% {
-    transform: scale(1);
-    color: inherit;
-    text-shadow: none;
-  }
-  30% {
-    transform: scale(1.6) translateY(-4px);
-    color: var(--gold-light);
-    text-shadow: 0 0 14px var(--gold-light);
-  }
-  65% {
-    transform: scale(0.9) translateY(1px);
-    color: var(--gold);
-    text-shadow: 0 0 8px var(--gold-glow);
-  }
-  100% {
-    transform: scale(1) translateY(0);
-    color: inherit;
-    text-shadow: none;
-  }
+  0% { transform: scale(1); color: inherit; text-shadow: none; }
+  30% { transform: scale(1.6) translateY(-4px); color: var(--gold-light); text-shadow: 0 0 14px var(--gold-light); }
+  65% { transform: scale(0.9) translateY(1px); color: var(--gold); text-shadow: 0 0 8px var(--gold-glow); }
+  100% { transform: scale(1) translateY(0); color: inherit; text-shadow: none; }
 }
 
 .cart-bounce-gold {
@@ -407,7 +391,6 @@ header {
 }
 .product-card:active { transform: scale(0.97); }
 
-/* Благородное сатиновое переливание хита продаж */
 .product-card.popular-hit {
   border-color: var(--border-accent);
   box-shadow: 0 8px 28px rgba(197, 160, 89, 0.18);
@@ -685,6 +668,30 @@ header {
   box-shadow: 0 6px 20px rgba(194, 65, 12, 0.3);
 }
 
+/* Кнопка ручной синхронизации в Root */
+.btn-root-sync {
+  width: 100%;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(197, 160, 89, 0.1);
+  border: 1px solid var(--border-accent);
+  color: var(--gold-light);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+.btn-root-sync:active {
+  transform: scale(0.98);
+  background: rgba(197, 160, 89, 0.2);
+}
+
 .qty-btn {
   width: 32px;
   height: 32px;
@@ -702,7 +709,7 @@ header {
 }
 .qty-btn:active { transform: scale(0.9); }
 
-/* Современный компактный капсульный прогресс-бар заказа */
+/* Компактный капсульный прогресс-бар заказа */
 .order-progress-box {
   background: var(--card-inner);
   border: 1px solid var(--border);
@@ -861,6 +868,14 @@ header {
   overflow-y: auto;
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.5);
   animation: sheetSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Модалка медиа Google Диска увеличена на 2/3 экрана (72vh) */
+.modal-sheet-drive {
+  max-height: 72vh !important;
+  height: 72vh !important;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes sheetSlideUp {
@@ -1187,27 +1202,58 @@ header {
   border-radius: var(--radius-md);
 }
 
+/* Сетка медиа Google Диска с чекбоксами */
 .drive-media-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  max-height: 260px;
+  flex: 1;
   overflow-y: auto;
   margin: 10px 0;
+  padding-right: 2px;
 }
 .drive-media-item {
+  position: relative;
   aspect-ratio: 1/1;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border);
   cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.drive-media-item:active { transform: scale(0.96); }
+.drive-media-item.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
 }
 .drive-media-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+.drive-media-check-ui {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(7, 9, 14, 0.75);
+  border: 1.5px solid var(--border-accent);
+  color: #07090e;
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.drive-media-item.selected .drive-media-check-ui {
+  background: var(--gold);
+  border-color: var(--gold);
+}
 
+/* Лента фото в карточке товара со стрелками сортировки */
 .prod-photo-strip {
   display: flex;
   gap: 8px;
@@ -1217,12 +1263,13 @@ header {
 }
 .prod-photo-thumb-wrap {
   position: relative;
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
+  width: 74px;
+  height: 74px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border-accent);
   flex-shrink: 0;
+  background: var(--card-inner);
 }
 .prod-photo-thumb-wrap img {
   width: 100%;
@@ -1233,7 +1280,7 @@ header {
   position: absolute;
   top: 2px;
   right: 2px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   color: var(--red);
   border: none;
   border-radius: 50%;
@@ -1245,6 +1292,24 @@ header {
   align-items: center;
   justify-content: center;
 }
+.prod-photo-nav-btn {
+  position: absolute;
+  bottom: 2px;
+  background: rgba(7, 9, 14, 0.85);
+  color: var(--gold-light);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.prod-photo-nav-btn.left { left: 2px; }
+.prod-photo-nav-btn.right { right: 2px; }
 
 .top-confirm-popup {
   position: fixed;
@@ -1489,6 +1554,43 @@ body.in-text-edit-mode [data-config-key] {
   padding: 7px 8px;
   border-bottom: 1px solid var(--border);
   color: var(--text);
+}
+
+/* Стили модалки управления категориями */
+.category-card-block {
+  background: var(--card-inner);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.category-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.category-card-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gold-light);
+}
+.category-card-items-wrap {
+  display: none;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.category-card-block.open .category-card-items-wrap {
+  display: block;
+}
+.category-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 11px;
 }
 
 #toast {
