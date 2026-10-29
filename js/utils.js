@@ -8,7 +8,7 @@ function triggerHaptic(type = 'light') {
     } else if (type === 'success' || type === 'error' || type === 'warning') {
       hf.notificationOccurred(type);
     } else {
-      hf.impactOccurred(type);
+      hf.impactOccurred(type); // 'light', 'medium', 'heavy', 'rigid', 'soft'
     }
   } catch (e) {}
 }
