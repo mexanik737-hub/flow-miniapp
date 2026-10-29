@@ -195,81 +195,48 @@ function resetFilters() {
 }
 window.resetFilters = resetFilters;
 
-// Мгновенная отрисовка из кэша телефона + фоновый запрос в сеть
+// Загрузка каталога с моделью Stale-While-Revalidate
 async function loadCatalog() {
-  const cached = localStorage.getItem('flw_catalog_cache');
-  let hasRenderedFromCache = false;
-
-  if (cached) {
+  // 1. Мгновенная отрисовка из локального кеша устройства
+  const cachedDataStr = localStorage.getItem('flw_client_catalog_cache');
+  if (cachedDataStr) {
     try {
-      const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        catalog = parsed;
-        buildDisplayCatalog();
-        filteredCatalog = [...displayCatalog];
-        setupFilterDropdown();
-        renderDailyBloom();
-        renderCatalog(filteredCatalog);
-        if (typeof updateCartUI === 'function') updateCartUI();
-        if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
-        hasRenderedFromCache = true;
-      }
-    } catch (e) {
-      localStorage.removeItem('flw_catalog_cache');
-    }
+      catalog = JSON.parse(cachedDataStr);
+      buildDisplayCatalog();
+      filteredCatalog = [...displayCatalog];
+      setupFilterDropdown();
+      renderDailyBloom();
+      renderCatalog(filteredCatalog);
+      if (typeof updateCartUI === 'function') updateCartUI();
+      if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
+    } catch (e) {}
   }
 
-  // Если кэша не было или он был пуст — ждем сеть
-  if (!hasRenderedFromCache) {
-    await fetchCatalogFromNetwork();
-  } else {
-    // Если из кэша уже отрисовали, в фоне тихо сверяем с сервером
-    fetchCatalogFromNetwork();
+  // 2. Фоновый запрос актуальных данных из Google Таблицы
+  try {
+    const res = await fetch(`${API_URL}?action=catalog`);
+    const freshCatalog = await res.json();
+    const freshJsonStr = JSON.stringify(freshCatalog);
+
+    // Если данные на сервере отличаются от кеша — обновляем витрину и перезаписываем кеш
+    if (freshJsonStr !== cachedDataStr) {
+      catalog = freshCatalog;
+      localStorage.setItem('flw_client_catalog_cache', freshJsonStr);
+      buildDisplayCatalog();
+      filteredCatalog = [...displayCatalog];
+      setupFilterDropdown();
+      renderDailyBloom();
+      renderCatalog(filteredCatalog);
+      if (typeof updateCartUI === 'function') updateCartUI();
+      if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
+    }
+  } catch (e) {
+    if (!catalog.length) {
+      toast("Ошибка загрузки каталога");
+    }
   }
 }
 window.loadCatalog = loadCatalog;
-
-async function fetchCatalogFromNetwork() {
-  try {
-    const res = await fetch(`${API_URL}?action=catalog`);
-    if (!res.ok) throw new Error("HTTP error " + res.status);
-    
-    const data = await res.json();
-    
-    // Бронебойный парсинг любого формата (массив или объект с items)
-    let items = [];
-    if (Array.isArray(data)) {
-      items = data;
-    } else if (data && Array.isArray(data.items)) {
-      items = data.items;
-      if (data.version) {
-        localStorage.setItem('flw_ver_catalog', String(data.version));
-      }
-    }
-
-    if (!Array.isArray(items)) {
-      throw new Error("Неверный формат данных каталога");
-    }
-
-    catalog = items;
-    localStorage.setItem('flw_catalog_cache', JSON.stringify(items));
-
-    buildDisplayCatalog();
-    filteredCatalog = [...displayCatalog];
-    setupFilterDropdown();
-    renderDailyBloom();
-    renderCatalog(filteredCatalog);
-    if (typeof updateCartUI === 'function') updateCartUI();
-    if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
-  } catch (e) {
-    console.error("fetchCatalogFromNetwork error:", e);
-    // Выводим тост только если витрина вообще пустая
-    if (!catalog || catalog.length === 0) {
-      toast("Ошибка загрузки каталога. Проверьте интернет");
-    }
-  }
-}
-window.fetchCatalogFromNetwork = fetchCatalogFromNetwork;
 
 function getCartItemQuantity(id) {
   return Object.entries(cart || {}).reduce((sum, [key, qty]) => {
@@ -418,6 +385,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   activePopItem = item;
   popQty = 1;
 
+  // Жесткий сброс позиции галереи на 1-е фото при открытии карточки
   popGalleryCurrentIndex = 0;
   const gallery = document.getElementById('pop-gallery');
   if (gallery) gallery.scrollLeft = 0;
@@ -470,6 +438,7 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
   if (prefColor && colors.includes(prefColor)) selectedGroupColor = prefColor;
   else selectedGroupColor = colors[0] || "";
 
+  // Точные названия лейблов
   const packLabel = document.getElementById('pop-pack-label');
   if (packLabel) packLabel.innerText = "Количество";
   const varLabel = document.getElementById('pop-variant-label');
@@ -529,6 +498,7 @@ function selectProductChip(type, value) {
   if (type === 'color') selectedGroupColor = value;
 
   setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
+  // Передаём preserveGalleryIndex = true для сохранения позиции открытого фото
   updateSelectedGroupVariantUI(true);
 }
 window.selectProductChip = selectProductChip;
@@ -652,6 +622,7 @@ function closeProductModal() {
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
 
+  // Гарантированный сброс индекса и положения скролла при закрытии карточки
   const gallery = document.getElementById('pop-gallery');
   if (gallery) gallery.scrollLeft = 0;
   popGalleryCurrentIndex = 0;
