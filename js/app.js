@@ -1,5 +1,15 @@
 window.cachedFaqData = window.cachedFaqData || null;
 
+// Анимация вращения SVG-иконки синхронизации при нажатии
+function animateSyncBtn(btnEl) {
+  if (!btnEl) return;
+  btnEl.classList.remove('rotating');
+  void btnEl.offsetWidth; // перезапуск CSS-анимации
+  btnEl.classList.add('rotating');
+  setTimeout(() => btnEl.classList.remove('rotating'), 650);
+}
+window.animateSyncBtn = animateSyncBtn;
+
 function navigateTab(screenId, btn) {
   try {
     if (typeof triggerHaptic === 'function') triggerHaptic('selection');
@@ -54,7 +64,7 @@ window.navigateTab = navigateTab;
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  // 1. Если ячейка в базе явно содержит FALSE/ЛОЖЬ — запрет администратора
+  // 1. Если в базе явно стоит запрет
   if (currentUser && (currentUser.is_blocked_admin === true || currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
     toast("Доступ запрещен администратором");
     return;
@@ -501,7 +511,7 @@ async function checkDataHashesAndSync() {
     const savedHashesStr = localStorage.getItem('flw_data_hashes');
     const localHashes = savedHashesStr ? JSON.parse(savedHashesStr) : {};
 
-    if (localHashes.catalog_hash !== serverHashes.catalog_hash) {
+    if (localHashes.catalog_hash !== serverHashes.catalog_hash || localHashes.table_edit_ts !== serverHashes.table_edit_ts) {
       if (typeof loadCatalog === 'function') loadCatalog(true);
     }
     if (localHashes.faq_hash !== serverHashes.faq_hash) {
@@ -519,6 +529,21 @@ async function checkDataHashesAndSync() {
     localStorage.setItem('flw_data_hashes', JSON.stringify(serverHashes));
   } catch (e) {}
 }
+window.checkDataHashesAndSync = checkDataHashesAndSync;
+
+// Автоматическая мгновенная проверка изменений в таблице при возврате в приложение
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    checkDataHashesAndSync();
+    const activeScreen = document.querySelector('.screen.active')?.id;
+    if (activeScreen === 'screen-profile' && typeof loadUserOrders === 'function') {
+      loadUserOrders();
+    }
+    if (activeScreen === 'screen-root' && isAdmin && typeof loadRootOrders === 'function') {
+      loadRootOrders(false);
+    }
+  }
+});
 
 // Инициализация при полной готовности DOM
 function initApp() {
