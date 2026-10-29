@@ -60,10 +60,49 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
+// Отрисовка плашки «Букет дня» над каталогом
+function renderDailyBloom() {
+  const container = document.getElementById('daily-bloom-container');
+  if (!container) return;
+
+  const bloomItem = getDailyBloomItem(displayCatalog, userId);
+  if (!bloomItem) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const photos = (bloomItem.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
+  const thumb = photos[0] || "";
+  const isGroup = bloomItem.is_group;
+
+  container.innerHTML = `
+    <div class="daily-bloom-card" onclick="triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
+      <div class="daily-bloom-header">
+        <span class="daily-bloom-tag">✨ Букет дня</span>
+        <span class="daily-bloom-time">Обновление в 09:00</span>
+      </div>
+      <div class="daily-bloom-content">
+        <div class="daily-bloom-thumb">
+          ${thumb ? `<img src="${thumb}" alt="${bloomItem.title}">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:28px;">🌸</div>'}
+        </div>
+        <div class="daily-bloom-info">
+          <div class="daily-bloom-title">${bloomItem.title}</div>
+          <div class="daily-bloom-unit">${bloomItem.unit || 'Премиальная срезка'}</div>
+          <div class="daily-bloom-footer">
+            <span class="daily-bloom-price">${isGroup ? 'от ' : ''}${bloomItem.price} ₽</span>
+            <button class="daily-bloom-btn" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
+              Выбрать
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function setupFilterDropdown() {
   const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
   const optionsBox = document.getElementById('filter-cat-options');
-  if (!optionsBox) return;
   optionsBox.innerHTML = `
     <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
   ` + cats.map(c => `
@@ -76,25 +115,29 @@ function setupFilterDropdown() {
 
   const rangeEl = document.getElementById('filter-price-range');
   const numEl = document.getElementById('filter-price-input');
-  if (rangeEl) { rangeEl.min = minP; rangeEl.max = maxP; rangeEl.value = maxP; }
-  if (numEl) numEl.value = maxP;
-  const minLbl = document.getElementById('filter-min-label');
-  const maxLbl = document.getElementById('filter-max-label');
-  if (minLbl) minLbl.innerText = `${minP} ₽`;
-  if (maxLbl) maxLbl.innerText = `${maxP} ₽`;
+  rangeEl.min = minP;
+  rangeEl.max = maxP;
+  rangeEl.value = maxP;
+  numEl.value = maxP;
+  document.getElementById('filter-min-label').innerText = `${minP} ₽`;
+  document.getElementById('filter-max-label').innerText = `${maxP} ₽`;
 }
 
 function selectFilterCategory(cat) {
-  triggerHaptic('light');
+  triggerHaptic('selection');
   selectedFilterCategoryValue = cat;
-  const disp = document.getElementById('filter-cat-display');
-  if (disp) disp.innerText = (cat === 'Все' ? 'Все категории' : cat);
-  const box = document.getElementById('filter-cat-box');
-  if (box) box.classList.remove('open');
+  document.getElementById('filter-cat-display').innerText = (cat === 'Все' ? 'Все категории' : cat);
+  document.getElementById('filter-cat-box').classList.remove('open');
 }
 
-function openFilterModal() { triggerHaptic('light'); document.getElementById('filter-modal').classList.add('open'); }
-function closeFilterModal() { triggerHaptic('light'); document.getElementById('filter-modal').classList.remove('open'); }
+function openFilterModal() { 
+  triggerHaptic('selection');
+  document.getElementById('filter-modal').classList.add('open'); 
+}
+function closeFilterModal() { 
+  triggerHaptic('light');
+  document.getElementById('filter-modal').classList.remove('open'); 
+}
 
 function applyFilters() {
   triggerHaptic('medium');
@@ -108,8 +151,7 @@ function applyFilters() {
   });
 
   renderCatalog(filteredCatalog);
-  const sumEl = document.getElementById('catalog-filter-summary');
-  if (sumEl) sumEl.innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
+  document.getElementById('catalog-filter-summary').innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
   closeFilterModal();
   toast(`Найдено позиций: ${filteredCatalog.length}`);
 }
@@ -119,14 +161,11 @@ function resetFilters() {
   selectFilterCategory('Все');
   const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
   const maxP = prices.length ? Math.max(...prices) : 10000;
-  const rng = document.getElementById('filter-price-range');
-  const inp = document.getElementById('filter-price-input');
-  if (rng) rng.value = maxP;
-  if (inp) inp.value = maxP;
+  document.getElementById('filter-price-range').value = maxP;
+  document.getElementById('filter-price-input').value = maxP;
   filteredCatalog = [...displayCatalog];
   renderCatalog(filteredCatalog);
-  const sumEl = document.getElementById('catalog-filter-summary');
-  if (sumEl) sumEl.innerHTML = 'Показано: <b>Все</b>';
+  document.getElementById('catalog-filter-summary').innerHTML = 'Показано: <b>Все</b>';
   closeFilterModal();
 }
 
@@ -137,6 +176,7 @@ async function loadCatalog() {
     buildDisplayCatalog();
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
+    renderDailyBloom();
     renderCatalog(filteredCatalog);
     updateCartUI();
 
@@ -153,59 +193,8 @@ function getCartItemQuantity(id) {
   }, 0);
 }
 
-// Рендер баннера «Букет дня» (обновляется после 09:00 ежедневно)
-function getDailyBloomItem() {
-  const activeItems = displayCatalog.filter(i => i.is_active);
-  if (!activeItems.length) return null;
-
-  const now = new Date();
-  const todayKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-  const savedDate = localStorage.getItem('flw_bloom_date');
-  let savedIndex = parseInt(localStorage.getItem('flw_bloom_idx') || '0', 10);
-
-  if (savedDate !== todayKey || isNaN(savedIndex)) {
-    savedIndex = Math.floor(Math.random() * activeItems.length);
-    localStorage.setItem('flw_bloom_date', todayKey);
-    localStorage.setItem('flw_bloom_idx', String(savedIndex));
-  }
-
-  return activeItems[savedIndex % activeItems.length];
-}
-
-function renderDailyBloomBanner() {
-  const dailyItem = getDailyBloomItem();
-  const bannerContainer = document.getElementById('daily-bloom-banner-container');
-  if (!bannerContainer) return;
-
-  if (!dailyItem) {
-    bannerContainer.innerHTML = '';
-    return;
-  }
-
-  const photos = (dailyItem.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
-  const thumb = photos[0] || "";
-
-  bannerContainer.innerHTML = `
-    <div class="daily-bloom-banner" onclick="triggerHaptic('medium'); openProductModal('${dailyItem.id}')">
-      <div class="daily-bloom-thumb">
-        ${thumb ? `<img src="${thumb}">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
-      </div>
-      <div class="daily-bloom-info">
-        <div class="daily-bloom-tag">✨ Выбор флориста сегодня</div>
-        <div class="daily-bloom-title">${dailyItem.title}</div>
-        <div class="daily-bloom-price">${dailyItem.is_group ? 'от ' : ''}${dailyItem.price} ₽</div>
-      </div>
-    </div>
-  `;
-}
-
 function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
-  if (!el) return;
-
-  // Отрисовка баннера Букета дня перед сеткой
-  renderDailyBloomBanner();
-
   el.innerHTML = items.map(p => {
     const photos = (p.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
     const firstPhoto = photos[0] || "";
@@ -215,7 +204,7 @@ function renderCatalog(items) {
     const isGroup = p.is_group;
 
     return `
-      <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="triggerHaptic('light'); openProductModal('${p.id}')">
+      <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="triggerHaptic('selection'); openProductModal('${p.id}')">
         <div class="product-thumb">
           ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
           ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
@@ -234,19 +223,19 @@ function renderCatalog(items) {
               <span class="product-price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
               <div id="product-action-${p.id}">
                 ${isGroup ? `
-                  <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('light'); openProductModal('${p.id}')">Выбрать</button>
+                  <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${p.id}')">Выбрать</button>
                 ` : (inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
                     ${inCartQty === 1 ? `
-                      <button class="btn-trash-mini" onclick="event.stopPropagation(); triggerHaptic('medium'); removeAllOfItemFromCart('${p.id}')">🗑️</button>
+                      <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${p.id}')">🗑️</button>
                     ` : `
-                      <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); triggerHaptic('light'); quickDecrease('${p.id}')">–</button>
+                      <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${p.id}')">–</button>
                     `}
                     <span class="cart-active-qty">${inCartQty}</span>
-                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); triggerHaptic('medium'); quickAdd('${p.id}')">+</button>
+                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
                   </div>
                 ` : `
-                  <button class="btn-quick-add" onclick="event.stopPropagation(); triggerHaptic('medium'); quickAdd('${p.id}')">+</button>
+                  <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
                 `)}
               </div>
             ` : `
@@ -260,11 +249,15 @@ function renderCatalog(items) {
 }
 
 function quickDecrease(id) {
+  triggerHaptic('medium');
   const targetKey = Object.keys(cart).find(k => {
     const [itemId] = k.split(':::');
     return String(itemId) === String(id);
   });
-  if (targetKey) modifyCartByKey(targetKey, -1);
+
+  if (targetKey) {
+    modifyCartByKey(targetKey, -1);
+  }
 }
 
 function updateProductCardAction(id) {
@@ -275,7 +268,7 @@ function updateProductCardAction(id) {
       const groupActionEl = document.getElementById(`product-action-${groupParent.id}`);
       if (groupActionEl) {
         const hasItems = isGroupInCart(groupParent.id);
-        groupActionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('light'); openProductModal('${groupParent.id}')">Выбрать</button>`;
+        groupActionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${groupParent.id}')">Выбрать</button>`;
       }
     }
   }
@@ -286,7 +279,7 @@ function updateProductCardAction(id) {
   const groupParent = displayCatalog.find(g => String(g.id) === String(id));
   if (groupParent && groupParent.is_group) {
     const hasItems = isGroupInCart(groupParent.id);
-    actionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('light'); openProductModal('${groupParent.id}')">Выбрать</button>`;
+    actionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${groupParent.id}')">Выбрать</button>`;
     return;
   }
 
@@ -295,16 +288,16 @@ function updateProductCardAction(id) {
     actionEl.innerHTML = `
       <div class="cart-active-stepper" onclick="event.stopPropagation();">
         ${inCartQty === 1 ? `
-          <button class="btn-trash-mini" onclick="event.stopPropagation(); triggerHaptic('medium'); removeAllOfItemFromCart('${id}')">🗑️</button>
+          <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${id}')">🗑️</button>
         ` : `
-          <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); triggerHaptic('light'); quickDecrease('${id}')">–</button>
+          <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${id}')">–</button>
         `}
         <span class="cart-active-qty">${inCartQty}</span>
-        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); triggerHaptic('medium'); quickAdd('${id}')">+</button>
+        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${id}')">+</button>
       </div>
     `;
   } else {
-    actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); triggerHaptic('medium'); quickAdd('${id}')">+</button>`;
+    actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${id}')">+</button>`;
   }
 }
 
@@ -356,9 +349,15 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
   let rawColors = [];
 
   sourceItems.forEach(v => {
-    if (v.unit) v.unit.split('/').forEach(s => { if (s.trim()) rawPacks.push(s.trim()); });
-    if (v.variant) v.variant.split('/').forEach(s => { if (s.trim()) rawVars.push(s.trim()); });
-    if (v.color) v.color.split('/').forEach(s => { if (s.trim()) rawColors.push(s.trim()); });
+    if (v.unit) {
+      v.unit.split('/').forEach(s => { if (s.trim()) rawPacks.push(s.trim()); });
+    }
+    if (v.variant) {
+      v.variant.split('/').forEach(s => { if (s.trim()) rawVars.push(s.trim()); });
+    }
+    if (v.color) {
+      v.color.split('/').forEach(s => { if (s.trim()) rawColors.push(s.trim()); });
+    }
   });
 
   const packs = sortAscendingValues(Array.from(new Set(rawPacks)));
@@ -379,7 +378,7 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
   if (packs.length > 1 || (item.is_group && packs.length >= 1 && packs[0] !== "1 шт.")) {
     packBlock.style.display = 'block';
     packWrap.innerHTML = packs.map(p => `
-      <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="triggerHaptic('light'); selectProductChip('pack', '${p}')">${p}</div>
+      <div class="variant-chip ${p === selectedGroupPack ? 'active' : ''}" onclick="selectProductChip('pack', '${p}')">${p}</div>
     `).join('');
   } else {
     packBlock.style.display = 'none';
@@ -390,7 +389,7 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
   if (vars.length > 0) {
     varBlock.style.display = 'block';
     varWrap.innerHTML = vars.map(v => `
-      <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="triggerHaptic('light'); selectProductChip('variant', '${v}')">${v}</div>
+      <div class="variant-chip ${v === selectedGroupVariant ? 'active' : ''}" onclick="selectProductChip('variant', '${v}')">${v}</div>
     `).join('');
   } else {
     varBlock.style.display = 'none';
@@ -401,17 +400,18 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
   if (colors.length > 0) {
     colorBlock.style.display = 'block';
     colorWrap.innerHTML = colors.map(c => `
-      <div class="variant-chip ${c === selectedGroupColor ? 'active' : ''}" onclick="triggerHaptic('light'); selectProductChip('color', '${c}')">${c}</div>
+      <div class="variant-chip ${c === selectedGroupColor ? 'active' : ''}" onclick="selectProductChip('color', '${c}')">${c}</div>
     `).join('');
   } else {
     colorBlock.style.display = 'none';
   }
 
   const hasAnySelector = (packBlock.style.display === 'block') || (varBlock.style.display === 'block') || (colorBlock.style.display === 'block');
-  if (variantBox) variantBox.style.display = hasAnySelector ? 'block' : 'none';
+  variantBox.style.display = hasAnySelector ? 'block' : 'none';
 }
 
 function selectProductChip(type, value) {
+  triggerHaptic('light');
   if (type === 'pack') selectedGroupPack = value;
   if (type === 'variant') selectedGroupVariant = value;
   if (type === 'color') selectedGroupColor = value;
@@ -441,42 +441,31 @@ function updateSelectedGroupVariantUI() {
     matchedVariant = activePopItem;
   }
 
-  const titleEl = document.getElementById('pop-title');
-  const catEl = document.getElementById('pop-cat');
-  const unitEl = document.getElementById('pop-unit');
-  const qtyEl = document.getElementById('pop-qty');
-
-  if (titleEl) titleEl.innerText = activePopItem.title;
-  if (catEl) catEl.innerText = activePopItem.category;
-  if (unitEl) unitEl.innerText = selectedGroupPack || matchedVariant?.unit || activePopItem.unit || '1 шт.';
-  if (qtyEl) qtyEl.innerText = popQty;
+  document.getElementById('pop-title').innerText = activePopItem.title;
+  document.getElementById('pop-cat').innerText = activePopItem.category;
+  document.getElementById('pop-unit').innerText = selectedGroupPack || matchedVariant?.unit || activePopItem.unit || '1 шт.';
+  document.getElementById('pop-qty').innerText = popQty;
 
   const addBtn = document.getElementById('pop-add-cart-btn');
   const qtyBox = document.getElementById('pop-qty-controls');
-  const priceEl = document.getElementById('pop-price');
-  const descEl = document.getElementById('pop-desc');
 
   if (!matchedVariant || !matchedVariant.is_active) {
-    if (priceEl) priceEl.innerText = matchedVariant ? `${matchedVariant.price} ₽` : "— ₽";
-    if (descEl) descEl.innerText = "Данная вариация сейчас отсутствует в наличии.";
-    if (addBtn) {
-      addBtn.innerText = "Нет в наличии";
-      addBtn.style.background = "var(--card-inner)";
-      addBtn.style.color = "var(--text-muted)";
-      addBtn.disabled = true;
-    }
-    if (qtyBox) qtyBox.style.display = 'none';
+    document.getElementById('pop-price').innerText = matchedVariant ? `${matchedVariant.price} ₽` : "— ₽";
+    document.getElementById('pop-desc').innerText = "Данная вариация сейчас отсутствует в наличии.";
+    addBtn.innerText = "Нет в наличии";
+    addBtn.style.background = "var(--card-inner)";
+    addBtn.style.color = "var(--text-muted)";
+    addBtn.disabled = true;
+    qtyBox.style.display = 'none';
     renderPopGallery(activePopItem.photo_url);
   } else {
-    if (priceEl) priceEl.innerText = `${matchedVariant.price} ₽`;
-    if (descEl) descEl.innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
-    if (addBtn) {
-      addBtn.innerText = "Добавить в заказ";
-      addBtn.style.background = "var(--green)";
-      addBtn.style.color = "#fff";
-      addBtn.disabled = false;
-    }
-    if (qtyBox) qtyBox.style.display = 'flex';
+    document.getElementById('pop-price').innerText = `${matchedVariant.price} ₽`;
+    document.getElementById('pop-desc').innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
+    addBtn.innerText = "Добавить в заказ";
+    addBtn.style.background = "linear-gradient(135deg, var(--green) 0%, #0a704e 100%)";
+    addBtn.style.color = "#fff";
+    addBtn.disabled = false;
+    qtyBox.style.display = 'flex';
     renderPopGallery(matchedVariant.photo_url || activePopItem.photo_url);
   }
 }
@@ -487,13 +476,11 @@ function renderPopGallery(photosStr) {
   const counter = document.getElementById('pop-gallery-counter');
   const photos = (photosStr || "").split(',').map(s => s.trim()).filter(Boolean);
 
-  if (!gallery) return;
-
   if (photos.length) {
     gallery.innerHTML = photos.map(url => `<img src="${url}" class="gallery-slide-img">`).join('');
     gallery.style.display = 'flex';
     gallery.scrollLeft = 0;
-    if (placeholder) placeholder.style.display = 'none';
+    placeholder.style.display = 'none';
 
     if (photos.length > 1) {
       if (counter) {
@@ -514,7 +501,7 @@ function renderPopGallery(photosStr) {
   } else {
     gallery.innerHTML = '';
     gallery.style.display = 'none';
-    if (placeholder) placeholder.style.display = 'flex';
+    placeholder.style.display = 'flex';
     if (counter) counter.style.display = 'none';
     gallery.onscroll = null;
   }
@@ -527,9 +514,8 @@ function closeProductModal() {
   if (counter) counter.style.display = 'none';
 }
 
-function adjustPopQty(delta) {
+function adjustPopQty(delta) { 
   triggerHaptic('light');
-  popQty = Math.max(1, popQty + delta);
-  const qtyEl = document.getElementById('pop-qty');
-  if (qtyEl) qtyEl.innerText = popQty;
+  popQty = Math.max(1, popQty + delta); 
+  document.getElementById('pop-qty').innerText = popQty; 
 }
