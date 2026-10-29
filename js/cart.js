@@ -191,33 +191,17 @@ function updateCartUI() {
 }
 window.updateCartUI = updateCartUI;
 
-// Синхронизация цен и статуса наличия в корзине с текущим каталогом
 function renderCartItems() {
   const container = document.getElementById('cart-items-container');
   if (!container) return;
 
   let subtotal = 0;
   const entries = Object.entries(cart || {});
-  let hasUnavailableItems = false;
 
-  const rowsHtml = entries.map(([cartKey, qty]) => {
+  container.innerHTML = entries.map(([cartKey, qty]) => {
     const [id, selectedUnit, selectedVar, selectedColor] = cartKey.split(':::');
     const item = catalog.find(i => String(i.id) === String(id));
-    
-    // Если товар удален из базы или выключен с витрины
-    if (!item || !item.is_active) {
-      hasUnavailableItems = true;
-      const fallbackTitle = item ? formatFullItemTitle(item.title, selectedUnit || item.unit, selectedVar, selectedColor) : `Товар #${id}`;
-      return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); opacity:0.65;">
-          <div style="max-width:70%;">
-            <div style="font-size:12px; font-weight:700; color:var(--red); line-height:1.25;">${fallbackTitle}</div>
-            <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Позиция закончилась или недоступна</div>
-          </div>
-          <button class="btn-trash-mini" style="color:var(--red); font-size:16px;" onclick="modifyCartByKey('${cartKey}', -${qty})">🗑️ Убрать</button>
-        </div>
-      `;
-    }
+    if (!item) return '';
 
     subtotal += item.price * qty;
     const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
@@ -249,12 +233,6 @@ function renderCartItems() {
       </div>
     `;
   }).join('');
-
-  container.innerHTML = (hasUnavailableItems ? `
-    <div style="background:rgba(185,28,28,0.14); border:1px solid rgba(185,28,28,0.35); border-radius:8px; padding:6px 10px; margin-bottom:8px; font-size:11px; color:#ef4444; font-weight:700; text-align:center;">
-      Некоторые цветы закончились. Уберите их, чтобы оформить заказ.
-    </div>
-  ` : '') + rowsHtml;
 
   currentFlowersSubtotal = subtotal;
   const totalEl = document.getElementById('cart-total');
