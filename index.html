@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Магазин «Цветы»</title>
-  <link rel="stylesheet" href="css/style.css?v=2.1">
+  <link rel="stylesheet" href="css/style.css?v=2.4">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -57,7 +57,6 @@
 
     <!-- Экран 1: Каталог -->
     <section id="screen-catalog" class="screen active">
-      <!-- Контейнер Букета дня -->
       <div id="daily-bloom-container"></div>
 
       <div class="catalog-top-bar">
@@ -221,9 +220,11 @@
 
       <!-- Каталог -->
       <div id="root-sec-catalog" style="display:none;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px;">
-          <button class="btn-metro" style="font-size:12px; padding:10px;" onclick="openAddProductModal()">+ Товар</button>
-          <button class="btn-metro btn-secondary" style="font-size:12px; padding:10px; color:var(--gold);" onclick="openAddGroupModal()">+ Группа вариаций</button>
+        <button class="btn-root-sync" onclick="forceSyncRootCatalog()">🔄 Обновить товары из таблицы</button>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
+          <button class="btn-metro" style="font-size:11px; padding:9px;" onclick="openAddProductModal()">+ Товар</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--gold);" onclick="openAddGroupModal()">+ Группа</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--cyan);" onclick="openCategoriesManagerModal()">🏷 Категории</button>
         </div>
         <div id="root-catalog-container"></div>
       </div>
@@ -236,6 +237,7 @@
 
       <!-- Уведомления (Root) -->
       <div id="root-sec-notifs" style="display:none;">
+        <button class="btn-root-sync" onclick="forceSyncRootNotifications()">🔄 Обновить уведомления из таблицы</button>
         <div class="box-card" style="margin-bottom:14px;">
           <div style="font-size:13px; font-weight:800; color:var(--gold); margin-bottom:10px; text-transform:uppercase;">Создать рассылку</div>
           <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Заголовок уведомления: *</label>
@@ -273,6 +275,7 @@
 
       <!-- Статистика (Root) -->
       <div id="root-sec-stats" style="display:none;">
+        <button class="btn-root-sync" onclick="loadRootStats(currentStatsPeriod)">🔄 Обновить статистику из таблицы</button>
         <div class="toggle-grid" style="grid-template-columns:repeat(3, 1fr); margin-bottom:12px;">
           <div class="toggle-btn active" id="tab-stat-today" onclick="switchStatsPeriod('today')">Сегодня</div>
           <div class="toggle-btn" id="tab-stat-7days" onclick="switchStatsPeriod('7days')">7 дней</div>
@@ -328,6 +331,7 @@
 
       <!-- FAQ -->
       <div id="root-sec-faq" style="display:none;">
+        <button class="btn-root-sync" onclick="forceSyncRootFaq()">🔄 Обновить FAQ из таблицы</button>
         <button class="btn-metro" style="margin-bottom:12px;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
         <div id="root-faq-container"></div>
       </div>
@@ -423,7 +427,7 @@
     </div>
   </div>
 
-  <!-- Модалка карточки букета (с 3 независимыми блоками выбора: фасовка, высота, цвет) -->
+  <!-- Модалка карточки букета -->
   <div class="modal-overlay" id="product-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -443,15 +447,15 @@
 
       <div id="pop-variant-box" style="display:none;">
         <div class="variant-selector-block" id="pop-pack-block" style="display:none;">
-          <div class="variant-selector-label" id="pop-pack-label">Количество / Фасовка:</div>
+          <div class="variant-selector-label" id="pop-pack-label">Количество</div>
           <div class="variant-chips-wrap" id="pop-pack-chips"></div>
         </div>
         <div class="variant-selector-block" id="pop-variant-block" style="display:none;">
-          <div class="variant-selector-label" id="pop-variant-label">Высота:</div>
+          <div class="variant-selector-label" id="pop-variant-label">Высота</div>
           <div class="variant-chips-wrap" id="pop-variant-chips"></div>
         </div>
         <div class="variant-selector-block" id="pop-color-block" style="display:none;">
-          <div class="variant-selector-label" id="pop-color-label">Цвет / Оттенок:</div>
+          <div class="variant-selector-label" id="pop-color-label">Цвет</div>
           <div class="variant-chips-wrap" id="pop-color-chips"></div>
         </div>
       </div>
@@ -536,12 +540,12 @@
           <div class="custom-select-options" id="time-select-options"></div>
         </div>
 
-        <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(212,175,55,0.12); border:1px solid var(--border-accent); color:var(--gold); font-size:12px; margin-bottom:12px;">
+        <div id="delivery-calc-badge" style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(197,160,89,0.12); border:1px solid var(--border-accent); color:var(--gold); font-size:12px; margin-bottom:12px;">
           📍 Введите адрес, чтобы рассчитать точную стоимость доставки (от 350 ₽)
         </div>
       </div>
 
-      <div id="pickup-extra-fields" style="display:none; padding:12px; border-radius:var(--radius-sm); background:rgba(212,175,55,0.08); border:1px solid var(--border-accent); color:var(--text); font-size:12px; line-height:1.5; margin-bottom:12px;">
+      <div id="pickup-extra-fields" style="display:none; padding:12px; border-radius:var(--radius-sm); background:rgba(197,160,89,0.08); border:1px solid var(--border-accent); color:var(--text); font-size:12px; line-height:1.5; margin-bottom:12px;">
         📍 <b>Адрес салона:</b> Зеленоград, Георгиевский пр-т, 37к2.<br>
         ⏰ <b>График выдачи:</b> ежедневно с 09:00 до 20:00 (в праздники продлевается).<br>
         🔔 <b>Уведомление:</b> Как только флорист закончит сборку букета, статус заказа сменится на «Готов к выдаче», и вам поступит уведомление в Telegram.
@@ -622,7 +626,7 @@
           <img id="sbp-qr-image-tag" src="" alt="QR СБП" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
         </div>
 
-        <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(217,119,6,0.12); border:1px solid rgba(217,119,6,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
+        <div style="padding:10px 12px; border-radius:var(--radius-sm); background:rgba(197,125,30,0.12); border:1px solid rgba(197,125,30,0.3); color:var(--amber); font-size:11px; line-height:1.4; margin-bottom:14px; text-align:left;">
           ⚠️ Введите ровно указанную сумму в приложении банка. Неоплаченные заказы автоматически отменяются через 15 минут.
         </div>
 
@@ -679,6 +683,29 @@
     </div>
   </div>
 
+  <!-- Модалка управления категориями в Root -->
+  <div class="modal-overlay" id="categories-manager-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Управление категориями</div>
+        <button class="close-btn" onclick="closeCategoriesManagerModal()">✕</button>
+      </div>
+
+      <div class="box-card" style="margin-bottom:12px; padding:10px;">
+        <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Создать новую категорию:</label>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          <input type="text" id="new-category-name-input" class="metro-input" style="margin-bottom:0;" placeholder="Например: Сухоцветы, Стаффаж">
+          <button class="btn-metro" style="width:auto; padding:0 14px; font-size:12px;" onclick="submitCreateNewCategory()">+ Создать</button>
+        </div>
+      </div>
+
+      <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">Список категорий и привязанных товаров:</div>
+      <div id="categories-manager-list" style="max-height:50vh; overflow-y:auto; margin-bottom:12px;"></div>
+
+      <button class="btn-metro btn-secondary" onclick="closeCategoriesManagerModal()">Закрыть</button>
+    </div>
+  </div>
+
   <!-- Модалка одиночного товара для Root -->
   <div class="modal-overlay" id="product-editor-modal">
     <div class="modal-sheet">
@@ -699,13 +726,20 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цвет / Оттенок:</label>
       <input type="text" id="prod-edit-color" class="metro-input" placeholder="Красный или Белый / Розовый">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория:</label>
-      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория товара: *</label>
+      <div class="custom-select-box" id="prod-edit-cat-box" style="margin-bottom:4px;">
+        <div class="custom-select-trigger" onclick="toggleDropdown('prod-edit-cat-box')">
+          <span id="prod-edit-cat-display">Выберите категорию...</span>
+          <span style="font-size:11px; color:var(--gold);">▼</span>
+        </div>
+        <div class="custom-select-options" id="prod-edit-cat-options"></div>
+      </div>
+      <input type="text" id="prod-edit-cat" class="metro-input" placeholder="Или напишите новую категорию...">
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
       <input type="number" id="prod-edit-price" class="metro-input" placeholder="3600">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Прикрепленные фотографии:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Прикрепленные фотографии (стрелками ◀ ▶ меняйте порядок):</label>
       <div class="prod-photo-strip" id="prod-photo-strip"></div>
       <input type="hidden" id="prod-edit-photo">
 
@@ -746,10 +780,17 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Базовое название группы: *</label>
       <input type="text" id="group-edit-name" class="metro-input" placeholder="Например: Роза Эквадор или Хризантема">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория группы:</label>
-      <input type="text" id="group-edit-cat" class="metro-input" placeholder="Роза Эквадор, Цветы...">
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория группы: *</label>
+      <div class="custom-select-box" id="group-edit-cat-box" style="margin-bottom:4px;">
+        <div class="custom-select-trigger" onclick="toggleDropdown('group-edit-cat-box')">
+          <span id="group-edit-cat-display">Выберите категорию...</span>
+          <span style="font-size:11px; color:var(--gold);">▼</span>
+        </div>
+        <div class="custom-select-options" id="group-edit-cat-options"></div>
+      </div>
+      <input type="text" id="group-edit-cat" class="metro-input" placeholder="Или напишите новую категорию...">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общие фотографии группы:</label>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общие фотографии группы (стрелками ◀ ▶ меняйте порядок):</label>
       <div class="prod-photo-strip" id="group-photo-strip"></div>
       <input type="hidden" id="group-edit-photo">
 
@@ -770,6 +811,14 @@
         <span style="font-size:13px; font-weight:700; color:var(--gold);">🔥 Хит продаж (для всей группы)</span>
       </div>
 
+      <!-- Чекбокс расформирования группы, если остался 1 вариант -->
+      <div class="custom-checkbox-wrap" onclick="toggleCheckbox('group-edit-disband-ui')">
+        <div class="custom-checkbox" id="group-edit-disband-ui"></div>
+        <span style="font-size:12px; font-weight:700; color:var(--gold-light);">
+          ✂️ Расформировать группу, если остался ровно 1 вариант
+        </span>
+      </div>
+
       <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:10px;">
         <span style="font-size:12px; font-weight:800; color:var(--gold); text-transform:uppercase;">Вариации в группе:</span>
         <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px 10px; width:auto;" onclick="addGroupVariantRow()">+ Добавить вариант</button>
@@ -782,7 +831,7 @@
               <th style="width:20%;">Фасовка</th>
               <th style="width:22%;">Высота</th>
               <th style="width:22%;">Цвет</th>
-              <th style="width:20%;">Цена (₽)</th>
+              <th style="width:20%;">Цена (₽)*</th>
               <th style="width:8%;">Нал.</th>
               <th style="width:8%;"></th>
             </tr>
@@ -791,20 +840,38 @@
         </table>
       </div>
 
-      <button class="btn-metro" onclick="saveGroupEditor()">Сохранить всю группу</button>
+      <button class="btn-metro" onclick="saveGroupEditor()">Сохранить группу</button>
     </div>
   </div>
 
-  <!-- Модалка выбора фото из Google Диска -->
+  <!-- Модалка выбора фото из Google Диска (на 2/3 экрана с мультиселектом) -->
   <div class="modal-overlay" id="drive-media-modal">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <div class="modal-title">Архив фото Google Диска</div>
+    <div class="modal-sheet modal-sheet-drive">
+      <div class="modal-header" style="margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="modal-title">Google Диск</div>
+          <!-- Кнопка «Обновить» в точности по красной зоне макета -->
+          <button class="courier-copy-btn" style="padding:4px 9px; font-size:11px;" onclick="forceSyncDriveMedia()" title="Обновить список фото с Диска">
+            🔄 Обновить
+          </button>
+        </div>
         <button class="close-btn" onclick="closeDriveMediaModal()">✕</button>
       </div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Нажмите на фото, чтобы прикрепить его:</div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted); margin-bottom:4px;">
+        <span>Отметьте нужные фотографии галочками:</span>
+        <span id="drive-selected-count-label" style="color:var(--gold); font-weight:800;">Выбрано: 0</span>
+      </div>
+
       <div class="drive-media-grid" id="drive-media-container">
         <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border);">
+        <button class="btn-metro btn-secondary" style="flex:1;" onclick="closeDriveMediaModal()">Отмена</button>
+        <button class="btn-metro" style="flex:2;" id="drive-confirm-btn" onclick="confirmDriveSelection()">
+          Прикрепить выбранные
+        </button>
       </div>
     </div>
   </div>
@@ -942,13 +1009,13 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=2.1"></script>
-  <script src="js/utils.js?v=2.1"></script>
-  <script src="js/catalog.js?v=2.1"></script>
-  <script src="js/cart.js?v=2.1"></script>
-  <script src="js/order.js?v=2.1"></script>
-  <script src="js/profile.js?v=2.1"></script>
-  <script src="js/admin.js?v=2.1"></script>
-  <script src="js/app.js?v=2.1"></script>
+  <script src="js/config.js?v=2.4"></script>
+  <script src="js/utils.js?v=2.4"></script>
+  <script src="js/catalog.js?v=2.4"></script>
+  <script src="js/cart.js?v=2.4"></script>
+  <script src="js/order.js?v=2.4"></script>
+  <script src="js/profile.js?v=2.4"></script>
+  <script src="js/admin.js?v=2.4"></script>
+  <script src="js/app.js?v=2.4"></script>
 </body>
 </html>
