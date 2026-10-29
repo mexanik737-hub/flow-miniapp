@@ -465,3 +465,12 @@ async function loadUserOrders() {
   } catch (e) {}
 }
 window.loadUserOrders = loadUserOrders;
+
+// Принудительное обновление заказов с анимацией золотой иконки
+function forceSyncUserOrders(btnEl) {
+  triggerHaptic('medium');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
+  loadUserOrders();
+  toast("Заказы обновлены");
+}
+window.forceSyncUserOrders = forceSyncUserOrders;
