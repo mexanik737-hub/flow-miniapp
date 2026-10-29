@@ -293,6 +293,139 @@ function startCartPetals() {
   animatePetals();
 }
 window.startCartPetals = startCartPetals;
+// ----------------- МЕХАНИКА №2: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ -----------------
+
+let petalsCanvas = null;
+let petalsCtx = null;
+let petalsAnimationId = null;
+let isPetalsActive = false;
+let petalsList = [];
+let tiltHorizontal = 0;
+
+class RosePetal {
+  constructor(w, h, randomY = false) {
+    this.reset(w, h, randomY);
+  }
+
+  reset(w, h, randomY = false) {
+    this.w = w || window.innerWidth;
+    this.h = h || window.innerHeight;
+    this.x = Math.random() * this.w;
+    this.y = randomY ? Math.random() * this.h : -30 - Math.random() * 40;
+    this.size = 14 + Math.random() * 16;
+    this.speedY = 1.3 + Math.random() * 1.7;
+    this.speedX = (Math.random() - 0.5) * 0.9;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotationSpeed = (Math.random() - 0.5) * 0.035;
+    this.flip = Math.random() * Math.PI;
+    this.flipSpeed = 0.02 + Math.random() * 0.03;
+    this.wobble = Math.random() * Math.PI * 2;
+    this.wobbleSpeed = 0.025 + Math.random() * 0.03;
+    this.opacity = 0.65 + Math.random() * 0.3;
+
+    // Благородные оттенки чайных и эквадорских роз
+    const petalColors = [
+      { r: 214, g: 40, b: 75 },
+      { r: 235, g: 65, b: 95 },
+      { r: 175, g: 25, b: 60 },
+      { r: 244, g: 114, b: 135 },
+      { r: 190, g: 30, b: 65 }
+    ];
+    this.color = petalColors[Math.floor(Math.random() * petalColors.length)];
+  }
+
+  update(w, h, tilt) {
+    this.wobble += this.wobbleSpeed;
+    this.rotation += this.rotationSpeed;
+    this.flip += this.flipSpeed;
+
+    const gyroShift = (tilt || 0) * 0.05;
+    this.x += this.speedX + Math.sin(this.wobble) * 1.1 + gyroShift;
+    this.y += this.speedY;
+
+    if (this.y > h + 40 || this.x < -60 || this.x > w + 60) {
+      this.reset(w, h, false);
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.scale(Math.cos(this.flip), 1); // 3D-эффект переворачивания лепестка в воздухе
+
+    ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`;
+    ctx.beginPath();
+    ctx.moveTo(0, -this.size * 0.75);
+    ctx.bezierCurveTo(this.size * 0.65, -this.size * 0.6, this.size * 0.75, this.size * 0.45, 0, this.size * 0.85);
+    ctx.bezierCurveTo(-this.size * 0.75, this.size * 0.45, -this.size * 0.65, -this.size * 0.6, 0, -this.size * 0.75);
+    ctx.fill();
+
+    // Тонкий внутренний золотистый отблеск
+    ctx.strokeStyle = `rgba(232, 200, 135, ${this.opacity * 0.25})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+function handleOrientation(e) {
+  if (e.gamma !== null && e.gamma !== undefined) {
+    tiltHorizontal = Math.max(-40, Math.min(40, e.gamma));
+  }
+}
+
+function resizePetalsCanvas() {
+  if (!petalsCanvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  petalsCanvas.width = (window.innerWidth || document.documentElement.clientWidth) * dpr;
+  petalsCanvas.height = (window.innerHeight || document.documentElement.clientHeight) * dpr;
+  if (petalsCtx) {
+    petalsCtx.scale(dpr, dpr);
+  }
+}
+
+function animatePetals() {
+  if (!isPetalsActive || !petalsCtx || !petalsCanvas) return;
+  const w = window.innerWidth || document.documentElement.clientWidth;
+  const h = window.innerHeight || document.documentElement.clientHeight;
+
+  petalsCtx.clearRect(0, 0, w, h);
+
+  for (let i = 0; i < petalsList.length; i++) {
+    petalsList[i].update(w, h, tiltHorizontal);
+    petalsList[i].draw(petalsCtx);
+  }
+
+  petalsAnimationId = requestAnimationFrame(animatePetals);
+}
+
+function startCartPetals() {
+  petalsCanvas = document.getElementById('cart-petals-canvas');
+  if (!petalsCanvas) return;
+
+  if (isPetalsActive) return;
+  isPetalsActive = true;
+
+  petalsCtx = petalsCanvas.getContext('2d');
+  resizePetalsCanvas();
+  window.addEventListener('resize', resizePetalsCanvas);
+
+  petalsList = [];
+  const w = window.innerWidth || document.documentElement.clientWidth;
+  const h = window.innerHeight || document.documentElement.clientHeight;
+  for (let i = 0; i < 28; i++) {
+    petalsList.push(new RosePetal(w, h, true));
+  }
+
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', handleOrientation, true);
+  }
+  petalsCanvas.classList.add('active');
+  animatePetals();
+}
+window.startCartPetals = startCartPetals;
 
 function stopCartPetals() {
   if (!isPetalsActive) return;
@@ -313,6 +446,6 @@ function stopCartPetals() {
     if (!isPetalsActive && petalsCtx && petalsCanvas) {
       petalsCtx.clearRect(0, 0, petalsCanvas.width, petalsCanvas.height);
     }
-  }, 850);
+  }, 650);
 }
 window.stopCartPetals = stopCartPetals;
