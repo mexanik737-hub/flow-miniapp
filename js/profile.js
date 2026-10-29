@@ -2,6 +2,7 @@ let selectedSavedAddrSuggestion = null;
 
 function renderSavedAddresses() {
   const box = document.getElementById('saved-addresses-profile-list');
+  if (!box) return;
   if (!savedAddresses.length) {
     box.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:4px 0;">Нет сохраненных адресов</div>';
     return;
@@ -18,6 +19,7 @@ function renderSavedAddresses() {
     </div>
   `).join('');
 }
+window.renderSavedAddresses = renderSavedAddresses;
 
 function openAddSavedAddressModal() {
   triggerHaptic('selection');
@@ -34,6 +36,7 @@ function openAddSavedAddressModal() {
   document.getElementById('new-addr-intercom').value = "";
   document.getElementById('add-saved-addr-modal').classList.add('open');
 }
+window.openAddSavedAddressModal = openAddSavedAddressModal;
 
 function openEditSavedAddressModal(idx) {
   triggerHaptic('selection');
@@ -55,18 +58,23 @@ function openEditSavedAddressModal(idx) {
   document.getElementById('new-addr-intercom').value = a.intercom || "";
   document.getElementById('add-saved-addr-modal').classList.add('open');
 }
+window.openEditSavedAddressModal = openEditSavedAddressModal;
 
 function closeAddSavedAddressModal() { 
   triggerHaptic('light');
   document.getElementById('add-saved-addr-modal').classList.remove('open'); 
 }
+window.closeAddSavedAddressModal = closeAddSavedAddressModal;
 
 function onSavedAddrSuggestInput(query) {
   clearTimeout(suggestDebounceTimer);
   const box = document.getElementById('new-addr-suggest-list');
   selectedSavedAddrSuggestion = null;
 
-  if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+  if (!query || query.trim().length < 2) { 
+    if (box) box.style.display = 'none'; 
+    return; 
+  }
 
   suggestDebounceTimer = setTimeout(async () => {
     try {
@@ -81,15 +89,18 @@ function onSavedAddrSuggestInput(query) {
       });
       const data = await res.json();
       const items = data.suggestions || [];
-      if (!items.length) { box.style.display = 'none'; return; }
-      box.innerHTML = items.map((s, idx) => `
-        <div class="suggest-item" onclick="selectSavedAddrItem(${idx})">${s.value}</div>
-      `).join('');
-      box.style.display = 'block';
+      if (!items.length) { if (box) box.style.display = 'none'; return; }
+      if (box) {
+        box.innerHTML = items.map((s, idx) => `
+          <div class="suggest-item" onclick="selectSavedAddrItem(${idx})">${s.value}</div>
+        `).join('');
+        box.style.display = 'block';
+      }
       window.savedAddrSuggestions = items;
     } catch (e) {}
   }, 250);
 }
+window.onSavedAddrSuggestInput = onSavedAddrSuggestInput;
 
 function selectSavedAddrItem(idx) {
   triggerHaptic('selection');
@@ -99,6 +110,7 @@ function selectSavedAddrItem(idx) {
   document.getElementById('new-addr-suggest-list').style.display = 'none';
   selectedSavedAddrSuggestion = s;
 }
+window.selectSavedAddrItem = selectSavedAddrItem;
 
 function saveNewAddressFromModal() {
   triggerHaptic('medium');
@@ -144,6 +156,7 @@ function saveNewAddressFromModal() {
   closeAddSavedAddressModal();
   renderSavedAddresses();
 }
+window.saveNewAddressFromModal = saveNewAddressFromModal;
 
 function deleteSavedAddress(idx) {
   savedAddresses.splice(idx, 1);
@@ -151,6 +164,7 @@ function deleteSavedAddress(idx) {
   renderSavedAddresses();
   toast("Адрес удален");
 }
+window.deleteSavedAddress = deleteSavedAddress;
 
 function syncSavedAddresses() {
   localStorage.setItem('flw_saved_addresses', JSON.stringify(savedAddresses));
@@ -168,10 +182,13 @@ function openEditProfileModal() {
   document.getElementById('edit-prof-phone').value = currentUser.phone || '';
   document.getElementById('edit-profile-modal').classList.add('open');
 }
+window.openEditProfileModal = openEditProfileModal;
+
 function closeEditProfileModal() { 
   triggerHaptic('light');
   document.getElementById('edit-profile-modal').classList.remove('open'); 
 }
+window.closeEditProfileModal = closeEditProfileModal;
 
 async function saveUserProfileChanges() {
   triggerHaptic('medium');
@@ -191,6 +208,7 @@ async function saveUserProfileChanges() {
   closeEditProfileModal();
   toast("Профиль обновлен");
 }
+window.saveUserProfileChanges = saveUserProfileChanges;
 
 async function checkUserSession() {
   if (currentUser) {
@@ -229,6 +247,7 @@ async function checkUserSession() {
     }
   }
 }
+window.checkUserSession = checkUserSession;
 
 async function submitRegistration() {
   triggerHaptic('medium');
@@ -253,6 +272,7 @@ async function submitRegistration() {
     toast("Ошибка связи с базой");
   }
 }
+window.submitRegistration = submitRegistration;
 
 function renderProfileUI() {
   if (!currentUser) return;
@@ -276,6 +296,7 @@ function renderProfileUI() {
   const pReg = document.getElementById('prof-regdate');
   if (pReg) pReg.innerText = regdate;
 }
+window.renderProfileUI = renderProfileUI;
 
 function renderOrderTrackerHtml(status) {
   if (status.startsWith('Отменен')) {
@@ -339,9 +360,12 @@ function renderOrderTrackerHtml(status) {
     </div>
   `;
 }
+window.renderOrderTrackerHtml = renderOrderTrackerHtml;
 
 async function loadUserOrders() {
   const container = document.getElementById('user-orders-list');
+  if (!container) return;
+
   try {
     const res = await fetch(`${API_URL}?action=user_orders&user_id=${userId}`);
     const orders = await res.json();
@@ -393,7 +417,6 @@ async function loadUserOrders() {
             <span class="status-badge ${badgeCls}">${ord.status}</span>
           </div>
 
-          <!-- Визуальный трекер процесса заказа -->
           ${renderOrderTrackerHtml(ord.status)}
 
           <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
@@ -428,3 +451,4 @@ async function loadUserOrders() {
     }).join('');
   } catch (e) {}
 }
+window.loadUserOrders = loadUserOrders;
