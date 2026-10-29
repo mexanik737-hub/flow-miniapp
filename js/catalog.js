@@ -195,10 +195,40 @@ function resetFilters() {
 }
 window.resetFilters = resetFilters;
 
+// Мгновенная отрисовка из кэша телефона + фоновый запрос в сеть
 async function loadCatalog() {
+  const cached = localStorage.getItem('flw_catalog_cache');
+  if (cached) {
+    try {
+      catalog = JSON.parse(cached);
+      buildDisplayCatalog();
+      filteredCatalog = [...displayCatalog];
+      setupFilterDropdown();
+      renderDailyBloom();
+      renderCatalog(filteredCatalog);
+      if (typeof updateCartUI === 'function') updateCartUI();
+      if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
+    } catch (e) {}
+  } else {
+    await fetchCatalogFromNetwork();
+  }
+}
+window.loadCatalog = loadCatalog;
+
+async function fetchCatalogFromNetwork() {
   try {
     const res = await fetch(`${API_URL}?action=catalog`);
-    catalog = await res.json();
+    const data = await res.json();
+    
+    // Поддержка формата с версией { items: [...], version: ... } или стандартного массива [...]
+    const items = Array.isArray(data) ? data : (data.items || []);
+    if (data.version) {
+      localStorage.setItem('flw_ver_catalog', String(data.version));
+    }
+
+    catalog = items;
+    localStorage.setItem('flw_catalog_cache', JSON.stringify(items));
+
     buildDisplayCatalog();
     filteredCatalog = [...displayCatalog];
     setupFilterDropdown();
@@ -207,11 +237,10 @@ async function loadCatalog() {
     if (typeof updateCartUI === 'function') updateCartUI();
     if (typeof populateCatalogDropdown === 'function') populateCatalogDropdown();
   } catch (e) {
-    console.error("loadCatalog error:", e);
-    toast("Ошибка загрузки каталога");
+    console.error("fetchCatalogFromNetwork error:", e);
   }
 }
-window.loadCatalog = loadCatalog;
+window.fetchCatalogFromNetwork = fetchCatalogFromNetwork;
 
 function getCartItemQuantity(id) {
   return Object.entries(cart || {}).reduce((sum, [key, qty]) => {
@@ -360,7 +389,6 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   activePopItem = item;
   popQty = 1;
 
-  // Жесткий сброс позиции галереи на первое фото при первичном входе в товар
   popGalleryCurrentIndex = 0;
   const gallery = document.getElementById('pop-gallery');
   if (gallery) gallery.scrollLeft = 0;
@@ -413,7 +441,6 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
   if (prefColor && colors.includes(prefColor)) selectedGroupColor = prefColor;
   else selectedGroupColor = colors[0] || "";
 
-  // Точные названия лейблов характеристик
   const packLabel = document.getElementById('pop-pack-label');
   if (packLabel) packLabel.innerText = "Количество";
   const varLabel = document.getElementById('pop-variant-label');
@@ -473,7 +500,6 @@ function selectProductChip(type, value) {
   if (type === 'color') selectedGroupColor = value;
 
   setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
-  // При смене характеристики флаг preserveGalleryIndex = true сохраняет открытое фото
   updateSelectedGroupVariantUI(true);
 }
 window.selectProductChip = selectProductChip;
@@ -597,7 +623,6 @@ function closeProductModal() {
   const counter = document.getElementById('pop-gallery-counter');
   if (counter) counter.style.display = 'none';
 
-  // Гарантированный сброс индекса и положения скролла при закрытии карточки
   const gallery = document.getElementById('pop-gallery');
   if (gallery) gallery.scrollLeft = 0;
   popGalleryCurrentIndex = 0;
