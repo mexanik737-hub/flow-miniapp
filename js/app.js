@@ -42,7 +42,7 @@ function navigateTab(screenId, btn) {
 
   if (screenId === 'profile') {
     if (typeof renderSavedAddresses === 'function') renderSavedAddresses();
-    if (typeof loadUserOrders === 'function') loadUserOrders();
+    if (typeof loadUserOrders === 'function') loadUserOrders(false);
   }
   if (screenId === 'root' && typeof loadRootOrders === 'function') {
     loadRootOrders(true);
@@ -50,19 +50,24 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
+// Проверка доступа к панели Root (строго по ТЗ)
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  if (currentUser && (currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
-    toast("Доступ запрещен администратором");
+  // 1. Если администратор в таблице прямо выставил ЛОЖЬ / FALSE — доступ заблокирован
+  if (currentUser && currentUser.is_admin === false) {
+    toast("Доступ заблокирован администратором");
     return;
   }
 
-  if (isAdmin) {
+  // 2. Если уже авторизован как админ (по ID 8900179932 или флагу TRUE)
+  if (isAdmin || String(userId) === ADMIN_TELEGRAM_ID) {
+    isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
+  // 3. Для всех остальных (пустая ячейка, новые клиенты) — счетчик 5 кликов и запрос кода
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
@@ -106,45 +111,91 @@ function toggleEditorFabVisibility(forceState = null) {
 }
 window.toggleEditorFabVisibility = toggleEditorFabVisibility;
 
+// Легкая фоновая проверка обновлений версий через Stale-While-Revalidate
+async function checkServerUpdates() {
+  try {
+    const catVer = localStorage.getItem('flw_ver_catalog') || "0";
+    const cfgVer = localStorage.getItem('flw_ver_config') || "0";
+    const faqVer = localStorage.getItem('flw_ver_faq') || "0";
+
+    const res = await fetch(`${API_URL}?action=check_updates&catalog_ver=${catVer}&config_ver=${cfgVer}&faq_ver=${faqVer}`);
+    const data = await res.json();
+
+    if (data.versions) {
+      if (data.catalog_changed) {
+        localStorage.setItem('flw_ver_catalog', data.versions.catalog);
+        if (typeof fetchCatalogFromNetwork === 'function') fetchCatalogFromNetwork();
+      }
+      if (data.config_changed) {
+        localStorage.setItem('flw_ver_config', data.versions.config);
+        fetchConfigFromNetwork();
+      }
+      if (data.faq_changed) {
+        localStorage.setItem('flw_ver_faq', data.versions.faq);
+        window.cachedFaqData = null;
+        localStorage.removeItem('flw_faq_cache');
+      }
+    }
+  } catch (e) {}
+}
+window.checkServerUpdates = checkServerUpdates;
+
+// Загрузка настроек с приоритетом локального кеша
 async function loadConfig() {
+  const cached = localStorage.getItem('flw_config_cache');
+  if (cached) {
+    try {
+      SERVER_CONFIG = JSON.parse(cached);
+      applyConfigToUI(SERVER_CONFIG);
+    } catch (e) {}
+  } else {
+    fetchConfigFromNetwork();
+  }
+}
+window.loadConfig = loadConfig;
+
+async function fetchConfigFromNetwork() {
   try {
     const res = await fetch(`${API_URL}?action=get_config`);
     const cfg = await res.json();
     SERVER_CONFIG = cfg;
-
-    const sbpBtn = document.getElementById('pay-sbp-btn');
-    if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
-
-    const qrImg = document.getElementById('sbp-qr-image-tag');
-    if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
-
-    if (cfg.shop_phone_tel) {
-      const telLink = 'tel:' + cfg.shop_phone_tel;
-      const callBtn = document.getElementById('shop-call-btn');
-      if (callBtn) callBtn.href = telLink;
-
-      const asmBtn = document.getElementById('assembly-call-btn');
-      if (asmBtn) {
-        asmBtn.href = telLink;
-        asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
-      }
-    }
-
-    if (cfg.store_lat && cfg.store_lon) {
-      const mapIframe = document.getElementById('yandex-map-iframe');
-      if (mapIframe) {
-        mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
-      }
-    }
-
-    Object.keys(cfg).forEach(key => {
-      document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
-        el.innerText = cfg[key];
-      });
-    });
+    localStorage.setItem('flw_config_cache', JSON.stringify(cfg));
+    applyConfigToUI(cfg);
   } catch (e) {}
 }
-window.loadConfig = loadConfig;
+
+function applyConfigToUI(cfg) {
+  const sbpBtn = document.getElementById('pay-sbp-btn');
+  if (sbpBtn && cfg.sbp_url) sbpBtn.href = cfg.sbp_url;
+
+  const qrImg = document.getElementById('sbp-qr-image-tag');
+  if (qrImg && cfg.sbp_qr) qrImg.src = cfg.sbp_qr;
+
+  if (cfg.shop_phone_tel) {
+    const telLink = 'tel:' + cfg.shop_phone_tel;
+    const callBtn = document.getElementById('shop-call-btn');
+    if (callBtn) callBtn.href = telLink;
+
+    const asmBtn = document.getElementById('assembly-call-btn');
+    if (asmBtn) {
+      asmBtn.href = telLink;
+      asmBtn.innerText = `📞 Позвонить в салон (${cfg.shop_phone || ''})`;
+    }
+  }
+
+  if (cfg.store_lat && cfg.store_lon) {
+    const mapIframe = document.getElementById('yandex-map-iframe');
+    if (mapIframe) {
+      mapIframe.src = `https://yandex.ru/map-widget/v1/?ll=${cfg.store_lon}%2C${cfg.store_lat}&z=16&pt=${cfg.store_lon},${cfg.store_lat},pm2rdm`;
+    }
+  }
+
+  Object.keys(cfg).forEach(key => {
+    document.querySelectorAll(`[data-config-key="${key}"]`).forEach(el => {
+      el.innerText = cfg[key];
+    });
+  });
+}
 
 function toggleTextEditingMode(forcedState = null) {
   isTextEditActive = (forcedState !== null) ? forcedState : !isTextEditActive;
@@ -156,7 +207,7 @@ function toggleTextEditingMode(forcedState = null) {
   document.body.classList.toggle('in-text-edit-mode', isTextEditActive);
 
   if (isTextEditActive) {
-    toast("Режим редактирования: нажмите на любой выделенный текст");
+    toast("Режим редактирования: нажмите на любой текст");
   } else {
     toast("Режим редактирования выключен");
   }
@@ -180,7 +231,7 @@ document.addEventListener('click', async (e) => {
   if (newVal !== null && newVal.trim() !== "" && newVal.trim() !== curVal) {
     const cleanVal = newVal.trim();
     target.innerText = cleanVal;
-    toast("Сохранение в таблицу...");
+    toast("Сохранение...");
     try {
       await fetch(API_URL, {
         method: 'POST',
@@ -193,6 +244,8 @@ document.addEventListener('click', async (e) => {
           value: cleanVal
         })
       });
+      SERVER_CONFIG[key] = cleanVal;
+      localStorage.setItem('flw_config_cache', JSON.stringify(SERVER_CONFIG));
       toast("Текст сохранен!");
     } catch (err) {
       toast("Ошибка сохранения");
@@ -229,9 +282,7 @@ document.addEventListener('click', async (e) => {
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
-      hasMoved = true;
-    }
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) hasMoved = true;
     if (!hasMoved) return;
 
     let newLeft = Math.max(10, Math.min(window.innerWidth - 60, initialLeft + dx));
@@ -282,6 +333,11 @@ async function toggleAboutFaqSection() {
   container.style.display = 'block';
   if (arrow) arrow.style.transform = 'rotate(180deg)';
 
+  const cachedFaq = localStorage.getItem('flw_faq_cache');
+  if (cachedFaq && !window.cachedFaqData) {
+    try { window.cachedFaqData = JSON.parse(cachedFaq); } catch (e) {}
+  }
+
   if (window.cachedFaqData) {
     renderFaqList(window.cachedFaqData);
     return;
@@ -292,6 +348,7 @@ async function toggleAboutFaqSection() {
   try {
     const res = await fetch(`${API_URL}?action=faq`);
     window.cachedFaqData = await res.json();
+    localStorage.setItem('flw_faq_cache', JSON.stringify(window.cachedFaqData));
     renderFaqList(window.cachedFaqData);
   } catch (e) {
     container.innerHTML = `<div style="text-align:center; padding:12px; color:var(--red); font-size:12px;">Ошибка загрузки FAQ</div>`;
@@ -444,13 +501,13 @@ function markAllNotificationsAsRead() {
 }
 window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 
-// Инициализация при полной готовности DOM
 function initApp() {
   try {
     loadCatalog();
     checkUserSession();
     loadConfig();
     loadNotifications();
+    checkServerUpdates();
     if (typeof updateCartUI === 'function') updateCartUI();
   } catch (e) {
     console.error("App init error:", e);
@@ -463,15 +520,16 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// Фоновый опрос заказов и уведомлений каждые 3 минуты (180 000 мс)
+// Фоновый опрос заказов и легкая проверка версий каждые 3 минуты
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
-    if (typeof loadUserOrders === 'function') loadUserOrders();
+    if (typeof loadUserOrders === 'function') loadUserOrders(true);
   }
   if (activeScreen === 'screen-root' && isAdmin) {
     const secOrders = document.getElementById('root-sec-orders')?.style.display !== 'none';
     if (secOrders && typeof loadRootOrders === 'function') loadRootOrders(false);
   }
-  if (typeof loadNotifications === 'function') loadNotifications();
+  checkServerUpdates();
+  loadNotifications();
 }, 180000);
