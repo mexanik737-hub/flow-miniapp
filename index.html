@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Магазин «Цветы»</title>
-  <link rel="stylesheet" href="css/style.css?v=2.4">
+  <link rel="stylesheet" href="css/style.css?v=2.5">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -62,7 +62,9 @@
       <div class="catalog-top-bar">
         <div class="catalog-active-filter-label" id="catalog-filter-summary">Показано: <b>Все</b></div>
         <div class="catalog-top-actions">
-          <button class="sync-mini-btn" onclick="forceSyncCatalogManual()" title="Обновить каталог">🔄</button>
+          <button class="sync-mini-btn" onclick="forceSyncCatalogManual(this)" title="Обновить каталог">
+            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
           <button class="filter-btn-pill" onclick="openFilterModal()" data-config-key="txt_btn_filters">Фильтры</button>
         </div>
       </div>
@@ -132,7 +134,9 @@
           <div style="font-size:12px; font-weight:800; color:var(--gold); text-transform:uppercase;" data-config-key="txt_prof_orders_title">
             Мои заказы
           </div>
-          <button class="sync-mini-btn" style="width:26px; height:26px; font-size:11px;" onclick="loadUserOrders()" title="Обновить заказы">🔄</button>
+          <button class="sync-mini-btn" style="width:28px; height:28px;" onclick="forceSyncUserOrders(this)" title="Обновить заказы">
+            <svg viewBox="0 0 24 24" style="width:13px; height:13px;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
         </div>
         <div id="user-orders-list">
           <div style="text-align:center; color:var(--text-muted); padding:14px 0; font-size:12px;">Заказов пока нет</div>
@@ -222,7 +226,9 @@
             <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
             <div class="toggle-btn" id="tab-root-archive" onclick="switchRootSubTab('archive')">Архив</div>
           </div>
-          <button class="sync-mini-btn" style="margin-left:8px;" onclick="loadRootOrders(true)" title="Синхронизировать заказы">🔄</button>
+          <button class="sync-mini-btn" style="margin-left:8px;" onclick="forceSyncRootOrders(this)" title="Синхронизировать заказы">
+            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
         </div>
         <div id="root-orders-container"></div>
       </div>
@@ -233,7 +239,9 @@
           <button class="btn-metro" style="font-size:11px; padding:9px; flex:1;" onclick="openAddProductModal()">+ Товар</button>
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--gold); flex:1;" onclick="openAddGroupModal()">+ Группа</button>
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--gold); flex:1.2;" onclick="openCategoriesManagerModal()">📁 Категории</button>
-          <button class="sync-mini-btn" onclick="forceSyncRootCatalog()" title="Синхронизировать">🔄</button>
+          <button class="sync-mini-btn" onclick="forceSyncRootCatalog(this)" title="Синхронизировать каталог">
+            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
         </div>
         <div id="root-catalog-container"></div>
       </div>
@@ -242,7 +250,9 @@
       <div id="root-sec-clients" style="display:none;">
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <input type="text" id="root-client-search" class="metro-input" style="margin-bottom:0;" placeholder="🔍 Поиск по имени, номеру, нику..." oninput="filterRootClients()">
-          <button class="sync-mini-btn" style="height:auto;" onclick="loadRootClients(true)" title="Синхронизировать клиентов">🔄</button>
+          <button class="sync-mini-btn" style="height:auto;" onclick="loadRootClients(true, this)" title="Синхронизировать клиентов">
+            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
         </div>
         <div id="root-clients-container"></div>
       </div>
@@ -282,7 +292,9 @@
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <div style="font-size:12px; font-weight:800; color:var(--text); text-transform:uppercase;">История рассылок</div>
-          <button class="sync-mini-btn" style="width:26px; height:26px; font-size:11px;" onclick="loadRootNotifications(true)" title="Обновить">🔄</button>
+          <button class="sync-mini-btn" style="width:26px; height:26px;" onclick="loadRootNotifications(true, this)" title="Обновить">
+            <svg viewBox="0 0 24 24" style="width:12px; height:12px;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
         </div>
         <div id="root-notifs-container"></div>
       </div>
@@ -295,7 +307,9 @@
             <div class="toggle-btn" id="tab-stat-7days" onclick="switchStatsPeriod('7days')">7 дней</div>
             <div class="toggle-btn" id="tab-stat-month" onclick="switchStatsPeriod('month')">Месяц</div>
           </div>
-          <button class="sync-mini-btn" style="margin-left:8px;" onclick="loadRootStats(currentStatsPeriod)" title="Обновить статистику">🔄</button>
+          <button class="sync-mini-btn" style="margin-left:8px;" onclick="loadRootStats(currentStatsPeriod, this)" title="Обновить статистику">
+            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
         </div>
 
         <div class="stats-summary-grid">
@@ -349,7 +363,9 @@
       <div id="root-sec-faq" style="display:none;">
         <div style="display:flex; gap:6px; margin-bottom:12px;">
           <button class="btn-metro" style="flex:1;" onclick="openAddFaqModal()">+ Добавить вопрос-ответ в FAQ</button>
-          <button class="sync-mini-btn" style="height:auto;" onclick="loadRootFaq(true)" title="Обновить FAQ">🔄</button>
+          <button class="sync-mini-btn" style="height:auto;" onclick="loadRootFaq(true, this)" title="Обновить FAQ">
+            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
         </div>
         <div id="root-faq-container"></div>
       </div>
@@ -873,7 +889,9 @@
       <div class="modal-header" style="margin-bottom:8px;">
         <div class="modal-title">Фото из Google Диска</div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <button class="sync-mini-btn" onclick="syncDriveMediaCache(true)" title="Синхронизировать с диском">🔄</button>
+          <button class="sync-mini-btn" onclick="syncDriveMediaCache(true, this)" title="Синхронизировать с диском">
+            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
           <button class="close-btn" onclick="closeDriveMediaModal()">✕</button>
         </div>
       </div>
@@ -1023,13 +1041,13 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=2.4"></script>
-  <script src="js/utils.js?v=2.4"></script>
-  <script src="js/catalog.js?v=2.4"></script>
-  <script src="js/cart.js?v=2.4"></script>
-  <script src="js/order.js?v=2.4"></script>
-  <script src="js/profile.js?v=2.4"></script>
-  <script src="js/admin.js?v=2.4"></script>
-  <script src="js/app.js?v=2.4"></script>
+  <script src="js/config.js?v=2.5"></script>
+  <script src="js/utils.js?v=2.5"></script>
+  <script src="js/catalog.js?v=2.5"></script>
+  <script src="js/cart.js?v=2.5"></script>
+  <script src="js/order.js?v=2.5"></script>
+  <script src="js/profile.js?v=2.5"></script>
+  <script src="js/admin.js?v=2.5"></script>
+  <script src="js/app.js?v=2.5"></script>
 </body>
 </html>
