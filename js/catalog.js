@@ -1,4 +1,5 @@
 let currentGallerySlideIdx = 0;
+let galleryHapticTimer = null;
 
 function formatFullItemTitle(title, unit, variant, color) {
   const parts = [];
@@ -592,12 +593,16 @@ function renderPopGallery(photosStr, preserveSlide = false) {
         const itemWidth = gallery.clientWidth || 1;
         const currentIdx = Math.round(gallery.scrollLeft / itemWidth);
         const newIdx = Math.min(photos.length - 1, Math.max(0, currentIdx));
+
         if (newIdx !== currentGallerySlideIdx) {
           currentGallerySlideIdx = newIdx;
-          triggerHaptic('selection'); // Тактильный щелчок при смене фото
           if (counter) {
             counter.innerText = `${currentGallerySlideIdx + 1} / ${photos.length}`;
           }
+          clearTimeout(galleryHapticTimer);
+          galleryHapticTimer = setTimeout(() => {
+            triggerHaptic('selection');
+          }, 30);
         }
       };
     } else {
