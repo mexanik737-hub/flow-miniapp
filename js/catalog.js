@@ -293,10 +293,10 @@ function renderCatalog(items) {
                       <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${p.id}')">–</button>
                     `}
                     <span class="cart-active-qty">${inCartQty}</span>
-                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
+                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${p.id}', event)">+</button>
                   </div>
                 ` : `
-                  <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}')">+</button>
+                  <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}', event)">+</button>
                 `)}
               </div>
             ` : `
@@ -356,11 +356,11 @@ function updateProductCardAction(id) {
           <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${id}')">–</button>
         `}
         <span class="cart-active-qty">${inCartQty}</span>
-        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${id}')">+</button>
+        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${id}', event)">+</button>
       </div>
     `;
   } else {
-    actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${id}')">+</button>`;
+    actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${id}', event)">+</button>`;
   }
 }
 window.updateProductCardAction = updateProductCardAction;
@@ -390,7 +390,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
 
   activePopItem = item;
   popQty = 1;
-  currentGallerySlideIdx = 0; // Сброс позиции фото строго на 1-й слайд при каждом новом открытии карточки
+  currentGallerySlideIdx = 0;
 
   const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
   fetch(API_URL, {
@@ -400,7 +400,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   }).catch(() => {});
 
   setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
-  updateSelectedGroupVariantUI(false); // При открытии карточки сбрасываем скролл на 1-й слайд
+  updateSelectedGroupVariantUI(false);
 
   const m = document.getElementById('product-modal');
   if (m) m.classList.add('open');
@@ -492,7 +492,7 @@ function selectProductChip(type, value) {
   if (type === 'color') selectedGroupColor = value;
 
   setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
-  updateSelectedGroupVariantUI(true); // При смене характеристик сохраняем позицию фото
+  updateSelectedGroupVariantUI(true);
 }
 window.selectProductChip = selectProductChip;
 
@@ -548,7 +548,7 @@ function updateSelectedGroupVariantUI(preserveSlide = false) {
     if (popD) popD.innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
     if (addBtn) {
       addBtn.innerText = "Добавить в заказ";
-      addBtn.style.background = "linear-gradient(135deg, var(--green) 0%, #0a704e 100%)";
+      addBtn.style.background = "linear-gradient(135deg, var(--green) 0%, #087f52 100%)";
       addBtn.style.color = "#fff";
       addBtn.disabled = false;
     }
@@ -578,7 +578,6 @@ function renderPopGallery(photosStr, preserveSlide = false) {
       targetIdx = 0;
     }
 
-    // Восстанавливаем позицию фото без анимационного рывка
     setTimeout(() => {
       const itemWidth = gallery.clientWidth || 1;
       gallery.scrollLeft = targetIdx * itemWidth;
@@ -592,9 +591,13 @@ function renderPopGallery(photosStr, preserveSlide = false) {
       gallery.onscroll = () => {
         const itemWidth = gallery.clientWidth || 1;
         const currentIdx = Math.round(gallery.scrollLeft / itemWidth);
-        currentGallerySlideIdx = Math.min(photos.length - 1, Math.max(0, currentIdx));
-        if (counter) {
-          counter.innerText = `${currentGallerySlideIdx + 1} / ${photos.length}`;
+        const newIdx = Math.min(photos.length - 1, Math.max(0, currentIdx));
+        if (newIdx !== currentGallerySlideIdx) {
+          currentGallerySlideIdx = newIdx;
+          triggerHaptic('selection'); // Тактильный щелчок при смене фото
+          if (counter) {
+            counter.innerText = `${currentGallerySlideIdx + 1} / ${photos.length}`;
+          }
         }
       };
     } else {
@@ -619,7 +622,7 @@ function closeProductModal() {
   if (counter) counter.style.display = 'none';
   const gallery = document.getElementById('pop-gallery');
   if (gallery) gallery.scrollLeft = 0;
-  currentGallerySlideIdx = 0; // Сбрасываем позицию фото при закрытии модалки
+  currentGallerySlideIdx = 0;
 }
 window.closeProductModal = closeProductModal;
 
