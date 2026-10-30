@@ -24,6 +24,81 @@ function toast(msg) {
 }
 window.toast = toast;
 
+// Эффект глубины витрины: отслеживает открытые модалки и масштабирует фон
+function syncModalDepthState() {
+  const hasOpenModal = !!document.querySelector('.modal-overlay.open');
+  if (hasOpenModal) {
+    document.body.classList.add('modal-open-blur');
+  } else {
+    document.body.classList.remove('modal-open-blur');
+  }
+}
+window.syncModalDepthState = syncModalDepthState;
+
+// Наблюдатель за открытием модалок для включения эффекта глубины
+const modalDepthObserver = new MutationObserver(() => {
+  syncModalDepthState();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    modalDepthObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+});
+
+// Анимация полета лепестка из точки нажатия в корзину
+function animateFlyToCart(sourceEventOrElement) {
+  try {
+    let startX = window.innerWidth / 2;
+    let startY = window.innerHeight / 2;
+
+    if (sourceEventOrElement) {
+      if (sourceEventOrElement.clientX !== undefined && sourceEventOrElement.clientY !== undefined) {
+        startX = sourceEventOrElement.clientX;
+        startY = sourceEventOrElement.clientY;
+      } else if (sourceEventOrElement.getBoundingClientRect) {
+        const rect = sourceEventOrElement.getBoundingClientRect();
+        startX = rect.left + rect.width / 2;
+        startY = rect.top + rect.height / 2;
+      }
+    }
+
+    const cartBtn = document.querySelector('.dock-pill button:nth-child(2)');
+    let targetX = window.innerWidth * 0.38;
+    let targetY = window.innerHeight - 45;
+
+    if (cartBtn) {
+      const rect = cartBtn.getBoundingClientRect();
+      targetX = rect.left + rect.width / 2;
+      targetY = rect.top + rect.height / 2;
+    }
+
+    const petal = document.createElement('div');
+    petal.className = 'flying-cart-petal';
+    petal.style.left = `${startX}px`;
+    petal.style.top = `${startY}px`;
+    petal.style.opacity = '1';
+    petal.style.transform = 'translate(-50%, -50%) scale(0.6) rotate(0deg)';
+    document.body.appendChild(petal);
+
+    requestAnimationFrame(() => {
+      petal.style.transform = `translate(${targetX - startX}px, ${targetY - startY}px) scale(1.15) rotate(240deg)`;
+      petal.style.opacity = '0.15';
+    });
+
+    setTimeout(() => {
+      petal.remove();
+      if (typeof triggerCartCounterBounce === 'function') {
+        triggerCartCounterBounce();
+      }
+      triggerHaptic('medium');
+    }, 620);
+  } catch (err) {
+    if (typeof triggerCartCounterBounce === 'function') triggerCartCounterBounce();
+  }
+}
+window.animateFlyToCart = animateFlyToCart;
+
 function initPhoneMask(id) {
   const input = document.getElementById(id);
   if (!input) return;
@@ -253,7 +328,7 @@ class RosePetal {
     ctx.bezierCurveTo(-this.size * 0.75, this.size * 0.45, -this.size * 0.65, -this.size * 0.6, 0, -this.size * 0.75);
     ctx.fill();
 
-    ctx.strokeStyle = `rgba(232, 200, 135, ${this.opacity * 0.25})`;
+    ctx.strokeStyle = `rgba(253, 237, 184, ${this.opacity * 0.28})`;
     ctx.lineWidth = 1;
     ctx.stroke();
 
