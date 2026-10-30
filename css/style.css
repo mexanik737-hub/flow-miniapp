@@ -2,7 +2,9 @@
   --bg: #05070a;
   --bg-gradient: radial-gradient(circle at 50% -10%, #171d2b 0%, #05070a 80%);
   --card-bg: rgba(18, 23, 35, 0.52);
-  --card-inner: rgba(10, 14, 23, 0.78);
+  --card-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(18, 23, 35, 0.75) 100%);
+  --card-bloom: linear-gradient(135deg, rgba(229, 193, 88, 0.18) 0%, rgba(18, 23, 35, 0.85) 55%, rgba(13, 159, 103, 0.14) 100%);
+  --card-inner: rgba(10, 14, 23, 0.85);
   --border: rgba(229, 193, 88, 0.18);
   --border-accent: rgba(229, 193, 88, 0.55);
   --gold: #e5c158;
@@ -20,7 +22,6 @@
   --dock-bg: rgba(10, 14, 23, 0.85);
   --dock-shadow: 0 20px 48px rgba(0, 0, 0, 0.85);
   --glass-rim: inset 0 1px 1px 0 rgba(255, 255, 255, 0.28);
-  --card-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(18, 23, 35, 0.65) 100%);
   --hit-bg: linear-gradient(135deg, #fff2be 0%, #e5c158 55%, #a88424 100%);
   --hit-text: #120c02;
   --radius-sm: 10px;
@@ -29,17 +30,19 @@
 }
 
 [data-theme="light"] {
-  --bg: #f6f4ee;
-  --bg-gradient: radial-gradient(circle at 50% -10%, #ffffff 0%, #ece7dc 90%);
-  --card-bg: rgba(255, 255, 255, 0.72);
-  --card-inner: rgba(244, 240, 230, 0.9);
-  --border: rgba(168, 126, 25, 0.25);
+  --bg: #f5f3ec;
+  --bg-gradient: radial-gradient(circle at 50% -10%, #ffffff 0%, #ebe5d8 90%);
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(246, 241, 230, 0.92) 100%);
+  --card-bloom: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 242, 232, 0.94) 55%, rgba(230, 245, 238, 0.92) 100%);
+  --card-inner: rgba(242, 237, 226, 0.95);
+  --border: rgba(168, 126, 25, 0.28);
   --border-accent: rgba(168, 126, 25, 0.65);
-  --gold: #9e7514;
-  --gold-light: #b88a1e;
-  --gold-dark: #6e5008;
+  --gold: #8f650c;
+  --gold-light: #ab7c16;
+  --gold-dark: #6e4c05;
   --gold-glow: rgba(184, 142, 40, 0.25);
-  --cyan: #9e7514;
+  --cyan: #8f650c;
   --green: #059669;
   --green-glow: rgba(5, 150, 105, 0.25);
   --amber: #b45309;
@@ -47,11 +50,10 @@
   --purple: #7c3aed;
   --text: #0f131a;
   --text-muted: #576375;
-  --dock-bg: rgba(255, 255, 255, 0.92);
-  --dock-shadow: 0 16px 40px rgba(148, 110, 22, 0.18);
+  --dock-bg: rgba(255, 255, 255, 0.94);
+  --dock-shadow: 0 16px 40px rgba(148, 110, 22, 0.16);
   --glass-rim: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95);
-  --card-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(246, 242, 233, 0.75) 100%);
-  --hit-bg: linear-gradient(135deg, #2a200e 0%, #120c02 100%);
+  --hit-bg: linear-gradient(135deg, #221805 0%, #120c02 100%);
   --hit-text: #ffd566;
 }
 
@@ -119,7 +121,6 @@ body.modal-open-blur .app-wrapper {
   opacity: 1;
 }
 
-/* Физическая частица-лепесток, летящая в корзину */
 .flying-cart-petal {
   position: fixed;
   top: 0;
@@ -276,11 +277,11 @@ header {
 .daily-bloom-card {
   position: relative;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(229, 193, 88, 0.2) 0%, var(--card-bg) 60%, rgba(13, 159, 103, 0.15) 100%);
+  background: var(--card-bloom);
   border: 1px solid var(--border-accent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25), var(--glass-rim);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18), var(--glass-rim);
   padding: 14px;
   margin-bottom: 14px;
   overflow: hidden;
@@ -313,6 +314,7 @@ header {
 [data-theme="light"] .daily-bloom-tag {
   color: #fff;
   background: var(--gold);
+  border-color: var(--gold);
 }
 .daily-bloom-time {
   font-size: 10px;
@@ -462,9 +464,9 @@ header {
 }
 
 .product-card {
-  background: var(--card-gradient);
+  background: var(--card-surface);
   border: 1px solid var(--border);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15), var(--glass-rim);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12), var(--glass-rim);
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
@@ -636,6 +638,11 @@ header {
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-theme="light"] .btn-select-variant {
+  background: rgba(184, 142, 40, 0.12);
+  color: var(--gold);
+  border-color: var(--border-accent);
 }
 .btn-select-variant:active { transform: scale(0.94); }
 .btn-select-variant.has-items::after {
