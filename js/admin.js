@@ -1,5 +1,6 @@
 let selectedDriveMediaUrls = new Set();
 let selectedCategoryProductsForBatch = new Set();
+let selectedDailyBloomCats = new Set();
 
 window.switchRootSection = function(sec) {
   const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
@@ -8,33 +9,17 @@ window.switchRootSection = function(sec) {
     const btn = document.getElementById('tab-root-' + s);
     const box = document.getElementById('root-sec-' + s);
 
-    if (btn) {
-      if (s === sec) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    }
-
-    if (box) {
-      box.style.display = (s === sec ? 'block' : 'none');
-    }
+    if (btn) btn.classList.toggle('active', s === sec);
+    if (box) box.style.display = (s === sec ? 'block' : 'none');
   });
 
   try {
-    if (sec === 'orders' && typeof loadRootOrders === 'function') {
-      loadRootOrders(false);
-    } else if (sec === 'catalog' && typeof loadRootCatalog === 'function') {
-      loadRootCatalog(false);
-    } else if (sec === 'clients' && typeof loadRootClients === 'function') {
-      loadRootClients(false);
-    } else if (sec === 'notifs' && typeof loadRootNotifications === 'function') {
-      loadRootNotifications(false);
-    } else if (sec === 'stats' && typeof loadRootStats === 'function') {
-      loadRootStats(currentStatsPeriod || 'today');
-    } else if (sec === 'faq' && typeof loadRootFaq === 'function') {
-      loadRootFaq(false);
-    }
+    if (sec === 'orders' && typeof loadRootOrders === 'function') loadRootOrders(false);
+    else if (sec === 'catalog' && typeof loadRootCatalog === 'function') loadRootCatalog(false);
+    else if (sec === 'clients' && typeof loadRootClients === 'function') loadRootClients(false);
+    else if (sec === 'notifs' && typeof loadRootNotifications === 'function') loadRootNotifications(false);
+    else if (sec === 'stats' && typeof loadRootStats === 'function') loadRootStats(currentStatsPeriod || 'today');
+    else if (sec === 'faq' && typeof loadRootFaq === 'function') loadRootFaq(false);
   } catch (err) {
     console.error("Root switch data load error:", err);
   }
@@ -48,6 +33,14 @@ window.switchRootSubTab = function(tab) {
   if (tabArchive) tabArchive.classList.toggle('active', tab === 'archive');
   renderRootOrders();
 };
+
+function forceSyncRootOrders(btnEl) {
+  triggerHaptic('medium');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
+  toast("Синхронизация заказов...");
+  loadRootOrders(true).then(() => toast("Заказы обновлены"));
+}
+window.forceSyncRootOrders = forceSyncRootOrders;
 
 async function loadRootOrders(force = false) {
   if (!isAdmin) return;
@@ -602,7 +595,8 @@ function closeDriveMediaModal() {
 }
 window.closeDriveMediaModal = closeDriveMediaModal;
 
-async function syncDriveMediaCache(showToast = false) {
+async function syncDriveMediaCache(showToast = false, btnEl = null) {
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const box = document.getElementById('drive-media-container');
   if (showToast) toast("Синхронизация с Google Диском...");
   else box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
@@ -906,6 +900,90 @@ async function openBatchMoveCategoryDialog() {
 }
 window.openBatchMoveCategoryDialog = openBatchMoveCategoryDialog;
 
+// УПРАВЛЕНИЕ КАТЕГОРИЯМИ ДЛЯ ТОВАРА ДНЯ
+function openDailyBloomCategoriesModal() {
+  triggerHaptic('selection');
+  selectedDailyBloomCats.clear();
+
+  const currentCfg = SERVER_CONFIG?.daily_bloom_categories || "";
+  if (currentCfg) {
+    currentCfg.split(',').forEach(c => {
+      if (c.trim()) selectedDailyBloomCats.add(c.trim());
+    });
+  }
+
+  const container = document.getElementById('daily-bloom-categories-list');
+  const allCats = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+
+  if (!allCats.length) {
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:10px 0;">Категорий нет</div>';
+  } else {
+    container.innerHTML = allCats.map(cat => {
+      const isChecked = selectedDailyBloomCats.has(cat);
+      return `
+        <div class="custom-checkbox-wrap" style="padding:6px 0;" onclick="toggleDailyBloomCatSelection('${cat}', this)">
+          <div class="custom-checkbox ${isChecked ? 'checked' : ''}">${isChecked ? '✓' : ''}</div>
+          <span style="font-size:13px; font-weight:700; color:var(--text);">${cat}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('daily-bloom-cat-modal')?.classList.add('open');
+}
+window.openDailyBloomCategoriesModal = openDailyBloomCategoriesModal;
+
+function toggleDailyBloomCatSelection(cat, wrapEl) {
+  triggerHaptic('light');
+  const chk = wrapEl.querySelector('.custom-checkbox');
+  if (selectedDailyBloomCats.has(cat)) {
+    selectedDailyBloomCats.delete(cat);
+    chk?.classList.remove('checked');
+    if (chk) chk.innerText = '';
+  } else {
+    selectedDailyBloomCats.add(cat);
+    chk?.classList.add('checked');
+    if (chk) chk.innerText = '✓';
+  }
+}
+window.toggleDailyBloomCatSelection = toggleDailyBloomCatSelection;
+
+function closeDailyBloomCategoriesModal() {
+  triggerHaptic('light');
+  document.getElementById('daily-bloom-cat-modal')?.classList.remove('open');
+}
+window.closeDailyBloomCategoriesModal = closeDailyBloomCategoriesModal;
+
+async function saveDailyBloomCategoriesSelection() {
+  triggerHaptic('medium');
+  const val = Array.from(selectedDailyBloomCats).join(', ');
+
+  toast("Сохранение категорий...");
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_save_config",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        key: "daily_bloom_categories",
+        value: val
+      })
+    });
+    if (SERVER_CONFIG) {
+      SERVER_CONFIG.daily_bloom_categories = val;
+      localStorage.setItem('flw_config_cache', JSON.stringify(SERVER_CONFIG));
+    }
+    closeDailyBloomCategoriesModal();
+    if (typeof renderDailyBloom === 'function') renderDailyBloom();
+    toast("Категории Товара дня сохранены!");
+  } catch (e) {
+    toast("Ошибка сохранения");
+  }
+}
+window.saveDailyBloomCategoriesSelection = saveDailyBloomCategoriesSelection;
+
 async function loadRootCatalog(force = false) {
   const container = document.getElementById('root-catalog-container');
   const cached = localStorage.getItem('flw_root_catalog_cache');
@@ -930,8 +1008,9 @@ async function loadRootCatalog(force = false) {
 }
 window.loadRootCatalog = loadRootCatalog;
 
-async function forceSyncRootCatalog() {
+async function forceSyncRootCatalog(btnEl = null) {
   triggerHaptic('medium');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   toast("Синхронизация каталога...");
   await loadRootCatalog(true);
   if (typeof loadCatalog === 'function') loadCatalog(true);
@@ -972,7 +1051,7 @@ function renderRootCatalogUI() {
         <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--gold);">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
-              <b>${c.title}</b> <span style="font-size:10px; background:rgba(197,160,89,0.18); color:var(--gold); padding:2px 6px; border-radius:4px; font-weight:800;">Группа (${c.items.length})</span>
+              <b>${c.title}</b> <span style="font-size:10px; background:rgba(212,175,55,0.18); color:var(--gold); padding:2px 6px; border-radius:4px; font-weight:800;">Группа (${c.items.length})</span>
               <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Категория: ${c.items[0].category} · Фото: ${photoCount}</div>
               <div style="font-size:11px; color:var(--amber); margin-top:2px;">Наличие: ${activeCount} из ${c.items.length} активны</div>
             </div>
@@ -1279,7 +1358,8 @@ async function deleteProductRoot(id) {
   forceSyncRootCatalog();
 }
 
-async function loadRootClients(force = false) {
+async function loadRootClients(force = false, btnEl = null) {
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const container = document.getElementById('root-clients-container');
   const cached = localStorage.getItem('flw_root_clients_cache');
 
@@ -1381,7 +1461,8 @@ function selectRootNotifTab(val, label) {
 }
 window.selectRootNotifTab = selectRootNotifTab;
 
-async function loadRootNotifications(force = false) {
+async function loadRootNotifications(force = false, btnEl = null) {
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const container = document.getElementById('root-notifs-container');
   const cached = localStorage.getItem('flw_root_notifs_cache');
 
@@ -1539,7 +1620,8 @@ function switchStatsPeriod(period) {
 }
 window.switchStatsPeriod = switchStatsPeriod;
 
-async function loadRootStats(period = 'today') {
+async function loadRootStats(period = 'today', btnEl = null) {
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   currentStatsPeriod = period;
   try {
     const res = await fetch(`${API_URL}?action=admin_stats&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
@@ -1644,7 +1726,8 @@ function renderRootStats() {
   }
 }
 
-async function loadRootFaq(force = false) {
+async function loadRootFaq(force = false, btnEl = null) {
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const container = document.getElementById('root-faq-container');
   const cached = localStorage.getItem('flw_root_faq_cache');
 
