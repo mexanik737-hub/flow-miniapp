@@ -84,7 +84,7 @@ function renderDailyBloom() {
     container.innerHTML = `
       <div class="daily-bloom-card" onclick="triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
         <div class="daily-bloom-header">
-          <span class="daily-bloom-tag">✨ Букет дня</span>
+          <span class="daily-bloom-tag">✨ Товар дня</span>
           <span class="daily-bloom-time">Обновление в 09:00</span>
         </div>
         <div class="daily-bloom-content">
@@ -195,12 +195,47 @@ function resetFilters() {
 }
 window.resetFilters = resetFilters;
 
+function populateDeliveryTimeSlots() {
+  const optionsBox = document.getElementById('time-select-options');
+  const displayEl = document.getElementById('selected-time-display');
+  if (!optionsBox) return;
+
+  const slots = [
+    "10:00 – 12:00",
+    "12:00 – 14:00",
+    "14:00 – 16:00",
+    "16:00 – 18:00",
+    "18:00 – 20:00",
+    "Другой день (согласовать с салоном)"
+  ];
+
+  optionsBox.innerHTML = slots.map(slot => `
+    <div class="custom-select-option" onclick="selectDeliveryTimeSlot('${slot}')">${slot}</div>
+  `).join('');
+
+  if (displayEl && (!displayEl.innerText || displayEl.innerText.includes('Загрузка'))) {
+    displayEl.innerText = slots[0];
+  }
+}
+window.populateDeliveryTimeSlots = populateDeliveryTimeSlots;
+
+function selectDeliveryTimeSlot(slot) {
+  triggerHaptic('selection');
+  const displayEl = document.getElementById('selected-time-display');
+  if (displayEl) displayEl.innerText = slot;
+  const box = document.getElementById('time-select-box');
+  if (box) box.classList.remove('open');
+  if (typeof saveCurrentOrderFormDraft === 'function') saveCurrentOrderFormDraft();
+}
+window.selectDeliveryTimeSlot = selectDeliveryTimeSlot;
+
 function applyLoadedCatalogData(items) {
   catalog = items;
   localStorage.setItem('flw_catalog_cache', JSON.stringify(catalog));
   buildDisplayCatalog();
   filteredCatalog = [...displayCatalog];
   setupFilterDropdown();
+  populateDeliveryTimeSlots();
   renderDailyBloom();
   renderCatalog(filteredCatalog);
   if (typeof updateCartUI === 'function') updateCartUI();
@@ -267,7 +302,7 @@ function renderCatalog(items) {
     return `
       <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="triggerHaptic('selection'); openProductModal('${p.id}')">
         <div class="product-thumb">
-          ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
+          ${isHit ? `<div class="hit-badge">🔥 ХИТ</div>` : ''}
           ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
           <div class="thumb-placeholder-box" style="${firstPhoto ? 'display:none;' : ''}">
             <span class="thumb-placeholder-icon">🌸</span>
@@ -390,17 +425,17 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
 
   activePopItem = item;
   popQty = 1;
-  currentGallerySlideIdx = 0; // Сброс позиции фото строго на 1-й слайд при каждом новом открытии карточки
+  currentGallerySlideIdx = 0;
 
   const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "track_stat", type: "product_view", ref_id: String(statRefId) })
+    body: JSON.stringify({ action: "track_stat", type: "product_view", ref_id: String(statRefId), user_id: userId })
   }).catch(() => {});
 
   setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
-  updateSelectedGroupVariantUI(false); // При открытии карточки сбрасываем скролл на 1-й слайд
+  updateSelectedGroupVariantUI(false);
 
   const m = document.getElementById('product-modal');
   if (m) m.classList.add('open');
@@ -471,7 +506,7 @@ function setupUniversalVariantChips(item, prefPack = null, prefVar = null, prefC
   if (colorBlock && colorWrap) {
     if (colors.length > 0) {
       colorBlock.style.display = 'block';
-      colorWrap.innerHTML = colors.map(c => `
+      varWrap.innerHTML = colors.map(c => `
         <div class="variant-chip ${c === selectedGroupColor ? 'active' : ''}" onclick="selectProductChip('color', '${c}')">${c}</div>
       `).join('');
     } else {
@@ -492,7 +527,7 @@ function selectProductChip(type, value) {
   if (type === 'color') selectedGroupColor = value;
 
   setupUniversalVariantChips(activePopItem, selectedGroupPack, selectedGroupVariant, selectedGroupColor);
-  updateSelectedGroupVariantUI(true); // При смене характеристик сохраняем позицию фото
+  updateSelectedGroupVariantUI(true);
 }
 window.selectProductChip = selectProductChip;
 
@@ -578,7 +613,6 @@ function renderPopGallery(photosStr, preserveSlide = false) {
       targetIdx = 0;
     }
 
-    // Восстанавливаем позицию фото без анимационного рывка
     setTimeout(() => {
       const itemWidth = gallery.clientWidth || 1;
       gallery.scrollLeft = targetIdx * itemWidth;
@@ -619,7 +653,7 @@ function closeProductModal() {
   if (counter) counter.style.display = 'none';
   const gallery = document.getElementById('pop-gallery');
   if (gallery) gallery.scrollLeft = 0;
-  currentGallerySlideIdx = 0; // Сбрасываем позицию фото при закрытии модалки
+  currentGallerySlideIdx = 0;
 }
 window.closeProductModal = closeProductModal;
 
