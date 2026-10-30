@@ -1,5 +1,8 @@
-let orderDelType = 'delivery';
-let orderRecType = 'self';
+window.orderDelType = window.orderDelType || 'delivery';
+window.orderRecType = window.orderRecType || 'self';
+window.savedAddresses = window.savedAddresses || [];
+window.currentFlowersSubtotal = window.currentFlowersSubtotal || 0;
+
 let deliveryDistanceKm = 0;
 let calculatedDeliveryPrice = 0;
 let selectedAddressGeo = null;
@@ -44,13 +47,16 @@ window.setRecipientType = setRecipientType;
 
 function openOrderModal() {
   triggerHaptic('selection');
+  if (typeof requestIosOrientationPermission === 'function') {
+    requestIosOrientationPermission();
+  }
+
   const cartEntries = Object.entries(cart || {});
   if (!cartEntries.length) {
     toast("Корзина пуста");
     return;
   }
 
-  // Загружаем автосохранённый черновик или разовые сохранённые настройки
   if (typeof loadCurrentOrderFormDraft === 'function') {
     loadCurrentOrderFormDraft();
   }
@@ -178,7 +184,6 @@ function calculateDeliveryCostByCoords(lat, lon) {
   const dist = calcHaversineDistance(storeLat, storeLon, lat, lon);
   deliveryDistanceKm = Math.round(dist * 10) / 10;
 
-  // Базовый тариф: 350 ₽ до 2 км, далее +40 ₽ за каждый км
   if (deliveryDistanceKm <= 2.0) {
     calculatedDeliveryPrice = 350;
   } else {
@@ -207,7 +212,6 @@ function recalcFinalOrderTotals() {
 }
 window.recalcFinalOrderTotals = recalcFinalOrderTotals;
 
-// ПЕРЕХОД КО 2 ЭТАПУ: ПРЕДПРОСМОТР ЗАКАЗА
 function proceedToOrderSummary() {
   triggerHaptic('medium');
 
@@ -322,7 +326,6 @@ function renderOrderSummaryBox() {
   `;
 }
 
-// ОФОРМЛЕНИЕ ЗАКАЗА В СИСТЕМУ
 async function submitFinalOrder() {
   triggerHaptic('medium');
   toast("Создание заказа...");
@@ -368,7 +371,6 @@ async function submitFinalOrder() {
       fullAddress += ` [курьеру: ${courierComment}]`;
     }
 
-    // Сохранение адреса в профиль если чекбокс активен
     if (ordSaveAddrChecked && selectedAddressGeo && savedAddresses.length < 3) {
       savedAddresses.push({
         label: "Дом",
@@ -387,7 +389,6 @@ async function submitFinalOrder() {
   const desiredTime = document.getElementById('selected-time-display')?.innerText || "10:00 – 12:00";
   const shopComment = document.getElementById('ord-shop-comment')?.value.trim();
 
-  // Разовое сохранение настроек на следующий заказ
   if (ordSaveNextDefaultsChecked) {
     try {
       const defaults = {
@@ -407,7 +408,6 @@ async function submitFinalOrder() {
     } catch (e) {}
   }
 
-  // Очищаем черновик заполнения формы
   localStorage.removeItem('flw_order_draft');
 
   try {
@@ -531,8 +531,6 @@ async function confirmPaymentByClient() {
     });
 
     closePaymentModal();
-
-    // Открываем модалку ожидания и запускаем салют конфетти
     document.getElementById('order-success-modal')?.classList.add('open');
     if (typeof startConfettiAnimation === 'function') {
       startConfettiAnimation();
