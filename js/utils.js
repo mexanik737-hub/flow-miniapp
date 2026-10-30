@@ -95,6 +95,18 @@ function toggleOrderSaveAddressCheckbox() {
 }
 window.toggleOrderSaveAddressCheckbox = toggleOrderSaveAddressCheckbox;
 
+let ordSaveNextDefaultsChecked = false;
+function toggleOrderSaveNextDefaultsCheckbox() {
+  triggerHaptic('selection');
+  ordSaveNextDefaultsChecked = !ordSaveNextDefaultsChecked;
+  const chk = document.getElementById('ord-save-next-defaults-ui');
+  if (chk) {
+    chk.classList.toggle('checked', ordSaveNextDefaultsChecked);
+    chk.innerText = ordSaveNextDefaultsChecked ? '✓' : '';
+  }
+}
+window.toggleOrderSaveNextDefaultsCheckbox = toggleOrderSaveNextDefaultsCheckbox;
+
 function calcHaversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -130,7 +142,15 @@ function updateNotificationsBadge() {
   const badge = document.getElementById('hud-notif-counter');
   if (!badge) return;
 
-  const unreadCount = (clientNotifications || []).filter(n => !(readNotificationIds || []).includes(String(n.id))).length;
+  const userRegTs = currentUser?.reg_date_ts || 0;
+
+  // Показываем уведомления только созданные ПОСЛЕ регистрации клиента
+  const unreadCount = (clientNotifications || []).filter(n => {
+    const isUnread = !(readNotificationIds || []).includes(String(n.id));
+    const isAfterReg = !userRegTs || (n.created_at_ts >= userRegTs);
+    return isUnread && isAfterReg;
+  }).length;
+
   if (unreadCount > 0) {
     badge.innerText = unreadCount > 99 ? '99+' : unreadCount;
     badge.style.display = 'flex';
@@ -150,25 +170,42 @@ function getTabDisplayTitle(tabKey) {
   }
 }
 
-// ----------------- МЕХАНИКА №1: БУКЕТ ДНЯ (ОТСЕЧКА СТРОГО В 09:00) -----------------
+// ----------------- МЕХАНИКА №1: ТОВАР ДНЯ (ОТСЕЧКА СТРОГО В 09:00 ПО МСК) -----------------
 
 function getDailyBloomDateKey() {
-  const d = new Date();
-  if (d.getHours() < 9) {
-    d.setDate(d.getDate() - 1);
+  const now = new Date();
+  // Вычисляем точное московское время (UTC+3) независимо от часового пояса устройства
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const mskDate = new Date(utc + (3 * 3600000));
+
+  // Сутки меняются строго в 09:00:00 МСК
+  if (mskDate.getHours() < 9) {
+    mskDate.setDate(mskDate.getDate() - 1);
   }
-  const yr = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const yr = mskDate.getFullYear();
+  const mo = String(mskDate.getMonth() + 1).padStart(2, '0');
+  const day = String(mskDate.getDate()).padStart(2, '0');
   return `${yr}-${mo}-${day}`;
 }
 
 function getDailyBloomItem(itemsList, currentUid) {
   try {
     if (!itemsList || !itemsList.length) return null;
-    const activeItems = itemsList.filter(it => it.is_active);
-    const pool = activeItems.length ? activeItems : itemsList;
-    if (!pool.length) return null;
+
+    let activeItems = itemsList.filter(it => it.is_active);
+    if (!activeItems.length) activeItems = itemsList;
+
+    // Фильтр по разрешённым категориям из настроек Root (SERVER_CONFIG.daily_bloom_categories)
+    const allowedCatsStr = SERVER_CONFIG?.daily_bloom_categories || "";
+    if (allowedCatsStr) {
+      const allowedCats = allowedCatsStr.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      if (allowedCats.length > 0) {
+        const filteredByCat = activeItems.filter(it => allowedCats.includes((it.category || "").trim().toLowerCase()));
+        if (filteredByCat.length > 0) {
+          activeItems = filteredByCat;
+        }
+      }
+    }
 
     const dateKey = getDailyBloomDateKey();
     const seedString = `${currentUid || 'client'}_${dateKey}`;
@@ -178,15 +215,15 @@ function getDailyBloomItem(itemsList, currentUid) {
       hash = ((hash << 5) - hash) + seedString.charCodeAt(i);
       hash |= 0;
     }
-    const index = Math.abs(hash) % pool.length;
-    return pool[index];
+    const index = Math.abs(hash) % activeItems.length;
+    return activeItems[index];
   } catch (err) {
     return itemsList && itemsList[0] ? itemsList[0] : null;
   }
 }
 window.getDailyBloomItem = getDailyBloomItem;
 
-// ----------------- МЕХАНИКА №2: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ -----------------
+// ----------------- МЕХАНИКА №2: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ (IOS + ANDROID) -----------------
 
 let petalsCanvas = null;
 let petalsCtx = null;
@@ -194,6 +231,7 @@ let petalsAnimationId = null;
 let isPetalsActive = false;
 let petalsList = [];
 let tiltHorizontal = 0;
+let iosPermissionRequested = false;
 
 class RosePetal {
   constructor(w, h, randomY = false) {
@@ -205,16 +243,16 @@ class RosePetal {
     this.h = h || window.innerHeight || 640;
     this.x = Math.random() * this.w;
     this.y = randomY ? Math.random() * this.h : -30 - Math.random() * 40;
-    this.size = 14 + Math.random() * 16;
-    this.speedY = 1.3 + Math.random() * 1.7;
-    this.speedX = (Math.random() - 0.5) * 0.9;
+    this.size = 13 + Math.random() * 15;
+    this.speedY = 1.2 + Math.random() * 1.5;
+    this.speedX = (Math.random() - 0.5) * 0.8;
     this.rotation = Math.random() * Math.PI * 2;
     this.rotationSpeed = (Math.random() - 0.5) * 0.035;
     this.flip = Math.random() * Math.PI;
     this.flipSpeed = 0.02 + Math.random() * 0.03;
     this.wobble = Math.random() * Math.PI * 2;
     this.wobbleSpeed = 0.025 + Math.random() * 0.03;
-    this.opacity = 0.65 + Math.random() * 0.3;
+    this.opacity = 0.6 + Math.random() * 0.3;
 
     const petalColors = [
       { r: 214, g: 40, b: 75 },
@@ -231,7 +269,7 @@ class RosePetal {
     this.rotation += this.rotationSpeed;
     this.flip += this.flipSpeed;
 
-    const gyroShift = (tilt || 0) * 0.05;
+    const gyroShift = (tilt || 0) * 0.055;
     this.x += this.speedX + Math.sin(this.wobble) * 1.1 + gyroShift;
     this.y += this.speedY;
 
@@ -253,7 +291,7 @@ class RosePetal {
     ctx.bezierCurveTo(-this.size * 0.75, this.size * 0.45, -this.size * 0.65, -this.size * 0.6, 0, -this.size * 0.75);
     ctx.fill();
 
-    ctx.strokeStyle = `rgba(232, 200, 135, ${this.opacity * 0.25})`;
+    ctx.strokeStyle = `rgba(245, 224, 160, ${this.opacity * 0.25})`;
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -267,11 +305,27 @@ function handleOrientation(e) {
   }
 }
 
+// Запрос доступа к датчикам движения на iOS
+async function requestIosOrientationPermission() {
+  if (iosPermissionRequested) return;
+  iosPermissionRequested = true;
+
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const response = await DeviceOrientationEvent.requestPermission();
+      if (response === 'granted') {
+        window.addEventListener('deviceorientation', handleOrientation, true);
+      }
+    } catch (e) {}
+  }
+}
+window.requestIosOrientationPermission = requestIosOrientationPermission;
+
 function resizePetalsCanvas() {
   if (!petalsCanvas) return;
-  const dpr = window.devicePixelRatio || 1;
-  petalsCanvas.width = (window.innerWidth || document.documentElement.clientWidth || 360) * dpr;
-  petalsCanvas.height = (window.innerHeight || document.documentElement.clientHeight || 640) * dpr;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2); // Ограничение 2 для 120 FPS
+  petalsCanvas.width = (window.innerWidth || 360) * dpr;
+  petalsCanvas.height = (window.innerHeight || 640) * dpr;
   if (petalsCtx) {
     petalsCtx.scale(dpr, dpr);
   }
@@ -279,8 +333,8 @@ function resizePetalsCanvas() {
 
 function animatePetals() {
   if (!isPetalsActive || !petalsCtx || !petalsCanvas) return;
-  const w = window.innerWidth || document.documentElement.clientWidth || 360;
-  const h = window.innerHeight || document.documentElement.clientHeight || 640;
+  const w = window.innerWidth || 360;
+  const h = window.innerHeight || 640;
 
   petalsCtx.clearRect(0, 0, w, h);
 
@@ -306,14 +360,16 @@ function startCartPetals() {
     window.addEventListener('resize', resizePetalsCanvas);
 
     petalsList = [];
-    const w = window.innerWidth || document.documentElement.clientWidth || 360;
-    const h = window.innerHeight || document.documentElement.clientHeight || 640;
-    for (let i = 0; i < 28; i++) {
+    const w = window.innerWidth || 360;
+    const h = window.innerHeight || 640;
+    for (let i = 0; i < 26; i++) {
       petalsList.push(new RosePetal(w, h, true));
     }
 
     if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation, true);
+      if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
+        window.addEventListener('deviceorientation', handleOrientation, true);
+      }
     }
     petalsCanvas.classList.add('active');
     animatePetals();
@@ -343,3 +399,88 @@ function stopCartPetals() {
   }, 650);
 }
 window.stopCartPetals = stopCartPetals;
+
+// ----------------- МЕХАНИКА №3: САЛЮТ КОНФЕТТИ ПРИ ОПЛАТЕ -----------------
+
+let confettiCanvas = null;
+let confettiCtx = null;
+let confettiAnimId = null;
+let confettiParticles = [];
+
+class ConfettiParticle {
+  constructor(w, h) {
+    this.x = Math.random() * w;
+    this.y = -20 - Math.random() * 50;
+    this.size = 7 + Math.random() * 8;
+    this.speedY = 3.5 + Math.random() * 4.5;
+    this.speedX = (Math.random() - 0.5) * 4;
+    this.rotation = Math.random() * 360;
+    this.rotationSpeed = (Math.random() - 0.5) * 8;
+    this.color = ['#d4af37', '#f5e0a0', '#0d9468', '#ef4444', '#8b5cf6', '#ffffff'][Math.floor(Math.random() * 6)];
+  }
+
+  update(w, h) {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    this.rotation += this.rotationSpeed;
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate((this.rotation * Math.PI) / 180);
+    ctx.fillStyle = this.color;
+    ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 0.6);
+    ctx.restore();
+  }
+}
+
+function startConfettiAnimation() {
+  confettiCanvas = document.getElementById('confetti-canvas');
+  if (!confettiCanvas) return;
+
+  confettiCtx = confettiCanvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  confettiCanvas.width = w * dpr;
+  confettiCanvas.height = h * dpr;
+  confettiCtx.scale(dpr, dpr);
+  confettiCanvas.style.display = 'block';
+
+  confettiParticles = [];
+  for (let i = 0; i < 90; i++) {
+    confettiParticles.push(new ConfettiParticle(w, h));
+  }
+
+  triggerHaptic('success');
+
+  const startTime = Date.now();
+  function loop() {
+    confettiCtx.clearRect(0, 0, w, h);
+    for (let p of confettiParticles) {
+      p.update(w, h);
+      p.draw(confettiCtx);
+    }
+    if (Date.now() - startTime < 3500) {
+      confettiAnimId = requestAnimationFrame(loop);
+    } else {
+      stopConfettiAnimation();
+    }
+  }
+  loop();
+}
+window.startConfettiAnimation = startConfettiAnimation;
+
+function stopConfettiAnimation() {
+  if (confettiAnimId) {
+    cancelAnimationFrame(confettiAnimId);
+    confettiAnimId = null;
+  }
+  if (confettiCanvas) {
+    confettiCanvas.style.display = 'none';
+    if (confettiCtx) confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  }
+}
+window.stopConfettiAnimation = stopConfettiAnimation;
