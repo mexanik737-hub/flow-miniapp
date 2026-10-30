@@ -144,7 +144,6 @@ function updateNotificationsBadge() {
 
   const userRegTs = currentUser?.reg_date_ts || 0;
 
-  // Показываем уведомления только созданные ПОСЛЕ регистрации клиента
   const unreadCount = (clientNotifications || []).filter(n => {
     const isUnread = !(readNotificationIds || []).includes(String(n.id));
     const isAfterReg = !userRegTs || (n.created_at_ts >= userRegTs);
@@ -170,15 +169,13 @@ function getTabDisplayTitle(tabKey) {
   }
 }
 
-// ----------------- МЕХАНИКА №1: ТОВАР ДНЯ (ОТСЕЧКА СТРОГО В 09:00 ПО МСК) -----------------
+// ----------------- МЕХАНИКА №1: ТОВАР ДНЯ (ОТСЕЧКА СТРОГО В 09:00 МСК) -----------------
 
 function getDailyBloomDateKey() {
   const now = new Date();
-  // Вычисляем точное московское время (UTC+3) независимо от часового пояса устройства
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   const mskDate = new Date(utc + (3 * 3600000));
 
-  // Сутки меняются строго в 09:00:00 МСК
   if (mskDate.getHours() < 9) {
     mskDate.setDate(mskDate.getDate() - 1);
   }
@@ -195,7 +192,6 @@ function getDailyBloomItem(itemsList, currentUid) {
     let activeItems = itemsList.filter(it => it.is_active);
     if (!activeItems.length) activeItems = itemsList;
 
-    // Фильтр по разрешённым категориям из настроек Root (SERVER_CONFIG.daily_bloom_categories)
     const allowedCatsStr = SERVER_CONFIG?.daily_bloom_categories || "";
     if (allowedCatsStr) {
       const allowedCats = allowedCatsStr.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -223,7 +219,7 @@ function getDailyBloomItem(itemsList, currentUid) {
 }
 window.getDailyBloomItem = getDailyBloomItem;
 
-// ----------------- МЕХАНИКА №2: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ (IOS + ANDROID) -----------------
+// ----------------- МЕХАНИКА №2: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ (ANDROID + IOS) -----------------
 
 let petalsCanvas = null;
 let petalsCtx = null;
@@ -299,13 +295,20 @@ class RosePetal {
   }
 }
 
+function handleDeviceMotion(e) {
+  if (!e) return;
+  const ag = e.accelerationIncludingGravity;
+  if (ag && typeof ag.x === 'number' && !isNaN(ag.x)) {
+    tiltHorizontal = Math.max(-40, Math.min(40, -ag.x * 4.2));
+  }
+}
+
 function handleOrientation(e) {
-  if (e && e.gamma !== null && e.gamma !== undefined) {
+  if (e && typeof e.gamma === 'number' && !isNaN(e.gamma)) {
     tiltHorizontal = Math.max(-40, Math.min(40, e.gamma));
   }
 }
 
-// Запрос доступа к датчикам движения на iOS
 async function requestIosOrientationPermission() {
   if (iosPermissionRequested) return;
   iosPermissionRequested = true;
@@ -315,6 +318,7 @@ async function requestIosOrientationPermission() {
       const response = await DeviceOrientationEvent.requestPermission();
       if (response === 'granted') {
         window.addEventListener('deviceorientation', handleOrientation, true);
+        window.addEventListener('devicemotion', handleDeviceMotion, true);
       }
     } catch (e) {}
   }
@@ -323,7 +327,7 @@ window.requestIosOrientationPermission = requestIosOrientationPermission;
 
 function resizePetalsCanvas() {
   if (!petalsCanvas) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2); // Ограничение 2 для 120 FPS
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   petalsCanvas.width = (window.innerWidth || 360) * dpr;
   petalsCanvas.height = (window.innerHeight || 640) * dpr;
   if (petalsCtx) {
@@ -366,11 +370,9 @@ function startCartPetals() {
       petalsList.push(new RosePetal(w, h, true));
     }
 
-    if (window.DeviceOrientationEvent) {
-      if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
-        window.addEventListener('deviceorientation', handleOrientation, true);
-      }
-    }
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    window.addEventListener('devicemotion', handleDeviceMotion, true);
+
     petalsCanvas.classList.add('active');
     animatePetals();
   } catch (e) {}
@@ -390,6 +392,7 @@ function stopCartPetals() {
   }
 
   window.removeEventListener('deviceorientation', handleOrientation, true);
+  window.removeEventListener('devicemotion', handleDeviceMotion, true);
   window.removeEventListener('resize', resizePetalsCanvas);
 
   setTimeout(() => {
