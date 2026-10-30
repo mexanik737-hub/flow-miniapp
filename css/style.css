@@ -1,15 +1,15 @@
 :root {
   --bg: #07090e;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #141822 0%, #07090e 75%);
-  --card-bg: rgba(16, 20, 30, 0.74);
-  --card-inner: rgba(10, 13, 20, 0.78);
-  --border: rgba(197, 160, 89, 0.14);
-  --border-accent: rgba(197, 160, 89, 0.42);
-  --gold: #c5a059;
-  --gold-light: #e8c887;
-  --gold-dark: #9e7d3b;
-  --gold-glow: rgba(197, 160, 89, 0.25);
-  --cyan: #c5a059;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #151924 0%, #07090e 75%);
+  --card-bg: rgba(16, 20, 30, 0.58);
+  --card-inner: rgba(10, 13, 20, 0.72);
+  --border: rgba(212, 175, 55, 0.16);
+  --border-accent: rgba(212, 175, 55, 0.48);
+  --gold: #d4af37;
+  --gold-light: #f5e0a0;
+  --gold-dark: #997528;
+  --gold-glow: rgba(212, 175, 55, 0.28);
+  --cyan: #d4af37;
   --green: #0d9468;
   --green-glow: rgba(13, 148, 104, 0.25);
   --amber: #c57d1e;
@@ -17,25 +17,26 @@
   --purple: #8b5cf6;
   --text: #f8fafc;
   --text-muted: #8e9bb0;
-  --dock-bg: rgba(12, 16, 24, 0.86);
-  --dock-shadow: 0 20px 48px rgba(0, 0, 0, 0.8);
+  --dock-bg: rgba(12, 16, 24, 0.75);
+  --dock-shadow: 0 20px 48px rgba(0, 0, 0, 0.85);
+  --daily-bloom-bg: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(16, 20, 30, 0.82) 55%, rgba(13, 148, 104, 0.15) 100%);
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 24px;
 }
 
 [data-theme="light"] {
-  --bg: #f7f5f0;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #ffffff 0%, #f0ece1 85%);
-  --card-bg: rgba(255, 255, 255, 0.86);
-  --card-inner: rgba(245, 241, 233, 0.85);
-  --border: rgba(168, 132, 58, 0.18);
-  --border-accent: rgba(168, 132, 58, 0.48);
-  --gold: #a8843a;
-  --gold-light: #c5a059;
-  --gold-dark: #7a5e24;
-  --gold-glow: rgba(168, 132, 58, 0.2);
-  --cyan: #a8843a;
+  --bg: #f8f6f0;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #ffffff 0%, #f1ece0 85%);
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-inner: rgba(246, 242, 234, 0.82);
+  --border: rgba(180, 142, 45, 0.2);
+  --border-accent: rgba(180, 142, 45, 0.55);
+  --gold: #b38b29;
+  --gold-light: #d4af37;
+  --gold-dark: #7a5e18;
+  --gold-glow: rgba(180, 142, 45, 0.22);
+  --cyan: #b38b29;
   --green: #059669;
   --green-glow: rgba(5, 150, 105, 0.2);
   --amber: #b45309;
@@ -43,8 +44,9 @@
   --purple: #7c3aed;
   --text: #171b22;
   --text-muted: #64748b;
-  --dock-bg: rgba(255, 255, 255, 0.9);
-  --dock-shadow: 0 16px 40px rgba(168, 132, 58, 0.15);
+  --dock-bg: rgba(255, 255, 255, 0.82);
+  --dock-shadow: 0 16px 40px rgba(180, 142, 45, 0.16);
+  --daily-bloom-bg: linear-gradient(135deg, rgba(212, 175, 55, 0.22) 0%, rgba(255, 255, 255, 0.92) 55%, rgba(13, 148, 104, 0.14) 100%);
 }
 
 * {
@@ -82,6 +84,7 @@ body {
   position: relative;
 }
 
+/* Холст опадающих лепестков роз (оптимизирован под 120 FPS) */
 #cart-petals-canvas {
   position: fixed;
   top: 0;
@@ -100,9 +103,22 @@ body {
   opacity: 1;
 }
 
+/* Холст конфетти для успешной оплаты */
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 250;
+  display: none;
+}
+
+/* Пружинная анимация счетчика корзины */
 @keyframes cartBounceGold {
   0% { transform: scale(1); color: inherit; text-shadow: none; }
-  30% { transform: scale(1.6) translateY(-4px); color: var(--gold-light); text-shadow: 0 0 14px var(--gold-light); }
+  30% { transform: scale(1.6) translateY(-4px); color: var(--gold-light); text-shadow: 0 0 16px var(--gold-light); }
   65% { transform: scale(0.9) translateY(1px); color: var(--gold); text-shadow: 0 0 8px var(--gold-glow); }
   100% { transform: scale(1) translateY(0); color: inherit; text-shadow: none; }
 }
@@ -133,15 +149,16 @@ header {
   background: var(--dock-bg);
   border: 1px solid var(--border-accent);
   border-radius: 40px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   padding: 7px 14px;
   display: flex;
   align-items: center;
   gap: 7px;
   cursor: pointer;
   transition: transform 0.15s ease;
+  transform: translateZ(0);
 }
 .hud-pill:active { transform: scale(0.96); }
 
@@ -161,7 +178,7 @@ header {
 
 .hud-address {
   font-size: 10px;
-  background: rgba(197, 160, 89, 0.12);
+  background: rgba(212, 175, 55, 0.14);
   color: var(--gold);
   border: 1px solid var(--border);
   padding: 2px 8px;
@@ -188,10 +205,11 @@ header {
   justify-content: center;
   font-size: 15px;
   cursor: pointer;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   transition: transform 0.15s ease;
+  transform: translateZ(0);
 }
 .hud-notif-btn:active { transform: scale(0.92); }
 
@@ -226,7 +244,7 @@ header {
 }
 .screen.active {
   display: block;
-  animation: tabFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: tabFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes tabFadeIn {
@@ -234,14 +252,13 @@ header {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Карточка "Товар дня" */
 .daily-bloom-card {
   position: relative;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(197, 160, 89, 0.16) 0%, rgba(16, 20, 30, 0.88) 55%, rgba(13, 148, 104, 0.12) 100%);
+  background: var(--daily-bloom-bg);
   border: 1px solid var(--border-accent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   padding: 14px;
   margin-bottom: 14px;
   overflow: hidden;
@@ -266,10 +283,13 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--gold-light);
-  background: rgba(197, 160, 89, 0.16);
+  background: rgba(212, 175, 55, 0.18);
   border: 1px solid var(--border-accent);
   padding: 3px 9px;
   border-radius: 20px;
+}
+[data-theme="light"] .daily-bloom-tag {
+  color: var(--gold-dark);
 }
 .daily-bloom-time {
   font-size: 10px;
@@ -287,7 +307,7 @@ header {
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid var(--border-accent);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 .daily-bloom-thumb img {
   width: 100%;
@@ -323,6 +343,9 @@ header {
   font-size: 16px;
   font-weight: 900;
   color: var(--gold-light);
+}
+[data-theme="light"] .daily-bloom-price {
+  color: var(--gold-dark);
 }
 .daily-bloom-btn {
   font-size: 11px;
@@ -366,7 +389,7 @@ header {
 .filter-btn-pill {
   padding: 7px 14px;
   border-radius: 20px;
-  background: rgba(197, 160, 89, 0.1);
+  background: rgba(212, 175, 55, 0.12);
   border: 1px solid var(--border-accent);
   color: var(--gold);
   font-size: 12px;
@@ -401,7 +424,7 @@ header {
 .sync-mini-btn:active {
   transform: scale(0.92);
   border-color: var(--gold-light);
-  background: rgba(197, 160, 89, 0.12);
+  background: rgba(212, 175, 55, 0.14);
 }
 .sync-mini-btn.rotating svg {
   transform: rotate(360deg);
@@ -414,12 +437,11 @@ header {
   width: 100%;
 }
 
+/* Оптимизированный Liquid Glass для 120 FPS */
 .product-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
@@ -427,13 +449,14 @@ header {
   cursor: pointer;
   position: relative;
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transform: translateZ(0);
 }
 .product-card:active { transform: scale(0.97); }
 
+/* Непрозрачная контрастная плашка "Хит" */
 .product-card.popular-hit {
   border-color: var(--border-accent);
-  box-shadow: 0 8px 28px rgba(197, 160, 89, 0.18);
-  position: relative;
+  box-shadow: 0 8px 28px rgba(212, 175, 55, 0.22);
 }
 .product-card.popular-hit::before {
   content: '';
@@ -442,7 +465,7 @@ header {
   left: -120%;
   width: 65%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(232, 200, 135, 0.15), rgba(255, 255, 255, 0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgba(245, 224, 160, 0.15), rgba(255, 255, 255, 0.2), transparent);
   transform: skewX(-25deg);
   animation: shimmerLuxury 4.8s ease-in-out infinite;
   pointer-events: none;
@@ -480,22 +503,24 @@ header {
   display: block;
 }
 
+/* Полная непрозрачность плашки Хит для идеальной читаемости */
 .hit-badge {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-dark) 100%);
+  background: linear-gradient(135deg, #f5e0a0 0%, #d4af37 50%, #997528 100%);
   color: #07090e;
   font-size: 10px;
   font-weight: 900;
-  padding: 3px 8px;
+  padding: 4px 9px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   z-index: 3;
   display: flex;
   align-items: center;
   gap: 3px;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
 
 .thumb-placeholder-box {
@@ -564,7 +589,7 @@ header {
   border-radius: 10px;
   background: linear-gradient(135deg, var(--green) 0%, #0a704e 100%);
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 4px 12px var(--green-glow);
   display: flex;
   align-items: center;
@@ -580,7 +605,7 @@ header {
   position: relative;
   padding: 7px 13px;
   border-radius: 10px;
-  background: rgba(197, 160, 89, 0.12);
+  background: rgba(212, 175, 55, 0.14);
   color: var(--gold);
   border: 1px solid var(--border-accent);
   font-size: 11px;
@@ -647,18 +672,17 @@ header {
 .box-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--radius-md);
   padding: 14px;
   margin-bottom: 12px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: background 0.25s ease, border-color 0.25s ease;
+  transform: translateZ(0);
 }
 
 .box-card.neon-glow {
   border-color: var(--border-accent);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 20px var(--gold-glow);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px var(--gold-glow);
 }
 
 .btn-metro {
@@ -746,6 +770,9 @@ header {
   color: var(--gold-light);
   letter-spacing: 0.3px;
 }
+[data-theme="light"] .order-progress-stage {
+  color: var(--gold-dark);
+}
 
 .order-progress-percent {
   font-size: 11px;
@@ -781,7 +808,7 @@ header {
   color: var(--text-muted);
 }
 .order-progress-steps span.done { color: var(--green); }
-.order-progress-steps span.active { color: var(--gold-light); }
+.order-progress-steps span.active { color: var(--gold); font-weight: 900; }
 
 .status-badge {
   font-size: 10px;
@@ -794,7 +821,7 @@ header {
 }
 .st-await-pay { background: rgba(197, 125, 30, 0.16); color: var(--amber); border: 1px solid rgba(197, 125, 30, 0.35); }
 .st-check-pay { background: rgba(139, 92, 246, 0.16); color: var(--purple); border: 1px solid rgba(139, 92, 246, 0.35); }
-.st-building { background: rgba(197, 160, 89, 0.18); color: var(--gold); border: 1px solid var(--border-accent); }
+.st-building { background: rgba(212, 175, 55, 0.18); color: var(--gold); border: 1px solid var(--border-accent); }
 .st-transit { background: rgba(139, 92, 246, 0.2); color: var(--purple); border: 1px solid var(--purple); }
 .st-completed { background: rgba(13, 148, 104, 0.16); color: var(--green); border: 1px solid rgba(13, 148, 104, 0.35); }
 .st-cancelled { background: rgba(185, 28, 28, 0.16); color: #ef4444; border: 1px solid rgba(185, 28, 28, 0.35); }
@@ -819,12 +846,13 @@ header {
   border: 1px solid var(--border-accent);
   border-radius: 40px;
   padding: 6px 8px;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   box-shadow: var(--dock-shadow);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
+  transform: translateZ(0);
 }
 
 .dock-tab {
@@ -851,7 +879,7 @@ header {
 .dock-tab span { font-size: 10px; font-weight: 700; white-space: nowrap; }
 
 .dock-tab.active {
-  background: rgba(197, 160, 89, 0.14);
+  background: rgba(212, 175, 55, 0.16);
   color: var(--gold);
 }
 .dock-tab.spinning svg {
@@ -862,12 +890,13 @@ header {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 110;
   align-items: flex-end;
   justify-content: center;
+  transform: translateZ(0);
 }
 .modal-overlay.open { display: flex; }
 
@@ -880,17 +909,17 @@ header {
   padding: 20px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.5);
-  animation: sheetSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.55);
+  animation: sheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
 }
 
-/* Модалка выбора медиа на 2/3 высоты экрана */
 .modal-sheet.sheet-drive-two-thirds {
   height: 67vh;
   max-height: 67vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Скроллится только сама сетка с картинками */
+  overflow: hidden;
 }
 
 @keyframes sheetSlideUp {
@@ -975,7 +1004,7 @@ header {
   cursor: pointer;
 }
 .custom-select-option:hover, .custom-select-option:active {
-  background: rgba(197, 160, 89, 0.16);
+  background: rgba(212, 175, 55, 0.16);
   color: var(--gold);
 }
 
@@ -1030,7 +1059,7 @@ header {
   cursor: pointer;
 }
 .suggest-item:hover, .suggest-item:active {
-  background: rgba(197, 160, 89, 0.16);
+  background: rgba(212, 175, 55, 0.16);
   color: var(--gold);
 }
 
@@ -1069,7 +1098,7 @@ header {
   transition: all 0.15s ease;
 }
 .toggle-btn.active {
-  background: rgba(197, 160, 89, 0.16) !important;
+  background: rgba(212, 175, 55, 0.18) !important;
   border-color: var(--gold) !important;
   color: var(--gold) !important;
 }
@@ -1101,7 +1130,7 @@ header {
   transition: all 0.15s ease;
 }
 .variant-chip.active {
-  background: rgba(197, 160, 89, 0.16);
+  background: rgba(212, 175, 55, 0.18);
   border-color: var(--gold);
   color: var(--gold);
 }
@@ -1125,7 +1154,7 @@ header {
   cursor: pointer;
 }
 .addr-pill.active {
-  background: rgba(197, 160, 89, 0.14);
+  background: rgba(212, 175, 55, 0.16);
   border-color: var(--gold);
   color: var(--gold);
 }
@@ -1223,18 +1252,17 @@ header {
   grid-auto-rows: max-content;
   gap: 8px;
   flex: 1 1 auto;
-  min-height: 0; /* Критично для снятия сжатия во Flexbox */
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   margin: 8px 0;
   padding: 4px 2px 8px 2px;
 }
-
 .drive-media-item {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  min-height: 95px; /* Защита от схлопывания сетки */
+  min-height: 95px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -1242,19 +1270,16 @@ header {
   cursor: pointer;
   transform: translateZ(0);
 }
-
 .drive-media-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-
 .drive-media-item.selected {
   border: 2px solid var(--gold);
   box-shadow: 0 0 14px var(--gold-glow);
 }
-
 .drive-media-check {
   position: absolute;
   top: 5px;
@@ -1273,7 +1298,6 @@ header {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
-
 .drive-media-item.selected .drive-media-check {
   background: var(--gold);
   border-color: var(--gold);
@@ -1281,7 +1305,6 @@ header {
   font-weight: 900;
 }
 
-/* Фотострип с кнопками перемещения фото ◄ ► */
 .prod-photo-strip {
   display: flex;
   gap: 8px;
@@ -1485,7 +1508,7 @@ body.in-text-edit-mode [data-config-key] {
 .courier-copy-btn {
   padding: 6px 10px;
   border-radius: 6px;
-  background: rgba(197, 160, 89, 0.14);
+  background: rgba(212, 175, 55, 0.16);
   color: var(--gold);
   border: 1px solid var(--border-accent);
   font-size: 11px;
@@ -1506,7 +1529,7 @@ body.in-text-edit-mode [data-config-key] {
 }
 .notif-card-item.unread {
   border-color: var(--gold);
-  background: rgba(197, 160, 89, 0.08);
+  background: rgba(212, 175, 55, 0.08);
 }
 .notif-card-header {
   display: flex;
@@ -1533,7 +1556,7 @@ body.in-text-edit-mode [data-config-key] {
   font-size: 10px;
   padding: 2px 7px;
   border-radius: 4px;
-  background: rgba(197, 160, 89, 0.15);
+  background: rgba(212, 175, 55, 0.16);
   color: var(--gold);
   display: inline-block;
   font-weight: 800;
@@ -1585,7 +1608,6 @@ body.in-text-edit-mode [data-config-key] {
   color: var(--text);
 }
 
-/* Стили менеджера категорий */
 .cat-item-card {
   background: var(--card-inner);
   border: 1px solid var(--border);
@@ -1614,7 +1636,7 @@ body.in-text-edit-mode [data-config-key] {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 12px;
-  background: rgba(197, 160, 89, 0.16);
+  background: rgba(212, 175, 55, 0.18);
   color: var(--gold);
   font-weight: 800;
 }
@@ -1633,6 +1655,28 @@ body.in-text-edit-mode [data-config-key] {
   padding: 6px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   font-size: 11px;
+}
+
+/* Модалки предпросмотра заказа и успешной оплаты */
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.summary-line-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  flex: 0 0 35%;
+}
+.summary-line-val {
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
 }
 
 #toast {
