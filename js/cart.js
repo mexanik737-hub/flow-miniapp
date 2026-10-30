@@ -72,8 +72,13 @@ function addPopToCart() {
   cart[cartKey] = (cart[cartKey] || 0) + popQty;
   cartAssemblyItems[cartKey] = true;
 
-  triggerHaptic('medium');
-  triggerCartCounterBounce();
+  const addBtn = document.getElementById('pop-add-cart-btn');
+  if (typeof animateFlyToCart === 'function') {
+    animateFlyToCart(addBtn);
+  } else {
+    triggerCartCounterBounce();
+  }
+
   updateCartUI();
   updateProductCardAction(activePopItem.id);
   closeProductModal();
@@ -81,7 +86,7 @@ function addPopToCart() {
 }
 window.addPopToCart = addPopToCart;
 
-function quickAdd(id) {
+function quickAdd(id, event) {
   let item = catalog.find(i => String(i.id) === String(id));
   if (!item) {
     const group = displayCatalog.find(g => String(g.id) === String(id));
@@ -105,8 +110,12 @@ function quickAdd(id) {
   cart[cartKey] = (cart[cartKey] || 0) + 1;
   cartAssemblyItems[cartKey] = true;
 
-  triggerHaptic('medium');
-  triggerCartCounterBounce();
+  if (typeof animateFlyToCart === 'function') {
+    animateFlyToCart(event ? event.target : null);
+  } else {
+    triggerCartCounterBounce();
+  }
+
   updateCartUI();
   updateProductCardAction(id);
   toast(`Добавлено: ${formatFullItemTitle(item.title, chosenUnit, chosenVar, chosenColor)}`);
