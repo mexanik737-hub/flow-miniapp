@@ -390,24 +390,18 @@ async function loadUserOrders() {
     const nowTs = Date.now();
 
     container.innerHTML = orders.map(ord => {
-      let isAwaitingPay = (ord.status === 'Ожидает оплаты');
+      const isAwaitingPay = (ord.status === 'Ожидает оплаты');
       const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
 
       let timerCardBadge = "";
       if (isAwaitingPay) {
-        const createdTs = parseOrderDateToTs(ord.date_time);
-        if (createdTs) {
-          const elapsedSec = Math.floor((nowTs - createdTs) / 1000);
-          const leftSec = (15 * 60) - elapsedSec;
+        const payStartTs = parseOrderDateToTs(ord.updated_at) || parseOrderDateToTs(ord.date_time);
+        if (payStartTs) {
+          const elapsedSec = Math.floor((nowTs - payStartTs) / 1000);
+          const leftSec = Math.floor(15.5 * 60) - elapsedSec;
 
           if (leftSec <= 0) {
-            ord.status = 'Отменен (таймаут)';
-            isAwaitingPay = false;
-            fetch(API_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain' },
-              body: JSON.stringify({ action: "cancel_order_timeout", order_id: ord.order_id })
-            }).catch(() => {});
+            timerCardBadge = `⏳ Время оплаты истекло`;
           } else {
             const m = Math.floor(leftSec / 60);
             const s = leftSec % 60;
@@ -442,7 +436,7 @@ async function loadUserOrders() {
 
           ${isAwaitingPay ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.updated_at || ord.date_time}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
@@ -466,7 +460,6 @@ async function loadUserOrders() {
 }
 window.loadUserOrders = loadUserOrders;
 
-// Принудительное обновление заказов с анимацией золотой иконки
 function forceSyncUserOrders(btnEl) {
   triggerHaptic('medium');
   if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
