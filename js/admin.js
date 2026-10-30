@@ -900,7 +900,6 @@ async function openBatchMoveCategoryDialog() {
 }
 window.openBatchMoveCategoryDialog = openBatchMoveCategoryDialog;
 
-// УПРАВЛЕНИЕ КАТЕГОРИЯМИ ДЛЯ ТОВАРА ДНЯ
 function openDailyBloomCategoriesModal() {
   triggerHaptic('selection');
   selectedDailyBloomCats.clear();
@@ -1672,13 +1671,10 @@ function renderRootStats() {
     }
   } else if (currentStatsPeriod === 'month') {
     if (breakdownBox) breakdownBox.style.display = 'none';
-    const list = cachedStatsData.past7days || [];
-    list.forEach(d => {
-      totalVisits += d.visits;
-      totalOrdersCount += d.orders_count;
-      totalRevenue += d.orders_total;
-      totalCompleted += d.completed_count;
-    });
+    totalVisits = cachedStatsData.month?.visits || 0;
+    totalOrdersCount = cachedStatsData.month?.orders_count || 0;
+    totalRevenue = cachedStatsData.month?.orders_total || 0;
+    totalCompleted = cachedStatsData.month?.completed_count || 0;
   }
 
   const vEl = document.getElementById('stat-val-visits');
@@ -1695,9 +1691,9 @@ function renderRootStats() {
   if (pList) {
     const products = cachedStatsData.products_views || [];
     if (!products.length) {
-      pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о просмотрах</div>';
+      pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Каталог пуст</div>';
     } else {
-      pList.innerHTML = products.slice(0, 15).map((p, idx) => `
+      pList.innerHTML = products.map((p, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
           <div><b>${idx + 1}.</b> ${p.title}</div>
           <div style="color:var(--gold); font-weight:800;">${p.views} просм.</div>
