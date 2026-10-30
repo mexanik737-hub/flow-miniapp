@@ -56,13 +56,12 @@ window.saveCurrentOrderFormDraft = saveCurrentOrderFormDraft;
 
 function loadCurrentOrderFormDraft() {
   try {
-    // Сначала проверяем разовые сохранённые настройки на следующий заказ
     const savedDefaultsStr = localStorage.getItem('flw_order_saved_defaults');
     let sourceData = null;
 
     if (savedDefaultsStr) {
       sourceData = JSON.parse(savedDefaultsStr);
-      localStorage.removeItem('flw_order_saved_defaults'); // Одноразовое использование
+      localStorage.removeItem('flw_order_saved_defaults');
     } else {
       const draftStr = localStorage.getItem('flw_order_draft');
       if (draftStr) sourceData = JSON.parse(draftStr);
@@ -70,15 +69,20 @@ function loadCurrentOrderFormDraft() {
 
     if (!sourceData) return;
 
-    if (sourceData.recName) document.getElementById('ord-rec-name').value = sourceData.recName;
-    if (sourceData.recPhone) document.getElementById('ord-rec-phone').value = sourceData.recPhone;
-    if (sourceData.street) document.getElementById('ord-suggest-input').value = sourceData.street;
-    if (sourceData.entrance) document.getElementById('ord-entrance').value = sourceData.entrance;
-    if (sourceData.floor) document.getElementById('ord-floor').value = sourceData.floor;
-    if (sourceData.apt) document.getElementById('ord-apt').value = sourceData.apt;
-    if (sourceData.intercom) document.getElementById('ord-intercom').value = sourceData.intercom;
-    if (sourceData.comment) document.getElementById('ord-comment').value = sourceData.comment;
-    if (sourceData.shopComment) document.getElementById('ord-shop-comment').value = sourceData.shopComment;
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) el.value = val;
+    };
+
+    setVal('ord-rec-name', sourceData.recName);
+    setVal('ord-rec-phone', sourceData.recPhone);
+    setVal('ord-suggest-input', sourceData.street);
+    setVal('ord-entrance', sourceData.entrance);
+    setVal('ord-floor', sourceData.floor);
+    setVal('ord-apt', sourceData.apt);
+    setVal('ord-intercom', sourceData.intercom);
+    setVal('ord-comment', sourceData.comment);
+    setVal('ord-shop-comment', sourceData.shopComment);
 
     if (sourceData.delType && typeof setDeliveryType === 'function') {
       setDeliveryType(sourceData.delType);
@@ -86,8 +90,9 @@ function loadCurrentOrderFormDraft() {
     if (sourceData.recType && typeof setRecipientType === 'function') {
       setRecipientType(sourceData.recType);
     }
-    if (sourceData.street && typeof onAddressInput === 'function') {
-      onAddressInput(sourceData.street);
+    if (sourceData.selectedTime) {
+      const timeEl = document.getElementById('selected-time-display');
+      if (timeEl) timeEl.innerText = sourceData.selectedTime;
     }
   } catch (e) {}
 }
