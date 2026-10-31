@@ -1,3 +1,30 @@
+// Гарантированное восстановление корзины из памяти при загрузке скрипта
+try {
+  const savedCart = localStorage.getItem('flw_cart') || localStorage.getItem('cart');
+  if (savedCart) {
+    const parsed = JSON.parse(savedCart);
+    if (parsed && typeof parsed === 'object') {
+      if (typeof cart !== 'undefined') {
+        Object.assign(cart, parsed);
+      }
+      window.cart = parsed;
+    }
+  }
+  const savedAsm = localStorage.getItem('flw_cart_assembly');
+  if (savedAsm) {
+    const parsedAsm = JSON.parse(savedAsm);
+    if (parsedAsm && typeof parsedAsm === 'object') {
+      if (typeof cartAssemblyItems !== 'undefined') Object.assign(cartAssemblyItems, parsedAsm);
+      window.cartAssemblyItems = parsedAsm;
+    }
+  }
+  const savedMode = localStorage.getItem('flw_is_assembly_mode');
+  if (savedMode !== null) {
+    if (typeof isAssemblyMode !== 'undefined') isAssemblyMode = (savedMode === 'true');
+    window.isAssemblyMode = (savedMode === 'true');
+  }
+} catch (e) {}
+
 function triggerCartCounterBounce() {
   try {
     const counter = document.getElementById('cart-counter');
@@ -15,22 +42,33 @@ function triggerCartCounterBounce() {
 window.triggerCartCounterBounce = triggerCartCounterBounce;
 
 function saveCartToStorage() {
-  localStorage.setItem('flw_cart', JSON.stringify(cart));
-  localStorage.setItem('flw_cart_assembly', JSON.stringify(cartAssemblyItems));
-  localStorage.setItem('flw_is_assembly_mode', String(isAssemblyMode));
-  window.cart = cart;
-  window.cartAssemblyItems = cartAssemblyItems;
-  window.isAssemblyMode = isAssemblyMode;
+  const targetCart = (typeof cart !== 'undefined' && cart) ? cart : (window.cart || {});
+  const targetAsm = (typeof cartAssemblyItems !== 'undefined' && cartAssemblyItems) ? cartAssemblyItems : (window.cartAssemblyItems || {});
+  const targetMode = (typeof isAssemblyMode !== 'undefined') ? isAssemblyMode : (window.isAssemblyMode || false);
+
+  localStorage.setItem('flw_cart', JSON.stringify(targetCart));
+  localStorage.setItem('flw_cart_assembly', JSON.stringify(targetAsm));
+  localStorage.setItem('flw_is_assembly_mode', String(targetMode));
+
+  window.cart = targetCart;
+  window.cartAssemblyItems = targetAsm;
+  window.isAssemblyMode = targetMode;
 }
 window.saveCartToStorage = saveCartToStorage;
 
 function clearCartStorage() {
-  cart = {};
-  cartAssemblyItems = {};
-  isAssemblyMode = false;
+  if (typeof cart !== 'undefined') {
+    Object.keys(cart).forEach(k => delete cart[k]);
+  }
+  if (typeof cartAssemblyItems !== 'undefined') {
+    Object.keys(cartAssemblyItems).forEach(k => delete cartAssemblyItems[k]);
+  }
+  if (typeof isAssemblyMode !== 'undefined') isAssemblyMode = false;
+
   window.cart = {};
   window.cartAssemblyItems = {};
   window.isAssemblyMode = false;
+
   localStorage.removeItem('flw_cart');
   localStorage.removeItem('flw_cart_assembly');
   localStorage.removeItem('flw_is_assembly_mode');
@@ -75,8 +113,14 @@ function addPopToCart() {
   }
 
   const cartKey = `${targetItem.id}:::${finalUnit}:::${finalVariant}:::${finalColor}`;
-  cart[cartKey] = (cart[cartKey] || 0) + popQty;
-  cartAssemblyItems[cartKey] = true;
+  
+  if (typeof cart === 'undefined') window.cart = window.cart || {};
+  const activeCartRef = (typeof cart !== 'undefined') ? cart : window.cart;
+  const activeAsmRef = (typeof cartAssemblyItems !== 'undefined') ? cartAssemblyItems : (window.cartAssemblyItems = window.cartAssemblyItems || {});
+
+  activeCartRef[cartKey] = (activeCartRef[cartKey] || 0) + (popQty || 1);
+  activeAsmRef[cartKey] = true;
+  window.cart = activeCartRef;
 
   const addBtn = document.getElementById('pop-add-cart-btn');
   if (typeof animateFlyToCart === 'function') {
@@ -113,8 +157,14 @@ function quickAdd(id, event) {
   if (chosenColor.includes('/')) chosenColor = chosenColor.split('/')[0].trim();
 
   const cartKey = `${item.id}:::${chosenUnit}:::${chosenVar}:::${chosenColor}`;
-  cart[cartKey] = (cart[cartKey] || 0) + 1;
-  cartAssemblyItems[cartKey] = true;
+
+  if (typeof cart === 'undefined') window.cart = window.cart || {};
+  const activeCartRef = (typeof cart !== 'undefined') ? cart : window.cart;
+  const activeAsmRef = (typeof cartAssemblyItems !== 'undefined') ? cartAssemblyItems : (window.cartAssemblyItems = window.cartAssemblyItems || {});
+
+  activeCartRef[cartKey] = (activeCartRef[cartKey] || 0) + 1;
+  activeAsmRef[cartKey] = true;
+  window.cart = activeCartRef;
 
   if (typeof animateFlyToCart === 'function') {
     animateFlyToCart(event ? event.target : null);
@@ -130,12 +180,16 @@ window.quickAdd = quickAdd;
 
 function modifyCartByKey(cartKey, delta) {
   triggerHaptic('medium');
-  cart[cartKey] = (cart[cartKey] || 0) + delta;
+  const activeCartRef = (typeof cart !== 'undefined') ? cart : (window.cart || {});
+  const activeAsmRef = (typeof cartAssemblyItems !== 'undefined') ? cartAssemblyItems : (window.cartAssemblyItems || {});
+
+  activeCartRef[cartKey] = (activeCartRef[cartKey] || 0) + delta;
   const [itemId] = cartKey.split(':::');
-  if (cart[cartKey] <= 0) {
-    delete cart[cartKey];
-    delete cartAssemblyItems[cartKey];
+  if (activeCartRef[cartKey] <= 0) {
+    delete activeCartRef[cartKey];
+    delete activeAsmRef[cartKey];
   }
+  window.cart = activeCartRef;
   updateCartUI();
   updateProductCardAction(itemId);
 }
@@ -143,13 +197,17 @@ window.modifyCartByKey = modifyCartByKey;
 
 function removeAllOfItemFromCart(id) {
   triggerHaptic('medium');
-  Object.keys(cart || {}).forEach(key => {
+  const activeCartRef = (typeof cart !== 'undefined') ? cart : (window.cart || {});
+  const activeAsmRef = (typeof cartAssemblyItems !== 'undefined') ? cartAssemblyItems : (window.cartAssemblyItems || {});
+
+  Object.keys(activeCartRef).forEach(key => {
     const [itemId] = key.split(':::');
     if (String(itemId) === String(id)) {
-      delete cart[key];
-      delete cartAssemblyItems[key];
+      delete activeCartRef[key];
+      delete activeAsmRef[key];
     }
   });
+  window.cart = activeCartRef;
   updateCartUI();
   updateProductCardAction(id);
   toast("Удалено из корзины");
@@ -158,7 +216,8 @@ window.removeAllOfItemFromCart = removeAllOfItemFromCart;
 
 function toggleItemAssemblySelection(cartKey) {
   triggerHaptic('light');
-  cartAssemblyItems[cartKey] = !cartAssemblyItems[cartKey];
+  const activeAsmRef = (typeof cartAssemblyItems !== 'undefined') ? cartAssemblyItems : (window.cartAssemblyItems = window.cartAssemblyItems || {});
+  activeAsmRef[cartKey] = !activeAsmRef[cartKey];
   renderCartItems();
   saveCartToStorage();
 }
@@ -167,12 +226,13 @@ window.toggleItemAssemblySelection = toggleItemAssemblySelection;
 function updateCartUI() {
   saveCartToStorage();
 
-  const count = Object.values(cart || {}).reduce((a, b) => a + b, 0);
+  const activeCartRef = (typeof cart !== 'undefined') ? cart : (window.cart || {});
+  const count = Object.values(activeCartRef).reduce((a, b) => a + (parseInt(b, 10) || 0), 0);
   const counterEl = document.getElementById('cart-counter');
   if (counterEl) counterEl.innerText = count;
 
   const checkoutCard = document.getElementById('cart-checkout-card');
-  const entries = Object.entries(cart || {});
+  const entries = Object.entries(activeCartRef);
 
   if (!entries.length) {
     const container = document.getElementById('cart-items-container');
@@ -194,15 +254,17 @@ function updateCartUI() {
     }
   }
 
-  displayCatalog.forEach(g => {
-    if (g.is_group) {
-      const el = document.getElementById(`product-action-${g.id}`);
-      if (el) {
-        const hasItems = isGroupInCart(g.id);
-        el.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${g.id}')">Выбрать</button>`;
+  if (typeof displayCatalog !== 'undefined' && Array.isArray(displayCatalog)) {
+    displayCatalog.forEach(g => {
+      if (g.is_group) {
+        const el = document.getElementById(`product-action-${g.id}`);
+        if (el) {
+          const hasItems = isGroupInCart(g.id);
+          el.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${g.id}')">Выбрать</button>`;
+        }
       }
-    }
-  });
+    });
+  }
 }
 window.updateCartUI = updateCartUI;
 
@@ -211,23 +273,28 @@ function renderCartItems() {
   if (!container) return;
 
   let subtotal = 0;
-  const entries = Object.entries(cart || {});
+  const activeCartRef = (typeof cart !== 'undefined') ? cart : (window.cart || {});
+  const activeAsmRef = (typeof cartAssemblyItems !== 'undefined') ? cartAssemblyItems : (window.cartAssemblyItems || {});
+  const activeMode = (typeof isAssemblyMode !== 'undefined') ? isAssemblyMode : (window.isAssemblyMode || false);
+
+  const entries = Object.entries(activeCartRef);
 
   container.innerHTML = entries.map(([cartKey, qty]) => {
     const [id, selectedUnit, selectedVar, selectedColor] = cartKey.split(':::');
     const item = catalog.find(i => String(i.id) === String(id));
     if (!item) return '';
 
-    subtotal += item.price * qty;
+    const numQty = parseInt(qty, 10) || 1;
+    subtotal += item.price * numQty;
     const photos = (item.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
     const thumb = photos[0] || "";
-    const isChecked = !!cartAssemblyItems[cartKey];
+    const isChecked = !!activeAsmRef[cartKey];
     const fullTitle = formatFullItemTitle(item.title, selectedUnit || item.unit, selectedVar, selectedColor);
 
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
         <div style="display:flex; align-items:center; gap:8px; max-width:68%;">
-          ${isAssemblyMode ? `
+          ${activeMode ? `
             <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
           ` : ''}
           <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="triggerHaptic('selection'); openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}')">
@@ -236,13 +303,13 @@ function renderCartItems() {
             </div>
             <div>
               <div style="font-size:12px; font-weight:700; line-height:1.25; color:var(--text);">${fullTitle}</div>
-              <div style="font-size:11px; color:var(--gold); margin-top:2px;">${item.price} ₽ × ${qty} шт. = ${item.price * qty} ₽</div>
+              <div style="font-size:11px; color:var(--gold); margin-top:2px;">${item.price} ₽ × ${numQty} шт. = ${item.price * numQty} ₽</div>
             </div>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:6px;">
           <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', -1)">–</button>
-          <span style="font-size:14px; font-weight:800; min-width:18px; text-align:center; color:var(--text);">${qty}</span>
+          <span style="font-size:14px; font-weight:800; min-width:18px; text-align:center; color:var(--text);">${numQty}</span>
           <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', 1)">+</button>
         </div>
       </div>
