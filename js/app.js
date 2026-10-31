@@ -4,7 +4,7 @@ window.cachedFaqData = window.cachedFaqData || null;
 function animateSyncBtn(btnEl) {
   if (!btnEl) return;
   btnEl.classList.remove('rotating');
-  void btnEl.offsetWidth; // перезапуск CSS-анимации
+  void btnEl.offsetWidth;
   btnEl.classList.add('rotating');
   setTimeout(() => btnEl.classList.remove('rotating'), 650);
 }
@@ -60,24 +60,24 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
-// Авторизация и доступ в Root по 5 тапам
+// Авторизация и доступ в Root по 5 тапам (без ложной блокировки обычных пользователей)
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  // 1. Если в базе явно стоит запрет
-  if (currentUser && (currentUser.is_blocked_admin === true || currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
-    toast("Доступ запрещен администратором");
-    return;
-  }
-
-  // 2. Если ID создателя (8900179932) или в базе TRUE — вход сразу без паролей
+  // 1. Создатель или админ по флагу заходят сразу
   if (String(userId) === ADMIN_TELEGRAM_ID || isAdmin || (currentUser && currentUser.is_admin === true)) {
     isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
-  // 3. Если ячейка пустая, клиент новый или анонимный — считаем 5 тапов за 2 секунды
+  // 2. Явный бан доступа администратором
+  if (currentUser && currentUser.is_blocked_admin === true) {
+    toast("Доступ запрещен администратором");
+    return;
+  }
+
+  // 3. Подсчет 5 тапов за 2 секунды для запроса пароля
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
@@ -386,7 +386,7 @@ function contactSupport() {
 }
 window.contactSupport = contactSupport;
 
-// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
+// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА (С ФИЛЬТРАЦИЕЙ ПО ДАТЕ РЕГИСТРАЦИИ) -------------------
 
 async function loadNotifications(force = false) {
   const cached = localStorage.getItem('flw_notifs_cache');
@@ -414,10 +414,21 @@ function openNotificationsModal() {
   const container = document.getElementById('notifications-list');
   if (!container) return;
 
-  if (!clientNotifications || !clientNotifications.length) {
+  const userRegDateTs = currentUser?.reg_date ? parseRuDateToTimestamp(currentUser.reg_date) : 0;
+
+  // Фильтруем: скрываем рассылки старше даты регистрации клиента
+  const visibleNotifs = (clientNotifications || []).filter(n => {
+    const notifTs = parseOrderDateToTs(n.created_at) || 0;
+    if (userRegDateTs > 0 && notifTs > 0 && notifTs < userRegDateTs) {
+      return false;
+    }
+    return true;
+  });
+
+  if (!visibleNotifs.length) {
     container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px 0; font-size:12px;">Новых уведомлений нет</div>';
   } else {
-    container.innerHTML = clientNotifications.map(n => {
+    container.innerHTML = visibleNotifs.map(n => {
       const isUnread = !(readNotificationIds || []).includes(String(n.id));
       const targetTitle = getTabDisplayTitle(n.target_tab);
 
@@ -433,7 +444,7 @@ function openNotificationsModal() {
       `;
     }).join('');
 
-    clientNotifications.forEach(n => {
+    visibleNotifs.forEach(n => {
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
@@ -531,7 +542,6 @@ async function checkDataHashesAndSync() {
 }
 window.checkDataHashesAndSync = checkDataHashesAndSync;
 
-// Автоматическая мгновенная проверка изменений в таблице при возврате в приложение
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     checkDataHashesAndSync();
@@ -545,7 +555,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Инициализация при полной готовности DOM
 function initApp() {
   try {
     loadCatalog();
@@ -565,7 +574,6 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// Фоновый опрос заказов и проверка хэшей каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
