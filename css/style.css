@@ -97,7 +97,6 @@ body {
 body.modal-open-blur .app-wrapper {
   transform: scale(0.96) translateY(4px);
   filter: brightness(0.7) blur(1.5px);
-  pointer-events: none;
 }
 [data-theme="light"] body.modal-open-blur .app-wrapper {
   filter: brightness(0.85) blur(1.5px);
@@ -121,7 +120,6 @@ body.modal-open-blur .app-wrapper {
   opacity: 1;
 }
 
-/* Полноэкранный холст конфетти */
 #confetti-canvas {
   position: fixed;
   inset: 0;
@@ -288,7 +286,6 @@ header {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Карточка "Товар дня" */
 .daily-bloom-card {
   position: relative;
   border-radius: var(--radius-lg);
@@ -543,7 +540,6 @@ header {
   display: block;
 }
 
-/* Плашка «ХИТ» (идентичная в обеих темах: золотой слиток с темным текстом) */
 .hit-badge {
   position: absolute;
   bottom: 8px;
@@ -1436,7 +1432,7 @@ header {
 
 .top-confirm-popup {
   position: fixed;
-  top: -120px;
+  top: -140px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -1447,11 +1443,18 @@ header {
   padding: 14px 16px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), var(--glass-rim);
   z-index: 250;
-  transition: top 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: top 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
 }
 .top-confirm-popup.show {
   top: 14px;
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
 }
+
 .top-confirm-title {
   font-size: 13px;
   font-weight: 700;
@@ -1733,7 +1736,6 @@ body.in-text-edit-mode [data-config-key] {
   font-size: 11px;
 }
 
-/* Сводка заказа в модалке подтверждения */
 .summary-card-block {
   background: var(--card-inner);
   border: 1px solid var(--border);
