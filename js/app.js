@@ -60,24 +60,24 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
-// Авторизация и доступ в Root по 5 тапам (без ложной блокировки)
+// Авторизация и доступ в Root по 5 тапам (без ложных блокировок)
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  // 1. Блокировать ТОЛЬКО если в таблице явно стоит флаг блокировки
+  // 1. Блокировка срабатывает строго при явном запрете администратора в таблице
   if (currentUser && currentUser.is_blocked_admin === true) {
     toast("Доступ запрещен администратором");
     return;
   }
 
-  // 2. Если ID создателя (8900179932) или в базе TRUE — вход сразу без паролей
+  // 2. Если ID создателя (8900179932) или подтверждённый администратор — открываем сразу
   if (String(userId) === ADMIN_TELEGRAM_ID || isAdmin || (currentUser && currentUser.is_admin === true)) {
     isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
-  // 3. Для всех остальных: считаем 5 тапов за 2 секунды, затем запрашиваем пароль
+  // 3. Для всех остальных клиентов — счётчик 5 тапов за 2 секунды
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
@@ -386,7 +386,7 @@ function contactSupport() {
 }
 window.contactSupport = contactSupport;
 
-// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА (С ФИЛЬТРАЦИЕЙ ПО ДАТЕ РЕГИСТРАЦИИ) -------------------
+// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
 
 async function loadNotifications(force = false) {
   const cached = localStorage.getItem('flw_notifs_cache');
@@ -398,8 +398,7 @@ async function loadNotifications(force = false) {
   }
 
   try {
-    // Передаем user_id для фильтрации старых уведомлений до регистрации
-    const res = await fetch(`${API_URL}?action=get_notifications&user_id=${encodeURIComponent(userId || '')}`);
+    const res = await fetch(`${API_URL}?action=get_notifications`);
     const serverNotifs = await res.json();
     if (Array.isArray(serverNotifs)) {
       clientNotifications = serverNotifs;
@@ -438,7 +437,7 @@ function openNotificationsModal() {
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "track_stat", type: "notif_view", ref_id: String(n.id), user_id: String(userId || '') })
+        body: JSON.stringify({ action: "track_stat", type: "notif_view", ref_id: String(n.id) })
       }).catch(() => {});
     });
   }
@@ -466,14 +465,14 @@ function clickNotificationItem(id, targetTab) {
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId, user_id: String(userId || '') })
+      body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId })
     }).catch(() => {});
   }
 
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "track_stat", type: "notif_click", ref_id: strId, user_id: String(userId || '') })
+    body: JSON.stringify({ action: "track_stat", type: "notif_click", ref_id: strId })
   }).catch(() => {});
 
   closeNotificationsModal();
@@ -490,7 +489,7 @@ function markAllNotificationsAsRead() {
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId, user_id: String(userId || '') })
+        body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId })
       }).catch(() => {});
     }
   });
@@ -502,6 +501,7 @@ function markAllNotificationsAsRead() {
 }
 window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 
+// Фоновая сверка версий данных для разгрузки запросов
 async function checkDataHashesAndSync() {
   try {
     const res = await fetch(`${API_URL}?action=get_data_hashes`);
@@ -531,6 +531,7 @@ async function checkDataHashesAndSync() {
 }
 window.checkDataHashesAndSync = checkDataHashesAndSync;
 
+// Автоматическая мгновенная проверка изменений в таблице при возврате в приложение
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     checkDataHashesAndSync();
@@ -544,6 +545,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// Инициализация при полной готовности DOM
 function initApp() {
   try {
     loadCatalog();
@@ -563,6 +565,7 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
+// Фоновый опрос заказов и проверка хэшей каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
