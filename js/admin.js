@@ -973,12 +973,15 @@ function openDailyItemSettingsModal() {
   if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
     try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
   }
-  const allCats = Array.from(new Set([...allRootCatalog.map(c => c.category), ...customCats].filter(Boolean))).sort();
+
+  // Подтягиваем категории из каталога Root, либо общего каталога
+  const sourceList = (allRootCatalog && allRootCatalog.length) ? allRootCatalog : (catalog || []);
+  const allCats = Array.from(new Set([...sourceList.map(c => c.category), ...customCats].filter(Boolean))).sort();
 
   const container = document.getElementById('daily-item-categories-list');
   if (container) {
     if (!allCats.length) {
-      container.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">Нет доступных категорий</div>';
+      container.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:12px; text-align:center;">Нет созданных категорий</div>';
     } else {
       container.innerHTML = allCats.map(cat => {
         const isChecked = selectedDailyCategoriesSet.has(cat);
@@ -992,13 +995,21 @@ function openDailyItemSettingsModal() {
     }
   }
 
-  document.getElementById('daily-item-settings-modal').classList.add('open');
+  const m = document.getElementById('daily-item-settings-modal');
+  if (m) {
+    m.classList.add('open');
+    if (typeof syncModalDepthState === 'function') syncModalDepthState();
+  }
 }
 window.openDailyItemSettingsModal = openDailyItemSettingsModal;
 
 function closeDailyItemSettingsModal() {
   triggerHaptic('light');
-  document.getElementById('daily-item-settings-modal').classList.remove('open');
+  const m = document.getElementById('daily-item-settings-modal');
+  if (m) {
+    m.classList.remove('open');
+    if (typeof syncModalDepthState === 'function') syncModalDepthState();
+  }
 }
 window.closeDailyItemSettingsModal = closeDailyItemSettingsModal;
 
