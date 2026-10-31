@@ -1,4 +1,3 @@
-// Тактильный отклик через Telegram WebApp API
 function triggerHaptic(type = 'light') {
   try {
     if (!window.Telegram?.WebApp?.HapticFeedback) return;
@@ -24,7 +23,6 @@ function toast(msg) {
 }
 window.toast = toast;
 
-// Эффект глубины витрины: отслеживает открытые модалки и масштабирует фон
 function syncModalDepthState() {
   const hasOpenModal = !!document.querySelector('.modal-overlay.open');
   if (hasOpenModal) {
@@ -45,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Анимация полета лепестка из точки нажатия в корзину
 function animateFlyToCart(sourceEventOrElement) {
   try {
     let startX = window.innerWidth / 2;
@@ -214,16 +211,7 @@ function updateNotificationsBadge() {
   const badge = document.getElementById('hud-notif-counter');
   if (!badge) return;
 
-  const userRegDateTs = currentUser?.reg_date ? parseRuDateToTimestamp(currentUser.reg_date) : 0;
-
-  const unreadCount = (clientNotifications || []).filter(n => {
-    const notifTs = parseOrderDateToTs(n.created_at) || 0;
-    if (userRegDateTs > 0 && notifTs > 0 && notifTs < userRegDateTs) {
-      return false; // Скрываем старые уведомления, выпущенные до дня регистрации клиента
-    }
-    return !(readNotificationIds || []).includes(String(n.id));
-  }).length;
-
+  const unreadCount = (clientNotifications || []).filter(n => !(readNotificationIds || []).includes(String(n.id))).length;
   if (unreadCount > 0) {
     badge.innerText = unreadCount > 99 ? '99+' : unreadCount;
     badge.style.display = 'flex';
@@ -232,16 +220,6 @@ function updateNotificationsBadge() {
   }
 }
 window.updateNotificationsBadge = updateNotificationsBadge;
-
-function parseRuDateToTimestamp(dateStr) {
-  if (!dateStr) return 0;
-  const parts = String(dateStr).split('.');
-  if (parts.length === 3) {
-    return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
-  }
-  return 0;
-}
-window.parseRuDateToTimestamp = parseRuDateToTimestamp;
 
 function getTabDisplayTitle(tabKey) {
   switch (tabKey) {
@@ -253,22 +231,96 @@ function getTabDisplayTitle(tabKey) {
   }
 }
 
-// ----------------- МЕХАНИКА: ТОВАР ДНЯ (ОТСЕЧКА СТРОГО В 09:00 ПО МСК) -----------------
+// ----------------- САЛЮТ КОНФЕТТИ (ПОСЛЕ НАЖАТИЯ "Я ОПЛАТИЛ") -----------------
 
-function getMskDate() {
-  const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  return new Date(utc + (3 * 3600000)); // Фиксация Московского времени UTC+3
+function launchConfettiShower() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+  canvas.classList.add('active');
+
+  const confettis = [];
+  const colors = ['#e5c158', '#fdedb8', '#0d9f67', '#f43f5e', '#38bdf8', '#fbbf24', '#ffffff'];
+
+  for (let i = 0; i < 90; i++) {
+    confettis.push({
+      x: window.innerWidth / 2,
+      y: window.innerHeight * 0.45,
+      w: 8 + Math.random() * 8,
+      h: 5 + Math.random() * 6,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 16,
+      vy: -8 - Math.random() * 12,
+      gravity: 0.38,
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 14,
+      opacity: 1
+    });
+  }
+
+  let startTime = Date.now();
+
+  function render() {
+    const elapsed = Date.now() - startTime;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    let alive = false;
+    confettis.forEach(c => {
+      c.x += c.vx;
+      c.y += c.vy;
+      c.vy += c.gravity;
+      c.rotation += c.rotSpeed;
+
+      if (elapsed > 2000) {
+        c.opacity = Math.max(0, c.opacity - 0.025);
+      }
+
+      if (c.opacity > 0 && c.y < window.innerHeight + 50) {
+        alive = true;
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate((c.rotation * Math.PI) / 180);
+        ctx.fillStyle = c.color;
+        ctx.globalAlpha = c.opacity;
+        ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+        ctx.restore();
+      }
+    });
+
+    if (alive && elapsed < 4200) {
+      requestAnimationFrame(render);
+    } else {
+      canvas.classList.remove('active');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  requestAnimationFrame(render);
 }
+window.launchConfettiShower = launchConfettiShower;
+
+// ----------------- МЕХАНИКА: ТОВАР ДНЯ (СТРОГО В 09:00 ПО МСК) -----------------
 
 function getDailyBloomDateKey() {
-  const msk = getMskDate();
-  if (msk.getHours() < 9) {
-    msk.setDate(msk.getDate() - 1);
+  const now = new Date();
+  // Вычисляем точное московское время (UTC+3)
+  const mskUtc = now.getTime() + (now.getTimezoneOffset() * 60000) + (3 * 3600000);
+  const mskDate = new Date(mskUtc);
+
+  // Смена строго в 09:00 по Москве
+  if (mskDate.getHours() < 9) {
+    mskDate.setDate(mskDate.getDate() - 1);
   }
-  const yr = msk.getFullYear();
-  const mo = String(msk.getMonth() + 1).padStart(2, '0');
-  const day = String(msk.getDate()).padStart(2, '0');
+
+  const yr = mskDate.getFullYear();
+  const mo = String(mskDate.getMonth() + 1).padStart(2, '0');
+  const day = String(mskDate.getDate()).padStart(2, '0');
   return `${yr}-${mo}-${day}`;
 }
 
@@ -276,26 +328,25 @@ function getDailyBloomItem(itemsList, currentUid) {
   try {
     if (!itemsList || !itemsList.length) return null;
 
-    // Сверяем категории, настроенные в Root для Товара дня
+    // Считываем разрешенные категории из конфигурации
     let allowedCategories = [];
-    if (SERVER_CONFIG && SERVER_CONFIG.daily_bloom_categories) {
+    if (SERVER_CONFIG && SERVER_CONFIG.daily_item_categories) {
       try {
-        allowedCategories = typeof SERVER_CONFIG.daily_bloom_categories === 'string'
-          ? JSON.parse(SERVER_CONFIG.daily_bloom_categories)
-          : SERVER_CONFIG.daily_bloom_categories;
+        allowedCategories = JSON.parse(SERVER_CONFIG.daily_item_categories);
       } catch (e) {}
     }
 
-    let activeItems = itemsList.filter(it => it.is_active);
-    if (allowedCategories && allowedCategories.length > 0) {
-      const filteredByCat = activeItems.filter(it => allowedCategories.includes(it.category));
-      if (filteredByCat.length > 0) {
-        activeItems = filteredByCat;
+    let candidatePool = itemsList.filter(it => it.is_active);
+
+    // Если категории настроены администратором — отбираем только из них
+    if (allowedCategories.length > 0) {
+      const catFiltered = candidatePool.filter(it => allowedCategories.includes(it.category));
+      if (catFiltered.length > 0) {
+        candidatePool = catFiltered;
       }
     }
 
-    const pool = activeItems.length ? activeItems : itemsList;
-    if (!pool.length) return null;
+    if (!candidatePool.length) candidatePool = itemsList;
 
     const dateKey = getDailyBloomDateKey();
     const seedString = `${currentUid || 'client'}_${dateKey}`;
@@ -305,15 +356,15 @@ function getDailyBloomItem(itemsList, currentUid) {
       hash = ((hash << 5) - hash) + seedString.charCodeAt(i);
       hash |= 0;
     }
-    const index = Math.abs(hash) % pool.length;
-    return pool[index];
+    const index = Math.abs(hash) % candidatePool.length;
+    return candidatePool[index];
   } catch (err) {
     return itemsList && itemsList[0] ? itemsList[0] : null;
   }
 }
 window.getDailyBloomItem = getDailyBloomItem;
 
-// ----------------- МЕХАНИКА: ЛЕПЕСТКИ РОЗ В КОРЗИНЕ С ГИРОСКОПОМ -----------------
+// ----------------- ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ В КОРЗИНЕ -----------------
 
 let petalsCanvas = null;
 let petalsCtx = null;
@@ -470,112 +521,3 @@ function stopCartPetals() {
   }, 650);
 }
 window.stopCartPetals = stopCartPetals;
-
-// ----------------- МЕХАНИКА: АНИМАЦИЯ КОНФЕТТИ ПРИ ОПЛАТЕ -----------------
-
-let confettiCanvas = null;
-let confettiCtx = null;
-let confettiAnimationId = null;
-let confettiList = [];
-let confettiStartTime = 0;
-
-class ConfettiParticle {
-  constructor(w, h) {
-    this.w = w;
-    this.h = h;
-    this.x = w / 2 + (Math.random() - 0.5) * 80;
-    this.y = h * 0.45;
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 7 + Math.random() * 11;
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed - 5;
-    this.gravity = 0.35;
-    this.friction = 0.96;
-    this.size = 7 + Math.random() * 8;
-    this.rotation = Math.random() * 360;
-    this.rotationSpeed = (Math.random() - 0.5) * 16;
-    this.opacity = 1;
-
-    const colors = ['#e5c158', '#fdedb8', '#0d9f67', '#f43f5e', '#38bdf8', '#a855f7'];
-    this.color = colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  update() {
-    this.vx *= this.friction;
-    this.vy = (this.vy + this.gravity) * this.friction;
-    this.x += this.vx;
-    this.y += this.vy;
-    this.rotation += this.rotationSpeed;
-    if (this.y > this.h * 0.6) {
-      this.opacity -= 0.018;
-    }
-  }
-
-  draw(ctx) {
-    if (this.opacity <= 0) return;
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate((this.rotation * Math.PI) / 180);
-    ctx.globalAlpha = Math.max(0, this.opacity);
-    ctx.fillStyle = this.color;
-    ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 0.6);
-    ctx.restore();
-  }
-}
-
-function startConfettiAnimation() {
-  confettiCanvas = document.getElementById('confetti-canvas');
-  if (!confettiCanvas) return;
-  confettiCtx = confettiCanvas.getContext('2d');
-  if (!confettiCtx) return;
-
-  const dpr = window.devicePixelRatio || 1;
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  confettiCanvas.width = w * dpr;
-  confettiCanvas.height = h * dpr;
-  confettiCtx.scale(dpr, dpr);
-
-  confettiList = [];
-  for (let i = 0; i < 90; i++) {
-    confettiList.push(new ConfettiParticle(w, h));
-  }
-
-  confettiCanvas.classList.add('active');
-  confettiStartTime = Date.now();
-  triggerHaptic('success');
-
-  function loop() {
-    const elapsed = Date.now() - confettiStartTime;
-    confettiCtx.clearRect(0, 0, w, h);
-
-    confettiList.forEach(p => {
-      p.update();
-      p.draw(confettiCtx);
-    });
-
-    if (elapsed < 4200) {
-      confettiAnimationId = requestAnimationFrame(loop);
-    } else {
-      stopConfettiAnimation();
-    }
-  }
-
-  if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
-  confettiAnimationId = requestAnimationFrame(loop);
-}
-window.startConfettiAnimation = startConfettiAnimation;
-
-function stopConfettiAnimation() {
-  if (confettiAnimationId) {
-    cancelAnimationFrame(confettiAnimationId);
-    confettiAnimationId = null;
-  }
-  if (confettiCanvas) {
-    confettiCanvas.classList.remove('active');
-    if (confettiCtx) {
-      confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-    }
-  }
-}
-window.stopConfettiAnimation = stopConfettiAnimation;
