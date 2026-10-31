@@ -66,7 +66,6 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
-// Отрисовка карточки "Товар дня"
 function renderDailyBloom() {
   try {
     const container = document.getElementById('daily-bloom-container');
@@ -87,7 +86,7 @@ function renderDailyBloom() {
       <div class="daily-bloom-card" onclick="triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
         <div class="daily-bloom-header">
           <span class="daily-bloom-tag">✨ Товар дня</span>
-          <span class="daily-bloom-time">Обновление в 09:00</span>
+          <span class="daily-bloom-time">Обновление в 09:00 МСК</span>
         </div>
         <div class="daily-bloom-content">
           <div class="daily-bloom-thumb">
@@ -107,23 +106,19 @@ function renderDailyBloom() {
       </div>
     `;
   } catch (err) {
-    console.error("Daily item render error:", err);
+    console.error("Daily bloom render error:", err);
   }
 }
 window.renderDailyBloom = renderDailyBloom;
 
 function setupFilterDropdown() {
-  let customCats = [];
-  if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
-    try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
-  }
-  const allCats = Array.from(new Set([...catalog.map(c => c.category), ...customCats].filter(Boolean)));
+  const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
   const optionsBox = document.getElementById('filter-cat-options');
   if (!optionsBox) return;
 
   optionsBox.innerHTML = `
     <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
-  ` + allCats.map(c => `
+  ` + cats.map(c => `
     <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
   `).join('');
 
@@ -398,17 +393,11 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   popQty = 1;
   currentGallerySlideIdx = 0;
 
-  // Фиксация уникального просмотра товара (1 клиент = 1 просмотр)
   const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      action: "track_stat",
-      type: "product_view",
-      ref_id: String(statRefId),
-      user_id: String(userId || "guest")
-    })
+    body: JSON.stringify({ action: "track_stat", type: "product_view", ref_id: String(statRefId) })
   }).catch(() => {});
 
   setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
