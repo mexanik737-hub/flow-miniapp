@@ -121,10 +121,10 @@ body.modal-open-blur .app-wrapper {
   opacity: 1;
 }
 
+/* Полноэкранный холст конфетти */
 #confetti-canvas {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
   pointer-events: none;
@@ -288,6 +288,7 @@ header {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Карточка "Товар дня" */
 .daily-bloom-card {
   position: relative;
   border-radius: var(--radius-lg);
@@ -542,6 +543,7 @@ header {
   display: block;
 }
 
+/* Плашка «ХИТ» (идентичная в обеих темах: золотой слиток с темным текстом) */
 .hit-badge {
   position: absolute;
   bottom: 8px;
@@ -552,13 +554,13 @@ header {
   font-weight: 900;
   padding: 4px 10px;
   border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 10px var(--gold-glow);
   z-index: 3;
   display: flex;
   align-items: center;
   gap: 3.5px;
   letter-spacing: 0.4px;
-  border: 1px solid var(--border-accent);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .thumb-placeholder-box {
@@ -1731,20 +1733,32 @@ body.in-text-edit-mode [data-config-key] {
   font-size: 11px;
 }
 
-/* Стили блока категорий для Товара дня */
-.daily-bloom-settings-box {
+/* Сводка заказа в модалке подтверждения */
+.summary-card-block {
   background: var(--card-inner);
-  border: 1px solid var(--border-accent);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   box-shadow: var(--glass-rim);
 }
-.daily-bloom-cat-pills-wrap {
+.summary-card-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+.summary-card-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 10px 0;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.summary-card-row b {
+  color: var(--text);
 }
 
 #toast {
@@ -1762,7 +1776,7 @@ body.in-text-edit-mode [data-config-key] {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25), var(--glass-rim);
   opacity: 0;
   pointer-events: none;
-  z-index: 300;
+  z-index: 400;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   max-width: 88vw;
   text-align: center;
