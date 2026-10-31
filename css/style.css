@@ -53,8 +53,8 @@
   --dock-bg: rgba(255, 255, 255, 0.94);
   --dock-shadow: 0 16px 40px rgba(148, 110, 22, 0.16);
   --glass-rim: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95);
-  --hit-bg: linear-gradient(135deg, #221805 0%, #120c02 100%);
-  --hit-text: #ffd566;
+  --hit-bg: linear-gradient(135deg, #fff2be 0%, #e5c158 55%, #a88424 100%);
+  --hit-text: #120c02;
 }
 
 * {
@@ -119,6 +119,20 @@ body.modal-open-blur .app-wrapper {
 #cart-petals-canvas.active {
   display: block;
   opacity: 1;
+}
+
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 350;
+  display: none;
+}
+#confetti-canvas.active {
+  display: block;
 }
 
 .flying-cart-petal {
@@ -1715,6 +1729,22 @@ body.in-text-edit-mode [data-config-key] {
   padding: 6px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-size: 11px;
+}
+
+/* Стили блока категорий для Товара дня */
+.daily-bloom-settings-box {
+  background: var(--card-inner);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: var(--glass-rim);
+}
+.daily-bloom-cat-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 10px 0;
 }
 
 #toast {
