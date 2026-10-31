@@ -395,10 +395,12 @@ async function loadUserOrders() {
 
       let timerCardBadge = "";
       if (isAwaitingPay) {
-        const createdTs = parseOrderDateToTs(ord.date_time);
-        if (createdTs) {
-          const elapsedSec = Math.floor((nowTs - createdTs) / 1000);
-          const leftSec = (15 * 60) - elapsedSec;
+        // Отсчитываем 15 минут строго от момента назначения статуса (updated_at)
+        const relevantDateStr = ord.updated_at || ord.date_time;
+        const statusTs = parseOrderDateToTs(relevantDateStr);
+        if (statusTs) {
+          const elapsedSec = Math.floor((nowTs - statusTs) / 1000);
+          const leftSec = (15.5 * 60) - elapsedSec;
 
           if (leftSec <= 0) {
             ord.status = 'Отменен (таймаут)';
@@ -410,7 +412,7 @@ async function loadUserOrders() {
             }).catch(() => {});
           } else {
             const m = Math.floor(leftSec / 60);
-            const s = leftSec % 60;
+            const s = Math.floor(leftSec % 60);
             timerCardBadge = `⏳ ${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
           }
         }
@@ -422,6 +424,8 @@ async function loadUserOrders() {
       else if (ord.status.includes('Завершен')) badgeCls = 'st-completed';
       else if (ord.status.includes('Отменен')) badgeCls = 'st-cancelled';
       else if (ord.status.includes('упаковки')) badgeCls = 'st-check-pay';
+
+      const relevantTimeParam = ord.updated_at || ord.date_time;
 
       return `
         <div class="box-card" style="margin-bottom:10px;">
@@ -442,7 +446,7 @@ async function loadUserOrders() {
 
           ${isAwaitingPay ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${relevantTimeParam}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
