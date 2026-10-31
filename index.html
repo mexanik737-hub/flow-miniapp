@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Магазин «Цветы»</title>
-  <link rel="stylesheet" href="css/style.css?v=2.5">
+  <link rel="stylesheet" href="css/style.css?v=2.9">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -19,6 +19,9 @@
 
   <!-- Холст опадающих лепестков розы в корзине -->
   <canvas id="cart-petals-canvas"></canvas>
+
+  <!-- Холст разовой анимации конфетти при успешной оплате -->
+  <canvas id="confetti-canvas"></canvas>
 
   <!-- Плавающая перетаскиваемая кнопка редактора текстов -->
   <div class="floating-editor-btn" id="floating-editor-btn">✏️</div>
@@ -233,8 +236,20 @@
         <div id="root-orders-container"></div>
       </div>
 
-      <!-- Каталог -->
+      <!-- Каталог (Root) -->
       <div id="root-sec-catalog" style="display:none;">
+        <!-- Блок выбора категорий для Товара дня -->
+        <div class="daily-bloom-settings-box">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <b style="font-size:12px; color:var(--gold); text-transform:uppercase;">Категории для «Товара дня»</b>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Из отмеченных категорий случайным образом выбирается товар дня в 09:00</div>
+            </div>
+            <button class="btn-metro" style="width:auto; padding:5px 12px; font-size:11px;" onclick="saveDailyBloomCategoriesSelection()">Сохранить</button>
+          </div>
+          <div class="daily-bloom-cat-pills-wrap" id="daily-bloom-categories-pills"></div>
+        </div>
+
         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
           <button class="btn-metro" style="font-size:11px; padding:9px; flex:1;" onclick="openAddProductModal()">+ Товар</button>
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:9px; color:var(--gold); flex:1;" onclick="openAddGroupModal()">+ Группа</button>
@@ -349,7 +364,7 @@
         </div>
 
         <div class="box-card" style="margin-bottom:12px;">
-          <div style="font-size:12px; font-weight:800; color:var(--gold); margin-bottom:8px; text-transform:uppercase;">Просмотры букетов каталога</div>
+          <div style="font-size:12px; font-weight:800; color:var(--gold); margin-bottom:8px; text-transform:uppercase;">Уникальные просмотры товаров</div>
           <div id="stats-products-list"></div>
         </div>
 
@@ -537,7 +552,7 @@
     </div>
   </div>
 
-  <!-- Модалка оформления заказа -->
+  <!-- Модалка заполнения данных заказа -->
   <div class="modal-overlay" id="order-modal">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -629,7 +644,35 @@
         </div>
       </div>
 
-      <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
+      <button class="btn-metro" onclick="openOrderSummaryModal()">Оформить заказ</button>
+    </div>
+  </div>
+
+  <!-- Новая модалка: Краткая сводка и подтверждение заказа -->
+  <div class="modal-overlay" id="order-summary-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Подтверждение заказа</div>
+        <button class="close-btn" onclick="closeOrderSummaryModal()">✕</button>
+      </div>
+
+      <div style="background:var(--card-inner); border:1px solid var(--border-accent); border-radius:var(--radius-sm); padding:12px; margin-bottom:14px; font-size:12px; line-height:1.55;">
+        <div style="font-weight:800; color:var(--gold); margin-bottom:6px; text-transform:uppercase;">Сводка заказа:</div>
+        <div id="summary-items-list" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed var(--border);"></div>
+        <div><b>Получение:</b> <span id="summary-delivery-type">—</span></div>
+        <div id="summary-address-row"><b>Адрес:</b> <span id="summary-address-val">—</span></div>
+        <div id="summary-time-row"><b>Время:</b> <span id="summary-time-val">—</span></div>
+        <div id="summary-recipient-row"><b>Получатель:</b> <span id="summary-recipient-val">—</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid var(--border); font-size:14px;">
+          <b style="color:var(--text);">К оплате:</b>
+          <b style="color:var(--gold); font-size:18px;" id="summary-total-val">0 ₽</b>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
+        <button class="btn-metro btn-secondary" onclick="closeOrderSummaryModal()">Вернуться в корзину</button>
+      </div>
     </div>
   </div>
 
@@ -693,6 +736,20 @@
         <button class="btn-metro" style="background:var(--green); margin-bottom:10px;" onclick="confirmPaymentByClient()">
           ✅ Я оплатил
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Новая модалка: Ожидайте подтверждения оплаты (с конфетти) -->
+  <div class="modal-overlay" id="payment-success-modal">
+    <div class="modal-sheet">
+      <div style="text-align:center; padding:16px 8px 10px 8px;">
+        <div style="font-size:44px; margin-bottom:8px;">🎉</div>
+        <div class="modal-title" style="font-size:18px; margin-bottom:8px;">Ожидайте подтверждения оплаты</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.55; margin-bottom:18px;">
+          Спасибо за заказ! Флорист уже видит уведомление, проверяет зачисление перевода в банке и приступает к бережной сборке свежего букета на Георгиевском, 37к2.
+        </div>
+        <button class="btn-metro" onclick="closePaymentSuccessModalAndGoOrders()">Перейти в мои заказы</button>
       </div>
     </div>
   </div>
@@ -852,7 +909,6 @@
         <span style="font-size:13px; font-weight:700; color:var(--gold);">🔥 Хит продаж (для всей группы)</span>
       </div>
 
-      <!-- Чекбокс расформирования группы при 1 оставшейся вариации -->
       <div class="custom-checkbox-wrap" id="group-disband-checkbox-wrap" style="display:none;" onclick="toggleCheckbox('group-disband-ui')">
         <div class="custom-checkbox" id="group-disband-ui"></div>
         <span style="font-size:12px; font-weight:700; color:var(--amber);">⚠️ Расформировать группу и оставить одиночным товаром</span>
@@ -883,7 +939,7 @@
     </div>
   </div>
 
-  <!-- Модалка выбора фото из Google Диска (2/3 экрана с мультивыбором и синхронизацией) -->
+  <!-- Модалка выбора фото из Google Диска -->
   <div class="modal-overlay" id="drive-media-modal">
     <div class="modal-sheet sheet-drive-two-thirds">
       <div class="modal-header" style="margin-bottom:8px;">
@@ -1041,13 +1097,13 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=2.5"></script>
-  <script src="js/utils.js?v=2.5"></script>
-  <script src="js/catalog.js?v=2.5"></script>
-  <script src="js/cart.js?v=2.5"></script>
-  <script src="js/order.js?v=2.5"></script>
-  <script src="js/profile.js?v=2.5"></script>
-  <script src="js/admin.js?v=2.5"></script>
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/config.js?v=2.9"></script>
+  <script src="js/utils.js?v=2.9"></script>
+  <script src="js/catalog.js?v=2.9"></script>
+  <script src="js/cart.js?v=2.9"></script>
+  <script src="js/order.js?v=2.9"></script>
+  <script src="js/profile.js?v=2.9"></script>
+  <script src="js/admin.js?v=2.9"></script>
+  <script src="js/app.js?v=2.9"></script>
 </body>
 </html>
