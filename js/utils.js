@@ -35,7 +35,6 @@ function syncModalDepthState() {
 }
 window.syncModalDepthState = syncModalDepthState;
 
-// Наблюдатель за открытием модалок для включения эффекта глубины
 const modalDepthObserver = new MutationObserver(() => {
   syncModalDepthState();
 });
@@ -53,9 +52,16 @@ function animateFlyToCart(sourceEventOrElement) {
     let startY = window.innerHeight / 2;
 
     if (sourceEventOrElement) {
-      if (sourceEventOrElement.clientX !== undefined && sourceEventOrElement.clientY !== undefined) {
+      if (sourceEventOrElement.touches && sourceEventOrElement.touches[0]) {
+        startX = sourceEventOrElement.touches[0].clientX;
+        startY = sourceEventOrElement.touches[0].clientY;
+      } else if (sourceEventOrElement.clientX && sourceEventOrElement.clientY) {
         startX = sourceEventOrElement.clientX;
         startY = sourceEventOrElement.clientY;
+      } else if (sourceEventOrElement.target) {
+        const rect = sourceEventOrElement.target.getBoundingClientRect();
+        startX = rect.left + rect.width / 2;
+        startY = rect.top + rect.height / 2;
       } else if (sourceEventOrElement.getBoundingClientRect) {
         const rect = sourceEventOrElement.getBoundingClientRect();
         startX = rect.left + rect.width / 2;
@@ -63,27 +69,30 @@ function animateFlyToCart(sourceEventOrElement) {
       }
     }
 
-    const cartBtn = document.querySelector('.dock-pill button:nth-child(2)');
+    const cartTab = document.querySelectorAll('.dock-pill .dock-tab')[1];
     let targetX = window.innerWidth * 0.38;
-    let targetY = window.innerHeight - 45;
+    let targetY = window.innerHeight - 38;
 
-    if (cartBtn) {
-      const rect = cartBtn.getBoundingClientRect();
+    if (cartTab) {
+      const rect = cartTab.getBoundingClientRect();
       targetX = rect.left + rect.width / 2;
       targetY = rect.top + rect.height / 2;
     }
 
     const petal = document.createElement('div');
     petal.className = 'flying-cart-petal';
-    petal.style.left = `${startX}px`;
-    petal.style.top = `${startY}px`;
+    petal.style.transform = `translate3d(${startX}px, ${startY}px, 0) scale(0.6) rotate(0deg)`;
     petal.style.opacity = '1';
-    petal.style.transform = 'translate(-50%, -50%) scale(0.6) rotate(0deg)';
     document.body.appendChild(petal);
 
+    const deltaX = targetX - startX;
+    const deltaY = targetY - startY;
+
     requestAnimationFrame(() => {
-      petal.style.transform = `translate(${targetX - startX}px, ${targetY - startY}px) scale(1.15) rotate(240deg)`;
-      petal.style.opacity = '0.15';
+      requestAnimationFrame(() => {
+        petal.style.transform = `translate3d(${startX + deltaX}px, ${startY + deltaY}px, 0) scale(1.15) rotate(260deg)`;
+        petal.style.opacity = '0.1';
+      });
     });
 
     setTimeout(() => {
@@ -92,7 +101,7 @@ function animateFlyToCart(sourceEventOrElement) {
         triggerCartCounterBounce();
       }
       triggerHaptic('medium');
-    }, 620);
+    }, 640);
   } catch (err) {
     if (typeof triggerCartCounterBounce === 'function') triggerCartCounterBounce();
   }
@@ -205,7 +214,16 @@ function updateNotificationsBadge() {
   const badge = document.getElementById('hud-notif-counter');
   if (!badge) return;
 
-  const unreadCount = (clientNotifications || []).filter(n => !(readNotificationIds || []).includes(String(n.id))).length;
+  const userRegDateTs = currentUser?.reg_date ? parseRuDateToTimestamp(currentUser.reg_date) : 0;
+
+  const unreadCount = (clientNotifications || []).filter(n => {
+    const notifTs = parseOrderDateToTs(n.created_at) || 0;
+    if (userRegDateTs > 0 && notifTs > 0 && notifTs < userRegDateTs) {
+      return false; // Скрываем старые уведомления, выпущенные до дня регистрации клиента
+    }
+    return !(readNotificationIds || []).includes(String(n.id));
+  }).length;
+
   if (unreadCount > 0) {
     badge.innerText = unreadCount > 99 ? '99+' : unreadCount;
     badge.style.display = 'flex';
@@ -214,6 +232,16 @@ function updateNotificationsBadge() {
   }
 }
 window.updateNotificationsBadge = updateNotificationsBadge;
+
+function parseRuDateToTimestamp(dateStr) {
+  if (!dateStr) return 0;
+  const parts = String(dateStr).split('.');
+  if (parts.length === 3) {
+    return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+  }
+  return 0;
+}
+window.parseRuDateToTimestamp = parseRuDateToTimestamp;
 
 function getTabDisplayTitle(tabKey) {
   switch (tabKey) {
@@ -225,23 +253,47 @@ function getTabDisplayTitle(tabKey) {
   }
 }
 
-// ----------------- МЕХАНИКА №1: БУКЕТ ДНЯ (ОТСЕЧКА СТРОГО В 09:00) -----------------
+// ----------------- МЕХАНИКА: ТОВАР ДНЯ (ОТСЕЧКА СТРОГО В 09:00 ПО МСК) -----------------
+
+function getMskDate() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + (3 * 3600000)); // Фиксация Московского времени UTC+3
+}
 
 function getDailyBloomDateKey() {
-  const d = new Date();
-  if (d.getHours() < 9) {
-    d.setDate(d.getDate() - 1);
+  const msk = getMskDate();
+  if (msk.getHours() < 9) {
+    msk.setDate(msk.getDate() - 1);
   }
-  const yr = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const yr = msk.getFullYear();
+  const mo = String(msk.getMonth() + 1).padStart(2, '0');
+  const day = String(msk.getDate()).padStart(2, '0');
   return `${yr}-${mo}-${day}`;
 }
 
 function getDailyBloomItem(itemsList, currentUid) {
   try {
     if (!itemsList || !itemsList.length) return null;
-    const activeItems = itemsList.filter(it => it.is_active);
+
+    // Сверяем категории, настроенные в Root для Товара дня
+    let allowedCategories = [];
+    if (SERVER_CONFIG && SERVER_CONFIG.daily_bloom_categories) {
+      try {
+        allowedCategories = typeof SERVER_CONFIG.daily_bloom_categories === 'string'
+          ? JSON.parse(SERVER_CONFIG.daily_bloom_categories)
+          : SERVER_CONFIG.daily_bloom_categories;
+      } catch (e) {}
+    }
+
+    let activeItems = itemsList.filter(it => it.is_active);
+    if (allowedCategories && allowedCategories.length > 0) {
+      const filteredByCat = activeItems.filter(it => allowedCategories.includes(it.category));
+      if (filteredByCat.length > 0) {
+        activeItems = filteredByCat;
+      }
+    }
+
     const pool = activeItems.length ? activeItems : itemsList;
     if (!pool.length) return null;
 
@@ -261,7 +313,7 @@ function getDailyBloomItem(itemsList, currentUid) {
 }
 window.getDailyBloomItem = getDailyBloomItem;
 
-// ----------------- МЕХАНИКА №2: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ -----------------
+// ----------------- МЕХАНИКА: ЛЕПЕСТКИ РОЗ В КОРЗИНЕ С ГИРОСКОПОМ -----------------
 
 let petalsCanvas = null;
 let petalsCtx = null;
@@ -418,3 +470,112 @@ function stopCartPetals() {
   }, 650);
 }
 window.stopCartPetals = stopCartPetals;
+
+// ----------------- МЕХАНИКА: АНИМАЦИЯ КОНФЕТТИ ПРИ ОПЛАТЕ -----------------
+
+let confettiCanvas = null;
+let confettiCtx = null;
+let confettiAnimationId = null;
+let confettiList = [];
+let confettiStartTime = 0;
+
+class ConfettiParticle {
+  constructor(w, h) {
+    this.w = w;
+    this.h = h;
+    this.x = w / 2 + (Math.random() - 0.5) * 80;
+    this.y = h * 0.45;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 7 + Math.random() * 11;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed - 5;
+    this.gravity = 0.35;
+    this.friction = 0.96;
+    this.size = 7 + Math.random() * 8;
+    this.rotation = Math.random() * 360;
+    this.rotationSpeed = (Math.random() - 0.5) * 16;
+    this.opacity = 1;
+
+    const colors = ['#e5c158', '#fdedb8', '#0d9f67', '#f43f5e', '#38bdf8', '#a855f7'];
+    this.color = colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  update() {
+    this.vx *= this.friction;
+    this.vy = (this.vy + this.gravity) * this.friction;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.rotation += this.rotationSpeed;
+    if (this.y > this.h * 0.6) {
+      this.opacity -= 0.018;
+    }
+  }
+
+  draw(ctx) {
+    if (this.opacity <= 0) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate((this.rotation * Math.PI) / 180);
+    ctx.globalAlpha = Math.max(0, this.opacity);
+    ctx.fillStyle = this.color;
+    ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 0.6);
+    ctx.restore();
+  }
+}
+
+function startConfettiAnimation() {
+  confettiCanvas = document.getElementById('confetti-canvas');
+  if (!confettiCanvas) return;
+  confettiCtx = confettiCanvas.getContext('2d');
+  if (!confettiCtx) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  confettiCanvas.width = w * dpr;
+  confettiCanvas.height = h * dpr;
+  confettiCtx.scale(dpr, dpr);
+
+  confettiList = [];
+  for (let i = 0; i < 90; i++) {
+    confettiList.push(new ConfettiParticle(w, h));
+  }
+
+  confettiCanvas.classList.add('active');
+  confettiStartTime = Date.now();
+  triggerHaptic('success');
+
+  function loop() {
+    const elapsed = Date.now() - confettiStartTime;
+    confettiCtx.clearRect(0, 0, w, h);
+
+    confettiList.forEach(p => {
+      p.update();
+      p.draw(confettiCtx);
+    });
+
+    if (elapsed < 4200) {
+      confettiAnimationId = requestAnimationFrame(loop);
+    } else {
+      stopConfettiAnimation();
+    }
+  }
+
+  if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+  confettiAnimationId = requestAnimationFrame(loop);
+}
+window.startConfettiAnimation = startConfettiAnimation;
+
+function stopConfettiAnimation() {
+  if (confettiAnimationId) {
+    cancelAnimationFrame(confettiAnimationId);
+    confettiAnimationId = null;
+  }
+  if (confettiCanvas) {
+    confettiCanvas.classList.remove('active');
+    if (confettiCtx) {
+      confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+  }
+}
+window.stopConfettiAnimation = stopConfettiAnimation;
