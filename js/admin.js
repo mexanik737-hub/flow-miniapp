@@ -1,6 +1,6 @@
 let selectedDriveMediaUrls = new Set();
 let selectedCategoryProductsForBatch = new Set();
-let selectedDailyCategoriesSet = new Set();
+let selectedDailyBloomCats = new Set();
 
 window.switchRootSection = function(sec) {
   const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
@@ -10,7 +10,11 @@ window.switchRootSection = function(sec) {
     const box = document.getElementById('root-sec-' + s);
 
     if (btn) {
-      btn.classList.toggle('active', s === sec);
+      if (s === sec) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
     }
 
     if (box) {
@@ -608,8 +612,8 @@ function closeDriveMediaModal() {
 window.closeDriveMediaModal = closeDriveMediaModal;
 
 async function syncDriveMediaCache(showToast = false, btnEl = null) {
-  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const box = document.getElementById('drive-media-container');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   if (showToast) toast("Синхронизация с Google Диском...");
   else box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
 
@@ -684,11 +688,7 @@ function applyDriveSelectedPhotos() {
 window.applyDriveSelectedPhotos = applyDriveSelectedPhotos;
 
 function populateCategorySelectBoxes() {
-  let customCats = [];
-  if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
-    try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
-  }
-  const categories = Array.from(new Set([...allRootCatalog.map(c => c.category), ...customCats].filter(Boolean)));
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
   if (!categories.includes("Цветы")) categories.unshift("Цветы");
 
   const pOptions = document.getElementById('prod-edit-cat-options');
@@ -747,14 +747,6 @@ function renderCategoriesManagerList() {
     catMap[cat].push(item);
   });
 
-  let customCats = [];
-  if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
-    try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
-  }
-  customCats.forEach(c => {
-    if (!catMap[c]) catMap[c] = [];
-  });
-
   const cats = Object.keys(catMap).sort();
 
   if (!cats.length) {
@@ -763,7 +755,7 @@ function renderCategoriesManagerList() {
   }
 
   container.innerHTML = cats.map(catName => {
-    const items = catMap[catName] || [];
+    const items = catMap[catName];
     return `
       <div class="cat-item-card" id="cat-card-${encodeURIComponent(catName)}">
         <div class="cat-item-header" onclick="toggleCatCardAccordion('${encodeURIComponent(catName)}')">
@@ -777,7 +769,7 @@ function renderCategoriesManagerList() {
           </div>
         </div>
         <div class="cat-item-products-list">
-          ${items.length === 0 ? '<div style="padding:6px 0; color:var(--text-muted); font-size:11px;">Нет привязанных товаров (пустая категория)</div>' : items.map(it => {
+          ${items.map(it => {
             const isChecked = selectedCategoryProductsForBatch.has(String(it.id));
             const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
             return `
@@ -833,7 +825,6 @@ function updateBatchCategoryBtnLabel() {
   }
 }
 
-// Создание новой категории с персистентной записью на сервер
 async function createNewCategoryFromManager() {
   const input = document.getElementById('new-category-name-input');
   const newCat = input.value.trim();
@@ -841,33 +832,9 @@ async function createNewCategoryFromManager() {
     toast("Введите название категории");
     return;
   }
-
-  toast("Сохранение категории...");
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: "admin_create_category",
-        admin_id: userId,
-        admin_passcode: sessionPasscode,
-        category_name: newCat
-      })
-    });
-    const d = await res.json();
-    if (d.success) {
-      if (!SERVER_CONFIG) SERVER_CONFIG = {};
-      SERVER_CONFIG.custom_categories = JSON.stringify(d.categories);
-      localStorage.setItem('flw_config_cache', JSON.stringify(SERVER_CONFIG));
-      input.value = "";
-      populateCategorySelectBoxes();
-      setupFilterDropdown();
-      renderCategoriesManagerList();
-      toast(`Категория «${newCat}» создана и сохранена!`);
-    }
-  } catch (e) {
-    toast("Ошибка сохранения");
-  }
+  input.value = "";
+  populateCategorySelectBoxes();
+  toast(`Категория «${newCat}» доступна при выборе в товарах`);
 }
 window.createNewCategoryFromManager = createNewCategoryFromManager;
 
@@ -902,11 +869,7 @@ async function renameCategoryPrompt(encodedOldCat) {
 window.renameCategoryPrompt = renameCategoryPrompt;
 
 async function moveSingleProductCategory(productId) {
-  let customCats = [];
-  if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
-    try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
-  }
-  const categories = Array.from(new Set([...allRootCatalog.map(c => c.category), ...customCats].filter(Boolean)));
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
   const targetCat = prompt(`Укажите категорию для переноса товара:\nДоступные: ${categories.join(', ')}`);
   if (!targetCat || !targetCat.trim()) return;
 
@@ -930,11 +893,7 @@ window.moveSingleProductCategory = moveSingleProductCategory;
 
 async function openBatchMoveCategoryDialog() {
   if (!selectedCategoryProductsForBatch.size) return;
-  let customCats = [];
-  if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
-    try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
-  }
-  const categories = Array.from(new Set([...allRootCatalog.map(c => c.category), ...customCats].filter(Boolean)));
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
   const targetCat = prompt(`Укажите целевую категорию для ${selectedCategoryProductsForBatch.size} товаров:\nДоступные: ${categories.join(', ')}`);
   if (!targetCat || !targetCat.trim()) return;
 
@@ -957,104 +916,104 @@ async function openBatchMoveCategoryDialog() {
 }
 window.openBatchMoveCategoryDialog = openBatchMoveCategoryDialog;
 
-// ------------------- НАСТРОЙКИ КАТЕГОРИЙ «ТОВАРА ДНЯ» -------------------
+// ----------------- УПРАВЛЕНИЕ КАТЕГОРИЯМИ ДЛЯ ТОВАРА ДНЯ -----------------
 
-function openDailyItemSettingsModal() {
+function openDailyBloomCatsModal() {
   triggerHaptic('selection');
-  selectedDailyCategoriesSet.clear();
+  selectedDailyBloomCats.clear();
 
-  let saved = [];
-  if (SERVER_CONFIG && SERVER_CONFIG.daily_item_categories) {
-    try { saved = JSON.parse(SERVER_CONFIG.daily_item_categories); } catch (e) {}
-  }
-  saved.forEach(c => selectedDailyCategoriesSet.add(c));
-
-  let customCats = [];
-  if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
-    try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
-  }
-
-  // Подтягиваем категории из каталога Root, либо общего каталога
-  const sourceList = (allRootCatalog && allRootCatalog.length) ? allRootCatalog : (catalog || []);
-  const allCats = Array.from(new Set([...sourceList.map(c => c.category), ...customCats].filter(Boolean))).sort();
-
-  const container = document.getElementById('daily-item-categories-list');
-  if (container) {
-    if (!allCats.length) {
-      container.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:12px; text-align:center;">Нет созданных категорий</div>';
-    } else {
-      container.innerHTML = allCats.map(cat => {
-        const isChecked = selectedDailyCategoriesSet.has(cat);
-        return `
-          <div class="custom-checkbox-wrap" onclick="toggleDailyItemCategory('${cat}', this.querySelector('.custom-checkbox'))">
-            <div class="custom-checkbox ${isChecked ? 'checked' : ''}">${isChecked ? '✓' : ''}</div>
-            <span style="font-size:12px; font-weight:700; color:var(--text);">${cat}</span>
-          </div>
-        `;
-      }).join('');
+  let activeConfigCats = [];
+  if (SERVER_CONFIG && SERVER_CONFIG.daily_bloom_categories) {
+    try {
+      const raw = SERVER_CONFIG.daily_bloom_categories;
+      activeConfigCats = typeof raw === 'string'
+        ? (raw.startsWith('[') ? JSON.parse(raw) : raw.split(',').map(s => s.trim()))
+        : raw;
+    } catch (e) {
+      activeConfigCats = String(SERVER_CONFIG.daily_bloom_categories).split(',').map(s => s.trim());
     }
   }
 
-  const m = document.getElementById('daily-item-settings-modal');
-  if (m) {
-    m.classList.add('open');
-    if (typeof syncModalDepthState === 'function') syncModalDepthState();
-  }
-}
-window.openDailyItemSettingsModal = openDailyItemSettingsModal;
+  (activeConfigCats || []).filter(Boolean).forEach(c => selectedDailyBloomCats.add(c));
 
-function closeDailyItemSettingsModal() {
-  triggerHaptic('light');
-  const m = document.getElementById('daily-item-settings-modal');
-  if (m) {
-    m.classList.remove('open');
-    if (typeof syncModalDepthState === 'function') syncModalDepthState();
-  }
-}
-window.closeDailyItemSettingsModal = closeDailyItemSettingsModal;
+  const listContainer = document.getElementById('daily-bloom-cats-list');
+  const allCats = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  if (!allCats.includes("Цветы")) allCats.unshift("Цветы");
 
-function toggleDailyItemCategory(cat, chkEl) {
-  triggerHaptic('light');
-  if (selectedDailyCategoriesSet.has(cat)) {
-    selectedDailyCategoriesSet.delete(cat);
-    if (chkEl) { chkEl.classList.remove('checked'); chkEl.innerText = ''; }
+  if (!allCats.length) {
+    listContainer.innerHTML = '<div style="color:var(--text-muted); font-size:12px;">Категории не найдены</div>';
   } else {
-    selectedDailyCategoriesSet.add(cat);
-    if (chkEl) { chkEl.classList.add('checked'); chkEl.innerText = '✓'; }
+    listContainer.innerHTML = allCats.map(cat => {
+      const isChecked = selectedDailyBloomCats.has(cat);
+      return `
+        <div class="custom-checkbox-wrap" style="padding:6px 0; border-bottom:1px solid var(--border);" onclick="toggleDailyBloomCat('${cat}', this)">
+          <div class="custom-checkbox ${isChecked ? 'checked' : ''}">${isChecked ? '✓' : ''}</div>
+          <span style="font-size:13px; font-weight:700; color:var(--text);">${cat}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('daily-bloom-cats-modal').classList.add('open');
+}
+window.openDailyBloomCatsModal = openDailyBloomCatsModal;
+
+function closeDailyBloomCatsModal() {
+  triggerHaptic('light');
+  document.getElementById('daily-bloom-cats-modal').classList.remove('open');
+}
+window.closeDailyBloomCatsModal = closeDailyBloomCatsModal;
+
+function toggleDailyBloomCat(catName, rowEl) {
+  triggerHaptic('light');
+  const chk = rowEl.querySelector('.custom-checkbox');
+  if (selectedDailyBloomCats.has(catName)) {
+    selectedDailyBloomCats.delete(catName);
+    chk.classList.remove('checked');
+    chk.innerText = '';
+  } else {
+    selectedDailyBloomCats.add(catName);
+    chk.classList.add('checked');
+    chk.innerText = '✓';
   }
 }
-window.toggleDailyItemCategory = toggleDailyItemCategory;
+window.toggleDailyBloomCat = toggleDailyBloomCat;
 
-async function saveDailyItemCategories() {
+async function saveDailyBloomCategories() {
   triggerHaptic('medium');
-  const arr = Array.from(selectedDailyCategoriesSet);
-  toast("Сохранение настроек...");
+  const selectedArr = Array.from(selectedDailyBloomCats);
+  const jsonVal = JSON.stringify(selectedArr);
 
+  toast("Сохранение категорий...");
   try {
-    const res = await fetch(API_URL, {
+    await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        action: "admin_save_daily_categories",
+        action: "admin_save_config",
         admin_id: userId,
         admin_passcode: sessionPasscode,
-        categories_json: JSON.stringify(arr)
+        key: "daily_bloom_categories",
+        value: jsonVal
       })
     });
-    const d = await res.json();
-    if (d.success) {
-      if (!SERVER_CONFIG) SERVER_CONFIG = {};
-      SERVER_CONFIG.daily_item_categories = JSON.stringify(arr);
+
+    if (SERVER_CONFIG) {
+      SERVER_CONFIG.daily_bloom_categories = selectedArr;
       localStorage.setItem('flw_config_cache', JSON.stringify(SERVER_CONFIG));
-      closeDailyItemSettingsModal();
-      if (typeof renderDailyBloom === 'function') renderDailyBloom();
-      toast("Категории Товара дня сохранены!");
     }
+
+    if (typeof renderDailyBloom === 'function') {
+      renderDailyBloom();
+    }
+
+    closeDailyBloomCatsModal();
+    toast(`Выбрано категорий: ${selectedArr.length || 'Все'}`);
   } catch (e) {
     toast("Ошибка сохранения");
   }
 }
-window.saveDailyItemCategories = saveDailyItemCategories;
+window.saveDailyBloomCategories = saveDailyBloomCategories;
 
 async function loadRootCatalog(force = false) {
   const container = document.getElementById('root-catalog-container');
@@ -1431,8 +1390,8 @@ async function deleteProductRoot(id) {
 }
 
 async function loadRootClients(force = false, btnEl = null) {
-  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const container = document.getElementById('root-clients-container');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const cached = localStorage.getItem('flw_root_clients_cache');
 
   if (cached && !force) {
@@ -1447,6 +1406,7 @@ async function loadRootClients(force = false, btnEl = null) {
     allRootClients = await res.json();
     localStorage.setItem('flw_root_clients_cache', JSON.stringify(allRootClients));
     renderRootClients(allRootClients);
+    if (force) toast("Клиенты обновлены");
   } catch (e) {
     if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки клиентов</div>';
   }
@@ -1534,8 +1494,8 @@ function selectRootNotifTab(val, label) {
 window.selectRootNotifTab = selectRootNotifTab;
 
 async function loadRootNotifications(force = false, btnEl = null) {
-  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const container = document.getElementById('root-notifs-container');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const cached = localStorage.getItem('flw_root_notifs_cache');
 
   if (cached && !force) {
@@ -1550,6 +1510,7 @@ async function loadRootNotifications(force = false, btnEl = null) {
     allRootNotifs = await res.json();
     localStorage.setItem('flw_root_notifs_cache', JSON.stringify(allRootNotifs));
     renderRootNotifications();
+    if (force) toast("Рассылки обновлены");
   } catch (e) {
     if (container) container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px 0;">Ошибка загрузки уведомлений</div>';
   }
@@ -1693,12 +1654,13 @@ function switchStatsPeriod(period) {
 window.switchStatsPeriod = switchStatsPeriod;
 
 async function loadRootStats(period = 'today', btnEl = null) {
-  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   currentStatsPeriod = period;
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   try {
     const res = await fetch(`${API_URL}?action=admin_stats&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
     cachedStatsData = await res.json();
     renderRootStats();
+    if (btnEl) toast("Статистика обновлена");
   } catch (e) {
     toast("Ошибка загрузки аналитики");
   }
@@ -1720,7 +1682,7 @@ function renderRootStats() {
     if (breakdownBox) breakdownBox.style.display = 'none';
     totalVisits = cachedStatsData.today?.visits || 0;
     totalOrdersCount = cachedStatsData.today?.orders?.count || 0;
-    totalRevenue = cachedStatsData.today?.orders?.total || 0; // Строго завершенные
+    totalRevenue = cachedStatsData.today?.orders?.total || 0;
     totalCompleted = cachedStatsData.today?.orders?.completed || 0;
   } else if (currentStatsPeriod === '7days') {
     if (breakdownBox) breakdownBox.style.display = 'block';
@@ -1772,9 +1734,7 @@ function renderRootStats() {
       pList.innerHTML = products.slice(0, 15).map((p, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
           <div><b>${idx + 1}.</b> ${p.title}</div>
-          <div style="color:var(--gold); font-weight:800;">
-            ${p.views} просм. <span style="font-size:10px; color:var(--text-muted);">(${p.unique_views || 0} уник.)</span>
-          </div>
+          <div style="color:var(--gold); font-weight:800;">${p.views} просм.</div>
         </div>
       `).join('');
     }
@@ -1801,8 +1761,8 @@ function renderRootStats() {
 }
 
 async function loadRootFaq(force = false, btnEl = null) {
-  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const container = document.getElementById('root-faq-container');
+  if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
   const cached = localStorage.getItem('flw_root_faq_cache');
 
   if (cached && !force) {
@@ -1817,6 +1777,7 @@ async function loadRootFaq(force = false, btnEl = null) {
     allRootFaq = await res.json();
     localStorage.setItem('flw_root_faq_cache', JSON.stringify(allRootFaq));
     renderRootFaqUI();
+    if (force) toast("FAQ обновлен");
   } catch (e) {
     if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки FAQ</div>';
   }
