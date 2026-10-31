@@ -24,10 +24,10 @@ function toast(msg) {
 }
 window.toast = toast;
 
-// Эффект глубины витрины: отслеживает открытые модалки и масштабирует фон
+// Эффект глубины витрины: гарантированное снятие класса при отсутствии открытых окон
 function syncModalDepthState() {
-  const hasOpenModal = !!document.querySelector('.modal-overlay.open');
-  if (hasOpenModal) {
+  const openModals = document.querySelectorAll('.modal-overlay.open');
+  if (openModals.length > 0) {
     document.body.classList.add('modal-open-blur');
   } else {
     document.body.classList.remove('modal-open-blur');
@@ -35,15 +35,18 @@ function syncModalDepthState() {
 }
 window.syncModalDepthState = syncModalDepthState;
 
-const modalDepthObserver = new MutationObserver(() => {
-  syncModalDepthState();
-});
-
-document.addEventListener('DOMContentLoaded', () => {
+function initModalDepthObserver() {
+  const observer = new MutationObserver(() => syncModalDepthState());
   document.querySelectorAll('.modal-overlay').forEach(el => {
-    modalDepthObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(el, { attributes: true, attributeFilter: ['class'] });
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initModalDepthObserver);
+} else {
+  initModalDepthObserver();
+}
 
 // Анимация полета лепестка из точки нажатия в корзину
 function animateFlyToCart(sourceEventOrElement) {
@@ -192,7 +195,7 @@ function calcHaversineDistance(lat1, lon1, lat2, lon2) {
 
 function parseOrderDateToTs(dateStr) {
   if (!dateStr) return null;
-  const match = String(dateStr).match(/(\d{2}):(\d{2})\s(\d{2})\.(\d{4})/);
+  const match = String(dateStr).match(/(\d{2}):(\d{2})\s(\d{2})\.(\d{2})\.(\d{4})/);
   if (match) {
     const [_, h, m, day, mon, yr] = match;
     return new Date(yr, mon - 1, day, h, m).getTime();
@@ -251,7 +254,6 @@ function getDailyBloomItem(itemsList, currentUid) {
   try {
     if (!itemsList || !itemsList.length) return null;
 
-    // Считываем разрешенные категории для Товара дня из конфига
     let allowedCats = [];
     if (window.SERVER_CONFIG && window.SERVER_CONFIG.daily_bloom_categories) {
       try {
