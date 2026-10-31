@@ -60,24 +60,24 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
-// Авторизация и доступ в Root по 5 тапам (без ложной блокировки обычных пользователей)
+// Авторизация и доступ в Root по 5 тапам (без ложной блокировки)
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  // 1. Создатель или админ по флагу заходят сразу
+  // 1. Блокировать ТОЛЬКО если в таблице явно стоит флаг блокировки
+  if (currentUser && currentUser.is_blocked_admin === true) {
+    toast("Доступ запрещен администратором");
+    return;
+  }
+
+  // 2. Если ID создателя (8900179932) или в базе TRUE — вход сразу без паролей
   if (String(userId) === ADMIN_TELEGRAM_ID || isAdmin || (currentUser && currentUser.is_admin === true)) {
     isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
-  // 2. Явный бан доступа администратором
-  if (currentUser && currentUser.is_blocked_admin === true) {
-    toast("Доступ запрещен администратором");
-    return;
-  }
-
-  // 3. Подсчет 5 тапов за 2 секунды для запроса пароля
+  // 3. Для всех остальных: считаем 5 тапов за 2 секунды, затем запрашиваем пароль
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
@@ -398,7 +398,8 @@ async function loadNotifications(force = false) {
   }
 
   try {
-    const res = await fetch(`${API_URL}?action=get_notifications`);
+    // Передаем user_id для фильтрации старых уведомлений до регистрации
+    const res = await fetch(`${API_URL}?action=get_notifications&user_id=${encodeURIComponent(userId || '')}`);
     const serverNotifs = await res.json();
     if (Array.isArray(serverNotifs)) {
       clientNotifications = serverNotifs;
@@ -414,21 +415,10 @@ function openNotificationsModal() {
   const container = document.getElementById('notifications-list');
   if (!container) return;
 
-  const userRegDateTs = currentUser?.reg_date ? parseRuDateToTimestamp(currentUser.reg_date) : 0;
-
-  // Фильтруем: скрываем рассылки старше даты регистрации клиента
-  const visibleNotifs = (clientNotifications || []).filter(n => {
-    const notifTs = parseOrderDateToTs(n.created_at) || 0;
-    if (userRegDateTs > 0 && notifTs > 0 && notifTs < userRegDateTs) {
-      return false;
-    }
-    return true;
-  });
-
-  if (!visibleNotifs.length) {
+  if (!clientNotifications || !clientNotifications.length) {
     container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px 0; font-size:12px;">Новых уведомлений нет</div>';
   } else {
-    container.innerHTML = visibleNotifs.map(n => {
+    container.innerHTML = clientNotifications.map(n => {
       const isUnread = !(readNotificationIds || []).includes(String(n.id));
       const targetTitle = getTabDisplayTitle(n.target_tab);
 
@@ -444,11 +434,11 @@ function openNotificationsModal() {
       `;
     }).join('');
 
-    visibleNotifs.forEach(n => {
+    clientNotifications.forEach(n => {
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "track_stat", type: "notif_view", ref_id: String(n.id) })
+        body: JSON.stringify({ action: "track_stat", type: "notif_view", ref_id: String(n.id), user_id: String(userId || '') })
       }).catch(() => {});
     });
   }
@@ -476,14 +466,14 @@ function clickNotificationItem(id, targetTab) {
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId })
+      body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId, user_id: String(userId || '') })
     }).catch(() => {});
   }
 
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "track_stat", type: "notif_click", ref_id: strId })
+    body: JSON.stringify({ action: "track_stat", type: "notif_click", ref_id: strId, user_id: String(userId || '') })
   }).catch(() => {});
 
   closeNotificationsModal();
@@ -500,7 +490,7 @@ function markAllNotificationsAsRead() {
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId })
+        body: JSON.stringify({ action: "track_stat", type: "notif_read", ref_id: strId, user_id: String(userId || '') })
       }).catch(() => {});
     }
   });
@@ -512,7 +502,6 @@ function markAllNotificationsAsRead() {
 }
 window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 
-// Фоновая сверка версий данных для разгрузки запросов
 async function checkDataHashesAndSync() {
   try {
     const res = await fetch(`${API_URL}?action=get_data_hashes`);
