@@ -18,6 +18,9 @@ function saveCartToStorage() {
   localStorage.setItem('flw_cart', JSON.stringify(cart));
   localStorage.setItem('flw_cart_assembly', JSON.stringify(cartAssemblyItems));
   localStorage.setItem('flw_is_assembly_mode', String(isAssemblyMode));
+  window.cart = cart;
+  window.cartAssemblyItems = cartAssemblyItems;
+  window.isAssemblyMode = isAssemblyMode;
 }
 window.saveCartToStorage = saveCartToStorage;
 
@@ -25,6 +28,9 @@ function clearCartStorage() {
   cart = {};
   cartAssemblyItems = {};
   isAssemblyMode = false;
+  window.cart = {};
+  window.cartAssemblyItems = {};
+  window.isAssemblyMode = false;
   localStorage.removeItem('flw_cart');
   localStorage.removeItem('flw_cart_assembly');
   localStorage.removeItem('flw_is_assembly_mode');
