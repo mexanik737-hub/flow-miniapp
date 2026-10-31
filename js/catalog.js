@@ -85,7 +85,7 @@ function renderDailyBloom() {
     container.innerHTML = `
       <div class="daily-bloom-card" onclick="triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
         <div class="daily-bloom-header">
-          <span class="daily-bloom-tag">✨ Букет дня</span>
+          <span class="daily-bloom-tag">✨ Товар дня</span>
           <span class="daily-bloom-time">Обновление в 09:00</span>
         </div>
         <div class="daily-bloom-content">
@@ -397,7 +397,12 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "track_stat", type: "product_view", ref_id: String(statRefId) })
+    body: JSON.stringify({
+      action: "track_stat",
+      type: "product_view",
+      ref_id: String(statRefId),
+      user_id: String(userId || "")
+    })
   }).catch(() => {});
 
   setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
