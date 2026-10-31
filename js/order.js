@@ -1,17 +1,45 @@
-// Безопасные геттеры для исключения ошибок области видимости переменных
+// Безопасное получение актуального объекта корзины с защитой от пустых объектов
 function getActiveCart() {
-  if (typeof cart !== 'undefined' && cart) return cart;
-  if (typeof window.cart !== 'undefined' && window.cart) return window.cart;
+  // 1. Проверяем window.cart с реальными ключами
+  if (window.cart && typeof window.cart === 'object' && Object.keys(window.cart).length > 0) {
+    return window.cart;
+  }
+  // 2. Проверяем глобальную переменную cart
+  if (typeof cart !== 'undefined' && cart && typeof cart === 'object' && Object.keys(cart).length > 0) {
+    window.cart = cart;
+    return cart;
+  }
+  // 3. Проверяем localStorage
   try {
-    const saved = localStorage.getItem('flw_cart');
-    if (saved) return JSON.parse(saved);
+    const saved = localStorage.getItem('flw_cart') || localStorage.getItem('cart');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+        window.cart = parsed;
+        if (typeof cart !== 'undefined') {
+          try { Object.assign(cart, parsed); } catch(e) {}
+        }
+        return parsed;
+      }
+    }
   } catch (e) {}
-  return {};
+  
+  return (typeof cart !== 'undefined' && cart) ? cart : (window.cart || {});
+}
+
+function getCartCount() {
+  const c = getActiveCart();
+  let total = 0;
+  for (let k in c) {
+    const q = parseInt(c[k], 10);
+    if (!isNaN(q) && q > 0) total += q;
+  }
+  return total;
 }
 
 function getActiveCatalog() {
-  if (typeof catalog !== 'undefined' && Array.isArray(catalog)) return catalog;
-  if (typeof window.catalog !== 'undefined' && Array.isArray(window.catalog)) return window.catalog;
+  if (typeof catalog !== 'undefined' && Array.isArray(catalog) && catalog.length > 0) return catalog;
+  if (typeof window.catalog !== 'undefined' && Array.isArray(window.catalog) && window.catalog.length > 0) return window.catalog;
   try {
     const saved = localStorage.getItem('flw_catalog_cache');
     if (saved) return JSON.parse(saved);
@@ -39,11 +67,14 @@ function getFlowersSubtotal() {
   const c = getActiveCart();
   const cat = getActiveCatalog();
   let sum = 0;
-  Object.entries(c).forEach(([k, q]) => {
-    const [id] = k.split(':::');
+  for (let key in c) {
+    const qty = parseInt(c[key], 10) || 0;
+    const [id] = key.split(':::');
     const item = cat.find(i => String(i.id) === String(id));
-    if (item && item.price) sum += Number(item.price) * q;
-  });
+    if (item && item.price) {
+      sum += Number(item.price) * qty;
+    }
+  }
   return sum;
 }
 
@@ -145,10 +176,9 @@ window.selectOrderDeliveryTime = selectOrderDeliveryTime;
 function openOrderModal() {
   try {
     triggerHaptic('selection');
-    const currentCart = getActiveCart();
-    const count = Object.values(currentCart).reduce((a, b) => a + b, 0);
+    const count = getCartCount();
 
-    if (!count) {
+    if (count <= 0) {
       toast("Корзина пуста");
       return;
     }
@@ -359,6 +389,7 @@ function updateOrderModalPriceSummary() {
 
   const deliv = (window.deliveryType === 'delivery') ? (window.calculatedDeliveryCost || 0) : 0;
   const flowersSum = getFlowersSubtotal();
+  window.currentFlowersSubtotal = flowersSum;
   const finalSum = flowersSum + deliv;
 
   if (subtotalEl) subtotalEl.innerText = `${flowersSum} ₽`;
@@ -371,10 +402,13 @@ function updateOrderModalPriceSummary() {
 function openOrderConfirmModal() {
   triggerHaptic('medium');
 
-  const currentCart = getActiveCart();
-  const count = Object.values(currentCart).reduce((a, b) => a + b, 0);
-  if (!count) { toast("Корзина пуста"); return; }
+  const count = getCartCount();
+  if (count <= 0) {
+    toast("Корзина пуста");
+    return;
+  }
 
+  const currentCart = getActiveCart();
   const u = getActiveUser();
   const userFirst = (typeof tgFirstName !== 'undefined' ? tgFirstName : (window.tgFirstName || ""));
   let recName = u?.name || userFirst || "Клиент";
@@ -448,6 +482,8 @@ function openOrderConfirmModal() {
 
   const itemsPayload = [];
   Object.entries(currentCart).forEach(([cartKey, qty]) => {
+    const q = parseInt(qty, 10);
+    if (isNaN(q) || q <= 0) return;
     const [id, unit, variant, color] = cartKey.split(':::');
     const item = catalogArr.find(i => String(i.id) === String(id));
     if (item) {
@@ -458,7 +494,7 @@ function openOrderConfirmModal() {
         variant: variant || item.variant || '',
         color: color || item.color || '',
         price: item.price,
-        qty: qty,
+        qty: q,
         in_bouquet: !!assemblyMap[cartKey]
       });
     }
