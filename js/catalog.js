@@ -66,6 +66,7 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
+// Отрисовка карточки "Товар дня"
 function renderDailyBloom() {
   try {
     const container = document.getElementById('daily-bloom-container');
@@ -106,19 +107,23 @@ function renderDailyBloom() {
       </div>
     `;
   } catch (err) {
-    console.error("Daily bloom render error:", err);
+    console.error("Daily item render error:", err);
   }
 }
 window.renderDailyBloom = renderDailyBloom;
 
 function setupFilterDropdown() {
-  const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
+  let customCats = [];
+  if (SERVER_CONFIG && SERVER_CONFIG.custom_categories) {
+    try { customCats = JSON.parse(SERVER_CONFIG.custom_categories); } catch (e) {}
+  }
+  const allCats = Array.from(new Set([...catalog.map(c => c.category), ...customCats].filter(Boolean)));
   const optionsBox = document.getElementById('filter-cat-options');
   if (!optionsBox) return;
 
   optionsBox.innerHTML = `
     <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
-  ` + cats.map(c => `
+  ` + allCats.map(c => `
     <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
   `).join('');
 
@@ -393,6 +398,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   popQty = 1;
   currentGallerySlideIdx = 0;
 
+  // Фиксация уникального просмотра товара (1 клиент = 1 просмотр)
   const statRefId = item.is_group && item.variants && item.variants[0] ? item.variants[0].id : item.id;
   fetch(API_URL, {
     method: 'POST',
@@ -401,7 +407,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
       action: "track_stat",
       type: "product_view",
       ref_id: String(statRefId),
-      user_id: String(userId || "")
+      user_id: String(userId || "guest")
     })
   }).catch(() => {});
 
