@@ -24,8 +24,8 @@ function toast(msg) {
 window.toast = toast;
 
 function syncModalDepthState() {
-  const hasOpenModal = !!document.querySelector('.modal-overlay.open');
-  if (hasOpenModal) {
+  const openModals = document.querySelectorAll('.modal-overlay.open');
+  if (openModals.length > 0) {
     document.body.classList.add('modal-open-blur');
   } else {
     document.body.classList.remove('modal-open-blur');
