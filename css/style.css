@@ -97,6 +97,7 @@ body {
 body.modal-open-blur .app-wrapper {
   transform: scale(0.96) translateY(4px);
   filter: brightness(0.7) blur(1.5px);
+  pointer-events: none;
 }
 [data-theme="light"] body.modal-open-blur .app-wrapper {
   filter: brightness(0.85) blur(1.5px);
@@ -120,9 +121,11 @@ body.modal-open-blur .app-wrapper {
   opacity: 1;
 }
 
+/* Холст конфетти */
 #confetti-canvas {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
   pointer-events: none;
@@ -550,13 +553,13 @@ header {
   font-weight: 900;
   padding: 4px 10px;
   border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 10px var(--gold-glow);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
   z-index: 3;
   display: flex;
   align-items: center;
   gap: 3.5px;
   letter-spacing: 0.4px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--border-accent);
 }
 
 .thumb-placeholder-box {
@@ -1432,7 +1435,7 @@ header {
 
 .top-confirm-popup {
   position: fixed;
-  top: -140px;
+  top: -120px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -1443,18 +1446,11 @@ header {
   padding: 14px 16px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), var(--glass-rim);
   z-index: 250;
-  transition: top 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
+  transition: top 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .top-confirm-popup.show {
   top: 14px;
-  pointer-events: auto;
-  opacity: 1;
-  visibility: visible;
 }
-
 .top-confirm-title {
   font-size: 13px;
   font-weight: 700;
@@ -1734,33 +1730,6 @@ body.in-text-edit-mode [data-config-key] {
   padding: 6px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-size: 11px;
-}
-
-.summary-card-block {
-  background: var(--card-inner);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  margin-bottom: 10px;
-  box-shadow: var(--glass-rim);
-}
-.summary-card-title {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--gold);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  letter-spacing: 0.3px;
-}
-.summary-card-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  margin-bottom: 4px;
-  line-height: 1.4;
-}
-.summary-card-row b {
-  color: var(--text);
 }
 
 #toast {
