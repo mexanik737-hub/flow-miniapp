@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Магазин «Цветы»</title>
-  <link rel="stylesheet" href="css/style.css?v=2.5">
+  <link rel="stylesheet" href="css/style.css?v=2.9">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -243,6 +243,22 @@
             <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
           </button>
         </div>
+
+        <!-- Блок выбора категорий для механики "Товар дня" -->
+        <div class="box-card" style="margin-bottom:12px; border-left: 3px solid var(--gold);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <b style="font-size:12px; color:var(--gold); text-transform:uppercase;">Категории для «Товара дня»</b>
+            <span style="font-size:10px; color:var(--text-muted);">Обновление в 09:00 МСК</span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+            Отметьте категории, из которых алгоритм случайным образом выбирает товар дня:
+          </div>
+          <div id="root-daily-bloom-categories" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;"></div>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:8px;" onclick="saveDailyBloomCategoriesRoot()">
+            💾 Сохранить выбор категорий
+          </button>
+        </div>
+
         <div id="root-catalog-container"></div>
       </div>
 
@@ -394,6 +410,25 @@
     </nav>
   </div>
 
+  <!-- Кастомная модалка ввода пароля Root -->
+  <div class="modal-overlay" id="root-passcode-modal">
+    <div class="modal-sheet" style="max-width:380px;">
+      <div class="modal-header">
+        <div class="modal-title">Вход в Root</div>
+        <button class="close-btn" onclick="closeRootPasscodeModal()">✕</button>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">
+        Введите служебный код доступа администратора:
+      </div>
+      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Код доступа: *</label>
+      <input type="password" id="root-passcode-input" class="metro-input" placeholder="••••••••••••" autocomplete="off" onkeydown="if(event.key==='Enter') submitRootPasscode()">
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn-metro btn-secondary" onclick="closeRootPasscodeModal()">Отмена</button>
+        <button class="btn-metro" onclick="submitRootPasscode()">Войти</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Модалка уведомлений клиента -->
   <div class="modal-overlay" id="notifications-modal">
     <div class="modal-sheet">
@@ -402,10 +437,7 @@
         <button class="close-btn" onclick="closeNotificationsModal()">✕</button>
       </div>
       <div id="notifications-list" style="margin-bottom:14px;"></div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn-metro btn-secondary" onclick="markAllNotificationsAsRead()">Прочитать все</button>
-        <button class="btn-metro" onclick="closeNotificationsModal()">Закрыть</button>
-      </div>
+      <button class="btn-metro btn-secondary" style="width:100%;" onclick="markAllNotificationsAsRead()">Прочитать все</button>
     </div>
   </div>
 
@@ -883,7 +915,7 @@
     </div>
   </div>
 
-  <!-- Модалка выбора фото из Google Диска (2/3 экрана с мультивыбором и синхронизацией) -->
+  <!-- Модалка выбора фото из Google Диска -->
   <div class="modal-overlay" id="drive-media-modal">
     <div class="modal-sheet sheet-drive-two-thirds">
       <div class="modal-header" style="margin-bottom:8px;">
@@ -1041,13 +1073,13 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=2.5"></script>
-  <script src="js/utils.js?v=2.5"></script>
-  <script src="js/catalog.js?v=2.5"></script>
-  <script src="js/cart.js?v=2.5"></script>
-  <script src="js/order.js?v=2.5"></script>
-  <script src="js/profile.js?v=2.5"></script>
-  <script src="js/admin.js?v=2.5"></script>
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/config.js?v=2.9"></script>
+  <script src="js/utils.js?v=2.9"></script>
+  <script src="js/catalog.js?v=2.9"></script>
+  <script src="js/cart.js?v=2.9"></script>
+  <script src="js/order.js?v=2.9"></script>
+  <script src="js/profile.js?v=2.9"></script>
+  <script src="js/admin.js?v=2.9"></script>
+  <script src="js/app.js?v=2.9"></script>
 </body>
 </html>
