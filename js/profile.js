@@ -246,8 +246,7 @@ async function checkUserSession() {
 
       renderProfileUI();
       renderSavedAddresses();
-
-      // Закрываем модалку регистрации, если профиль найден в базе
+      
       const regModal = document.getElementById('reg-modal');
       if (regModal) regModal.classList.remove('open');
     } else {
@@ -257,11 +256,17 @@ async function checkUserSession() {
       const regNameInput = document.getElementById('reg-name');
       if (regNameInput) regNameInput.value = tgFirstName || "";
 
+      // Подгружаем окно регистрации первым по очереди
       const regModal = document.getElementById('reg-modal');
       if (regModal) regModal.classList.add('open');
     }
   } catch (e) {
-    if (currentUser) renderProfileUI();
+    if (currentUser) {
+      renderProfileUI();
+    } else if (!cachedProfile) {
+      const regModal = document.getElementById('reg-modal');
+      if (regModal) regModal.classList.add('open');
+    }
   }
 }
 window.checkUserSession = checkUserSession;
@@ -284,8 +289,8 @@ async function submitRegistration() {
     localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
     document.getElementById('reg-modal').classList.remove('open');
     renderProfileUI();
-    toast("Регистрация завершена");
     if (typeof loadNotifications === 'function') loadNotifications(true);
+    toast("Регистрация завершена");
   } catch (e) {
     toast("Ошибка связи с базой");
   }
@@ -399,17 +404,21 @@ async function loadUserOrders() {
       const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
 
       let timerCardBadge = "";
-      // Время для отсчета 15 минут берем строго из updated_at (момент перевода в статус Ожидает оплаты)
-      const statusTimeStr = ord.updated_at || ord.date_time;
-
       if (isAwaitingPay) {
-        const statusTs = parseOrderDateToTs(statusTimeStr);
+        // Берем время обновления в статус оплаты из updated_at, а если пусто - из date_time
+        const statusTs = parseOrderDateToTs(ord.updated_at) || parseOrderDateToTs(ord.date_time);
         if (statusTs) {
           const elapsedSec = Math.floor((nowTs - statusTs) / 1000);
           const leftSec = (15 * 60) - elapsedSec;
 
           if (leftSec <= 0) {
-            timerCardBadge = `⏳ 00:00 (Таймаут)`;
+            ord.status = 'Отменен (таймаут)';
+            isAwaitingPay = false;
+            fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ action: "cancel_order_timeout", order_id: ord.order_id })
+            }).catch(() => {});
           } else {
             const m = Math.floor(leftSec / 60);
             const s = leftSec % 60;
@@ -435,7 +444,7 @@ async function loadUserOrders() {
           ${renderOrderTrackerHtml(ord.status)}
 
           <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
-            ${(ord.items || []).map(i => {
+            ${ord.items.map(i => {
               const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
               const packTag = i.in_bouquet ? ' <b style="color:var(--gold);">[в букет]</b>' : '';
               return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
@@ -444,7 +453,7 @@ async function loadUserOrders() {
 
           ${isAwaitingPay ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${statusTimeStr}')">
+              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.updated_at || ord.date_time}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
