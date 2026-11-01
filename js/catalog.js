@@ -66,6 +66,7 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
+// Рендер карточки "Товар дня" с жестким бейджем "✨ Товар дня"
 function renderDailyBloom() {
   try {
     const container = document.getElementById('daily-bloom-container');
@@ -85,8 +86,8 @@ function renderDailyBloom() {
     container.innerHTML = `
       <div class="daily-bloom-card" onclick="triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
         <div class="daily-bloom-header">
-          <span class="daily-bloom-tag">✨ Букет дня</span>
-          <span class="daily-bloom-time">Обновление в 09:00</span>
+          <span class="daily-bloom-tag">✨ Товар дня</span>
+          <span class="daily-bloom-time">Обновление в 09:00 МСК</span>
         </div>
         <div class="daily-bloom-content">
           <div class="daily-bloom-thumb">
