@@ -53,8 +53,8 @@
   --dock-bg: rgba(255, 255, 255, 0.94);
   --dock-shadow: 0 16px 40px rgba(148, 110, 22, 0.16);
   --glass-rim: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95);
-  --hit-bg: linear-gradient(135deg, #221805 0%, #120c02 100%);
-  --hit-text: #ffd566;
+  --hit-bg: linear-gradient(135deg, #fff2be 0%, #e5c158 55%, #a88424 100%);
+  --hit-text: #120c02;
 }
 
 * {
@@ -312,9 +312,9 @@ header {
   border-radius: 20px;
 }
 [data-theme="light"] .daily-bloom-tag {
-  color: #fff;
-  background: var(--gold);
-  border-color: var(--gold);
+  color: #120c02;
+  background: linear-gradient(135deg, #fff2be 0%, #e5c158 100%);
+  border-color: var(--border-accent);
 }
 .daily-bloom-time {
   font-size: 10px;
@@ -380,8 +380,8 @@ header {
   box-shadow: 0 4px 14px var(--gold-glow);
 }
 [data-theme="light"] .daily-bloom-btn {
-  color: #fff;
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+  color: #120c02;
+  background: linear-gradient(135deg, #fff2be 0%, var(--gold-light) 100%);
 }
 
 .catalog-top-bar {
