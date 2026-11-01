@@ -24,7 +24,7 @@ function toast(msg) {
 }
 window.toast = toast;
 
-// Эффект глубины витрины: отслеживает открытые модалки и масштабирует фон
+// Эффект глубины витрины: масштабирует фон при открытии модалок
 function syncModalDepthState() {
   const hasOpenModal = !!document.querySelector('.modal-overlay.open');
   if (hasOpenModal) {
@@ -35,7 +35,6 @@ function syncModalDepthState() {
 }
 window.syncModalDepthState = syncModalDepthState;
 
-// Наблюдатель за открытием модалок для включения эффекта глубины
 const modalDepthObserver = new MutationObserver(() => {
   syncModalDepthState();
 });
@@ -53,9 +52,16 @@ function animateFlyToCart(sourceEventOrElement) {
     let startY = window.innerHeight / 2;
 
     if (sourceEventOrElement) {
-      if (sourceEventOrElement.clientX !== undefined && sourceEventOrElement.clientY !== undefined) {
+      if (sourceEventOrElement.touches && sourceEventOrElement.touches[0]) {
+        startX = sourceEventOrElement.touches[0].clientX;
+        startY = sourceEventOrElement.touches[0].clientY;
+      } else if (sourceEventOrElement.clientX && sourceEventOrElement.clientY) {
         startX = sourceEventOrElement.clientX;
         startY = sourceEventOrElement.clientY;
+      } else if (sourceEventOrElement.target) {
+        const rect = sourceEventOrElement.target.getBoundingClientRect();
+        startX = rect.left + rect.width / 2;
+        startY = rect.top + rect.height / 2;
       } else if (sourceEventOrElement.getBoundingClientRect) {
         const rect = sourceEventOrElement.getBoundingClientRect();
         startX = rect.left + rect.width / 2;
@@ -63,27 +69,30 @@ function animateFlyToCart(sourceEventOrElement) {
       }
     }
 
-    const cartBtn = document.querySelector('.dock-pill button:nth-child(2)');
+    const cartTab = document.querySelectorAll('.dock-pill .dock-tab')[1];
     let targetX = window.innerWidth * 0.38;
-    let targetY = window.innerHeight - 45;
+    let targetY = window.innerHeight - 38;
 
-    if (cartBtn) {
-      const rect = cartBtn.getBoundingClientRect();
+    if (cartTab) {
+      const rect = cartTab.getBoundingClientRect();
       targetX = rect.left + rect.width / 2;
       targetY = rect.top + rect.height / 2;
     }
 
     const petal = document.createElement('div');
     petal.className = 'flying-cart-petal';
-    petal.style.left = `${startX}px`;
-    petal.style.top = `${startY}px`;
+    petal.style.transform = `translate3d(${startX}px, ${startY}px, 0) scale(0.6) rotate(0deg)`;
     petal.style.opacity = '1';
-    petal.style.transform = 'translate(-50%, -50%) scale(0.6) rotate(0deg)';
     document.body.appendChild(petal);
 
+    const deltaX = targetX - startX;
+    const deltaY = targetY - startY;
+
     requestAnimationFrame(() => {
-      petal.style.transform = `translate(${targetX - startX}px, ${targetY - startY}px) scale(1.15) rotate(240deg)`;
-      petal.style.opacity = '0.15';
+      requestAnimationFrame(() => {
+        petal.style.transform = `translate3d(${startX + deltaX}px, ${startY + deltaY}px, 0) scale(1.15) rotate(260deg)`;
+        petal.style.opacity = '0.1';
+      });
     });
 
     setTimeout(() => {
@@ -92,7 +101,7 @@ function animateFlyToCart(sourceEventOrElement) {
         triggerCartCounterBounce();
       }
       triggerHaptic('medium');
-    }, 620);
+    }, 640);
   } catch (err) {
     if (typeof triggerCartCounterBounce === 'function') triggerCartCounterBounce();
   }
@@ -225,25 +234,65 @@ function getTabDisplayTitle(tabKey) {
   }
 }
 
-// ----------------- МЕХАНИКА №1: БУКЕТ ДНЯ (ОТСЕЧКА СТРОГО В 09:00) -----------------
+// ----------------- МЕХАНИКА: ТОВАР ДНЯ (СТРОГО В 09:00 ПО МСК) -----------------
 
 function getDailyBloomDateKey() {
-  const d = new Date();
-  if (d.getHours() < 9) {
-    d.setDate(d.getDate() - 1);
+  // Расчет текущего времени строго по часовому поясу Москвы (UTC+3)
+  const now = new Date();
+  const mskFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    hour12: false
+  });
+
+  const parts = mskFormatter.formatToParts(now);
+  const mskValues = {};
+  parts.forEach(p => { mskValues[p.type] = p.value; });
+
+  let yr = parseInt(mskValues.year, 10);
+  let mo = parseInt(mskValues.month, 10);
+  let day = parseInt(mskValues.day, 10);
+  let hr = parseInt(mskValues.hour, 10);
+
+  // До 09:00 утра действует день вчерашней отсечки
+  if (hr < 9) {
+    const prevDate = new Date(Date.UTC(yr, mo - 1, day - 1));
+    yr = prevDate.getUTCFullYear();
+    mo = prevDate.getUTCMonth() + 1;
+    day = prevDate.getUTCDate();
   }
-  const yr = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${yr}-${mo}-${day}`;
+
+  const moStr = String(mo).padStart(2, '0');
+  const dayStr = String(day).padStart(2, '0');
+  return `${yr}-${moStr}-${dayStr}`;
 }
 
 function getDailyBloomItem(itemsList, currentUid) {
   try {
     if (!itemsList || !itemsList.length) return null;
-    const activeItems = itemsList.filter(it => it.is_active);
-    const pool = activeItems.length ? activeItems : itemsList;
-    if (!pool.length) return null;
+
+    // Считываем разрешенные категории из сохраненного конфига
+    let allowedCategories = [];
+    if (SERVER_CONFIG && SERVER_CONFIG.daily_bloom_categories) {
+      try {
+        allowedCategories = JSON.parse(SERVER_CONFIG.daily_bloom_categories);
+      } catch (e) {}
+    }
+
+    let filteredByCat = itemsList;
+    if (Array.isArray(allowedCategories) && allowedCategories.length > 0) {
+      const allowed = itemsList.filter(it => allowedCategories.includes(it.category));
+      if (allowed.length > 0) {
+        filteredByCat = allowed;
+      }
+    }
+
+    const activeItems = filteredByCat.filter(it => it.is_active);
+    const pool = activeItems.length ? activeItems : filteredByCat;
+    if (!pool.length) return itemsList[0] || null;
 
     const dateKey = getDailyBloomDateKey();
     const seedString = `${currentUid || 'client'}_${dateKey}`;
@@ -261,7 +310,7 @@ function getDailyBloomItem(itemsList, currentUid) {
 }
 window.getDailyBloomItem = getDailyBloomItem;
 
-// ----------------- МЕХАНИКА №2: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ -----------------
+// ----------------- МЕХАНИКА: ЛЕПЕСТКИ РОЗ С ГИРОСКОПОМ -----------------
 
 let petalsCanvas = null;
 let petalsCtx = null;
