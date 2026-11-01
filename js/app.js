@@ -1,10 +1,9 @@
 window.cachedFaqData = window.cachedFaqData || null;
 
-// Анимация вращения SVG-иконки синхронизации при нажатии
 function animateSyncBtn(btnEl) {
   if (!btnEl) return;
   btnEl.classList.remove('rotating');
-  void btnEl.offsetWidth; // перезапуск CSS-анимации
+  void btnEl.offsetWidth;
   btnEl.classList.add('rotating');
   setTimeout(() => btnEl.classList.remove('rotating'), 650);
 }
@@ -60,51 +59,85 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
-// Авторизация и доступ в Root по 5 тапам
+// Авторизация и доступ в Root по 5 тапам (без ложных блокировок)
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  // 1. Если в базе явно стоит запрет
-  if (currentUser && (currentUser.is_blocked_admin === true || currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
+  // 1. Блокируем доступ строго при явном значении FALSE (is_blocked_admin)
+  if (currentUser && currentUser.is_blocked_admin === true) {
     toast("Доступ запрещен администратором");
     return;
   }
 
-  // 2. Если ID создателя (8900179932) или в базе TRUE — вход сразу без паролей
+  // 2. Если ID создателя (8900179932) или подтвержденный админ — вход без пароля
   if (String(userId) === ADMIN_TELEGRAM_ID || isAdmin || (currentUser && currentUser.is_admin === true)) {
     isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
-  // 3. Если ячейка пустая, клиент новый или анонимный — считаем 5 тапов за 2 секунды
+  // 3. Открываем кастомную модалку после 5 тапов
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
 
   if (hudTapCount >= 5) {
     hudTapCount = 0;
-    const pass = prompt("Код доступа Root:");
-    if (pass) {
-      sessionPasscode = pass.trim();
-      toast("Проверка доступа...");
-      fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            isAdmin = true;
-            toast("Доступ подтвержден");
-            navigateTab('root', null);
-          } else {
-            sessionPasscode = "";
-            toast("Неверный код доступа");
-          }
-        })
-        .catch(() => toast("Ошибка проверки доступа"));
-    }
+    openRootPasscodeModal();
   }
 }
 window.handleHudRootTap = handleHudRootTap;
+
+function openRootPasscodeModal() {
+  triggerHaptic('selection');
+  const input = document.getElementById('root-passcode-input');
+  if (input) input.value = '';
+  const m = document.getElementById('root-passcode-modal');
+  if (m) m.classList.add('open');
+  setTimeout(() => { if (input) input.focus(); }, 150);
+}
+window.openRootPasscodeModal = openRootPasscodeModal;
+
+function closeRootPasscodeModal() {
+  triggerHaptic('light');
+  const m = document.getElementById('root-passcode-modal');
+  if (m) m.classList.remove('open');
+}
+window.closeRootPasscodeModal = closeRootPasscodeModal;
+
+async function submitRootPasscode() {
+  triggerHaptic('medium');
+  const input = document.getElementById('root-passcode-input');
+  const pass = input ? input.value.trim() : '';
+
+  if (!pass) {
+    toast("Введите код доступа");
+    return;
+  }
+
+  toast("Проверка доступа...");
+  try {
+    const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(pass)}`);
+    const data = await res.json();
+
+    if (Array.isArray(data)) {
+      sessionPasscode = pass;
+      isAdmin = true;
+      closeRootPasscodeModal();
+      toast("Доступ подтвержден");
+      navigateTab('root', null);
+    } else {
+      toast("Неверный код доступа");
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+  } catch (e) {
+    toast("Ошибка проверки доступа");
+  }
+}
+window.submitRootPasscode = submitRootPasscode;
 
 function toggleEditorFabVisibility(forceState = null) {
   isFabVisible = (forceState !== null) ? forceState : !isFabVisible;
@@ -156,6 +189,8 @@ function applyConfigToUI(cfg) {
       el.innerText = cfg[key];
     });
   });
+
+  if (typeof renderDailyBloom === 'function') renderDailyBloom();
 }
 
 async function loadConfig(force = false) {
@@ -386,7 +421,7 @@ function contactSupport() {
 }
 window.contactSupport = contactSupport;
 
-// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
+// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА (С ФИЛЬТРАЦИЕЙ ПО REG_TS) -------------------
 
 async function loadNotifications(force = false) {
   const cached = localStorage.getItem('flw_notifs_cache');
@@ -398,7 +433,8 @@ async function loadNotifications(force = false) {
   }
 
   try {
-    const res = await fetch(`${API_URL}?action=get_notifications`);
+    const regTs = currentUser ? (currentUser.reg_ts || 0) : 0;
+    const res = await fetch(`${API_URL}?action=get_notifications&user_reg_ts=${regTs}`);
     const serverNotifs = await res.json();
     if (Array.isArray(serverNotifs)) {
       clientNotifications = serverNotifs;
@@ -501,7 +537,6 @@ function markAllNotificationsAsRead() {
 }
 window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 
-// Фоновая сверка версий данных для разгрузки запросов
 async function checkDataHashesAndSync() {
   try {
     const res = await fetch(`${API_URL}?action=get_data_hashes`);
@@ -531,7 +566,6 @@ async function checkDataHashesAndSync() {
 }
 window.checkDataHashesAndSync = checkDataHashesAndSync;
 
-// Автоматическая мгновенная проверка изменений в таблице при возврате в приложение
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     checkDataHashesAndSync();
@@ -545,7 +579,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Инициализация при полной готовности DOM
 function initApp() {
   try {
     loadCatalog();
@@ -565,7 +598,6 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// Фоновый опрос заказов и проверка хэшей каждые 3 минуты (180 000 мс)
 setInterval(() => {
   const activeScreen = document.querySelector('.screen.active')?.id;
   if (activeScreen === 'screen-profile') {
