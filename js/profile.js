@@ -246,6 +246,10 @@ async function checkUserSession() {
 
       renderProfileUI();
       renderSavedAddresses();
+
+      // Закрываем модалку регистрации, если профиль найден в базе
+      const regModal = document.getElementById('reg-modal');
+      if (regModal) regModal.classList.remove('open');
     } else {
       currentUser = null;
       localStorage.removeItem('flw_user_profile');
@@ -281,6 +285,7 @@ async function submitRegistration() {
     document.getElementById('reg-modal').classList.remove('open');
     renderProfileUI();
     toast("Регистрация завершена");
+    if (typeof loadNotifications === 'function') loadNotifications(true);
   } catch (e) {
     toast("Ошибка связи с базой");
   }
@@ -394,20 +399,17 @@ async function loadUserOrders() {
       const isAwaitingAssembly = (ord.status === 'Ожидает согласования упаковки');
 
       let timerCardBadge = "";
+      // Время для отсчета 15 минут берем строго из updated_at (момент перевода в статус Ожидает оплаты)
+      const statusTimeStr = ord.updated_at || ord.date_time;
+
       if (isAwaitingPay) {
-        const createdTs = parseOrderDateToTs(ord.date_time);
-        if (createdTs) {
-          const elapsedSec = Math.floor((nowTs - createdTs) / 1000);
+        const statusTs = parseOrderDateToTs(statusTimeStr);
+        if (statusTs) {
+          const elapsedSec = Math.floor((nowTs - statusTs) / 1000);
           const leftSec = (15 * 60) - elapsedSec;
 
           if (leftSec <= 0) {
-            ord.status = 'Отменен (таймаут)';
-            isAwaitingPay = false;
-            fetch(API_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain' },
-              body: JSON.stringify({ action: "cancel_order_timeout", order_id: ord.order_id })
-            }).catch(() => {});
+            timerCardBadge = `⏳ 00:00 (Таймаут)`;
           } else {
             const m = Math.floor(leftSec / 60);
             const s = leftSec % 60;
@@ -433,7 +435,7 @@ async function loadUserOrders() {
           ${renderOrderTrackerHtml(ord.status)}
 
           <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:8px;">
-            ${ord.items.map(i => {
+            ${(ord.items || []).map(i => {
               const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
               const packTag = i.in_bouquet ? ' <b style="color:var(--gold);">[в букет]</b>' : '';
               return `• ${fullTitle} × ${i.qty} шт.${packTag}`;
@@ -442,7 +444,7 @@ async function loadUserOrders() {
 
           ${isAwaitingPay ? `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${ord.date_time}')">
+              <button class="btn-metro" style="font-size:12px; padding:9px; flex:1;" onclick="triggerHaptic('medium'); openPaymentModal('${ord.order_id}', ${ord.total_amount}, '${statusTimeStr}')">
                 💳 Оплатить ${ord.total_amount} ₽ (СБП)
               </button>
               <span style="font-size:11px; font-weight:800; color:var(--red); white-space:nowrap;">${timerCardBadge}</span>
@@ -466,7 +468,6 @@ async function loadUserOrders() {
 }
 window.loadUserOrders = loadUserOrders;
 
-// Принудительное обновление заказов с анимацией золотой иконки
 function forceSyncUserOrders(btnEl) {
   triggerHaptic('medium');
   if (btnEl && typeof animateSyncBtn === 'function') animateSyncBtn(btnEl);
