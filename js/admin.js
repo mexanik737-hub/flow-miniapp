@@ -1,0 +1,1794 @@
+let selectedDriveMediaUrls = new Set();
+let selectedCategoryProductsForBatch = new Set();
+
+window.switchRootSection = function(sec) {
+  const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
+
+  sections.forEach(s => {
+    const btn = document.getElementById('tab-root-' + s);
+    const box = document.getElementById('root-sec-' + s);
+
+    if (btn) {
+      if (s === sec) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+
+    if (box) {
+      box.style.display = (s === sec ? 'block' : 'none');
+    }
+  });
+
+  try {
+    if (sec === 'orders' && typeof loadRootOrders === 'function') {
+      loadRootOrders(false);
+    } else if (sec === 'catalog' && typeof loadRootCatalog === 'function') {
+      loadRootCatalog(false);
+    } else if (sec === 'clients' && typeof loadRootClients === 'function') {
+      loadRootClients(false);
+    } else if (sec === 'notifs' && typeof loadRootNotifications === 'function') {
+      loadRootNotifications(false);
+    } else if (sec === 'stats' && typeof loadRootStats === 'function') {
+      loadRootStats(currentStatsPeriod || 'today');
+    } else if (sec === 'faq' && typeof loadRootFaq === 'function') {
+      loadRootFaq(false);
+    }
+  } catch (err) {
+    console.error("Root switch data load error:", err);
+  }
+};
+
+window.switchRootSubTab = function(tab) {
+  currentRootSubTab = tab;
+  const tabActive = document.getElementById('tab-root-active');
+  const tabArchive = document.getElementById('tab-root-archive');
+  if (tabActive) tabActive.classList.toggle('active', tab === 'active');
+  if (tabArchive) tabArchive.classList.toggle('active', tab === 'archive');
+  renderRootOrders();
+};
+
+async function loadRootOrders(force = false) {
+  if (!isAdmin) return;
+  try {
+    const res = await fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    const orders = await res.json();
+    const newHash = JSON.stringify(orders);
+
+    if (force || newHash !== lastRootOrdersHash) {
+      allRootOrders = orders;
+      lastRootOrdersHash = newHash;
+      renderRootOrders();
+    }
+  } catch (e) {}
+}
+
+function renderRootOrders() {
+  const container = document.getElementById('root-orders-container');
+  if (!container) return;
+
+  const filtered = allRootOrders.filter(ord => {
+    const isClosed = ord.status === 'Завершен' || ord.status.startsWith('Отменен');
+    return currentRootSubTab === 'active' ? !isClosed : isClosed;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:16px 0;">${currentRootSubTab === 'active' ? 'Нет активных заказов' : 'Архив пуст'}</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(ord => {
+    const isAwaiting = (ord.status === 'Ожидает оплаты' || ord.status === 'Ожидает подтверждения оплаты');
+    const isAssembly = (ord.status === 'Ожидает согласования упаковки');
+    const deliveryCostText = ord.delivery_type === 'delivery' 
+      ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
+      : '0 ₽ (Самовывоз)';
+
+    const itemsListText = (ord.items || []).map(i => {
+      const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
+      const bqTag = i.in_bouquet ? ' [в букет]' : '';
+      return `• ${fullTitle} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
+    }).join('<br>');
+
+    const hasDistinctRecipient = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
+    const safeAddr = (ord.address || "").replace(/'/g, "\\'");
+
+    return `
+      <div class="box-card" style="margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <b>${ord.order_id}</b>
+          <span class="status-badge st-building">${ord.status}</span>
+        </div>
+        <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
+          <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
+          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--gold);">${ord.recipient_info}</span><br>` : ''}
+          <b>Адрес:</b> ${ord.address}<br>
+          <b>Стоимость доставки:</b> ${deliveryCostText}<br>
+          <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
+          ${ord.shop_comment ? `<b>Комментарий салону:</b> ${ord.shop_comment}<br>` : ''}
+          <div style="margin:6px 0; padding-top:6px; border-top:1px dashed var(--border);">
+            <b>Состав заказа:</b><br>
+            ${itemsListText || '<i>Нет данных о составе</i>'}
+          </div>
+          <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
+        </div>
+        ${isAssembly ? `
+          <div style="background:rgba(197,125,30,0.12); border:1px solid rgba(197,125,30,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
+            💐 <b>Требуется сборка букета!</b> Согласуйте упаковку с клиентом, скорректируйте сумму в «Составе заказа» и переведите в «Ожидает оплаты».
+          </div>
+        ` : ''}
+        ${isAwaiting ? `
+          <button class="btn-metro" style="font-size:11px; padding:7px; margin-bottom:6px;" onclick="confirmOrderRoot('${ord.order_id}')">
+            ✅ Оплата поступила ➔ В «Собирается»
+          </button>
+        ` : ''}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openCourierModal('${ord.order_id}')">📋 Для курьера</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber);" onclick="openYandexGoDelivery('${safeAddr}')">
+            🚚 Яндекс Go
+          </button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openStatusModal('${ord.order_id}')">Сменить статус</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openEditItemsModal('${ord.order_id}')">Состав заказа</button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="triggerOrderPhotoUpload('${ord.order_id}')">📸 Фото букета</button>
+          <button class="btn-metro btn-danger" style="font-size:11px; padding:7px;" onclick="openTopConfirm('${ord.order_id}')">Удалить заказ</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openYandexGoDelivery(orderAddress = "") {
+  if (orderAddress && navigator.clipboard) {
+    navigator.clipboard.writeText(orderAddress);
+    toast("Адрес скопирован! Вставьте его в Яндекс Go");
+  }
+  const appUrl = "yandexgo://route";
+  const webUrl = "https://3.redirect.appmetrica.yandex.com/route?appmetrica_tracking_id=1178268795219780156";
+
+  if (tg && tg.openLink) {
+    tg.openLink(appUrl);
+    setTimeout(() => tg.openLink(webUrl), 1000);
+  } else {
+    window.location.href = appUrl;
+    setTimeout(() => window.open(webUrl, '_blank'), 1000);
+  }
+}
+
+function openCourierModal(orderId) {
+  const ord = allRootOrders.find(o => o.order_id === orderId);
+  if (!ord) return;
+
+  const hasDistinct = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
+  let recName = ord.user_name || "Клиент";
+  let rawPhone = ord.user_phone || "";
+
+  if (hasDistinct) {
+    const match = ord.recipient_info.match(/^(.*?)\s*\((.*?)\)$/);
+    if (match) {
+      recName = match[1].trim();
+      rawPhone = match[2].trim();
+    } else {
+      recName = ord.recipient_info;
+    }
+  }
+
+  let cleanPhone = rawPhone.replace(/\D/g, '');
+  if (cleanPhone.startsWith('7') || cleanPhone.startsWith('8')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  let commentVal = "";
+  const commentMatch = (ord.address || "").match(/\[курьеру:\s*(.*?)\]/i);
+  if (commentMatch && commentMatch[1]) {
+    commentVal = commentMatch[1].trim();
+  }
+
+  const cleanAddress = (ord.address || "").replace(/\s*\[курьеру:.*?\]/i, '').trim();
+
+  document.getElementById('courier-modal-title').innerText = `Курьер: ${ord.order_id}`;
+  document.getElementById('courier-val-address').innerText = cleanAddress || "—";
+  document.getElementById('courier-val-name').innerText = recName || "—";
+  document.getElementById('courier-val-phone').innerText = cleanPhone || "—";
+  document.getElementById('courier-val-note').innerText = "Хрупкий товар — ЦВЕТЫ. Везти вертикально, аккуратно";
+
+  const commentCard = document.getElementById('courier-comment-card');
+  if (commentVal) {
+    document.getElementById('courier-val-comment').innerText = commentVal;
+    commentCard.style.display = 'flex';
+  } else {
+    commentCard.style.display = 'none';
+  }
+
+  document.getElementById('courier-modal').classList.add('open');
+}
+
+function closeCourierModal() {
+  document.getElementById('courier-modal').classList.remove('open');
+}
+
+function copyCourierSingleField(elId, fieldName) {
+  const el = document.getElementById(elId);
+  const val = el ? el.innerText.trim() : "";
+  if (!val || val === "—") return;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(val);
+    toast(`${fieldName} скопирован!`);
+  }
+}
+
+async function confirmOrderRoot(orderId) {
+  toast("Подтверждение...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "admin_update_order", admin_id: userId, admin_passcode: sessionPasscode, order_id: orderId, status: "Собирается" })
+  });
+  loadRootOrders(true);
+}
+
+function openStatusModal(orderId) {
+  activeRootOrderForStatus = orderId;
+  document.getElementById('status-modal-title').innerText = `Статус ${orderId}`;
+  document.getElementById('status-modal').classList.add('open');
+}
+function closeStatusModal() { document.getElementById('status-modal').classList.remove('open'); }
+
+async function applyStatusChoice(st) {
+  if (!activeRootOrderForStatus) return;
+  const oid = activeRootOrderForStatus;
+  closeStatusModal();
+  toast("Обновление...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "admin_update_order", admin_id: userId, admin_passcode: sessionPasscode, order_id: oid, status: st })
+  });
+  loadRootOrders(true);
+}
+
+function populateCatalogDropdown() {
+  const optionsBox = document.getElementById('add-item-catalog-options');
+  if (!optionsBox) return;
+  optionsBox.innerHTML = catalog.map(c => {
+    const fullTitle = formatFullItemTitle(c.title, c.unit, c.variant, c.color);
+    return `
+      <div class="custom-select-option" onclick="selectItemToAddToOrder('${c.id}')">
+        ${fullTitle} — ${c.price} ₽
+      </div>
+    `;
+  }).join('');
+}
+
+function selectItemToAddToOrder(cid) {
+  tempSelectedCatalogIdToAdd = cid;
+  const c = catalog.find(i => String(i.id) === String(cid));
+  if (c) {
+    document.getElementById('add-item-catalog-display').innerText = `${formatFullItemTitle(c.title, c.unit, c.variant, c.color)} — ${c.price} ₽`;
+  }
+  document.getElementById('add-item-catalog-box').classList.remove('open');
+}
+
+function openEditItemsModal(orderId) {
+  const ord = allRootOrders.find(o => o.order_id === orderId);
+  if (!ord) return;
+  activeRootOrderForEdit = ord;
+  tempEditingItems = JSON.parse(JSON.stringify(ord.items || []));
+  tempSelectedCatalogIdToAdd = "";
+  document.getElementById('add-item-catalog-display').innerText = "Выберите цветок для добавления...";
+  document.getElementById('edit-items-modal-title').innerText = `Состав ${orderId}`;
+
+  const hasDistinct = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
+  document.getElementById('edit-order-client-info').innerHTML = `
+    <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
+    ${hasDistinct ? `<b>Получатель:</b> <span style="color:var(--gold);">${ord.recipient_info}</span>` : `<b>Получатель:</b> Заказчик лично`}
+  `;
+ 
+  document.getElementById('edit-order-delivery-input').value = ord.delivery_cost || 0;
+  document.getElementById('edit-order-assembly-input').value = 0;
+ 
+  renderEditItemsList();
+  recalcEditOrderTotalFromInputs();
+  document.getElementById('edit-items-modal').classList.add('open');
+}
+function closeEditItemsModal() { document.getElementById('edit-items-modal').classList.remove('open'); }
+
+function renderEditItemsList() {
+  const box = document.getElementById('edit-items-list');
+  box.innerHTML = tempEditingItems.map((it, idx) => {
+    const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
+    const packTag = it.in_bouquet ? ' <b>[в букет]</b>' : '';
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+        <div>${fullTitle}${packTag} (${it.price} ₽ × ${it.qty})</div>
+        <div style="display:flex; gap:4px;">
+          <button class="qty-btn" style="width:24px; height:24px;" onclick="tempEditingItems[${idx}].qty++; renderEditItemsList(); recalcEditOrderTotalFromInputs();">+</button>
+          <button class="qty-btn" style="width:24px; height:24px;" onclick="if(--tempEditingItems[${idx}].qty<=0) tempEditingItems.splice(${idx},1); renderEditItemsList(); recalcEditOrderTotalFromInputs();">–</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function recalcEditOrderTotalFromInputs() {
+  const itemsSum = tempEditingItems.reduce((acc, it) => acc + (it.price * it.qty), 0);
+  const deliverySum = parseFloat(document.getElementById('edit-order-delivery-input').value) || 0;
+  const assemblySum = parseFloat(document.getElementById('edit-order-assembly-input').value) || 0;
+  document.getElementById('edit-order-total-input').value = itemsSum + deliverySum + assemblySum;
+}
+
+function addItemToCurrentOrder() {
+  if (!tempSelectedCatalogIdToAdd) { toast("Выберите цветок из списка"); return; }
+  const c = catalog.find(i => String(i.id) === String(tempSelectedCatalogIdToAdd));
+  if (!c) return;
+  const ex = tempEditingItems.find(i => String(i.id) === String(c.id));
+  if (ex) ex.qty++; 
+  else tempEditingItems.push({ 
+    id: c.id, 
+    title: c.title, 
+    unit: c.unit || '1 шт.', 
+    variant: c.variant || '', 
+    color: c.color || '', 
+    price: c.price, 
+    qty: 1 
+  });
+  renderEditItemsList();
+  recalcEditOrderTotalFromInputs();
+}
+
+async function saveEditedOrderItems() {
+  if (!activeRootOrderForEdit) return;
+  const totalAmountVal = parseFloat(document.getElementById('edit-order-total-input').value) || 0;
+
+  let nextStatus = activeRootOrderForEdit.status;
+  if (nextStatus === 'Ожидает согласования упаковки') {
+    nextStatus = 'Ожидает оплаты';
+  }
+
+  toast("Сохранение и выставление счета...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_update_order", admin_id: userId, admin_passcode: sessionPasscode,
+      order_id: activeRootOrderForEdit.order_id,
+      items: tempEditingItems,
+      total_amount: totalAmountVal,
+      status: nextStatus
+    })
+  });
+  closeEditItemsModal();
+  loadRootOrders(true);
+  toast("Счет обновлен!");
+}
+
+function openTopConfirm(orderId) {
+  document.getElementById('top-confirm-text').innerText = `Удалить заказ ${orderId} безвозвратно?`;
+  document.getElementById('top-confirm-yes-btn').onclick = () => confirmDeleteOrderExecute(orderId);
+  document.getElementById('top-confirm-popup').classList.add('show');
+}
+
+function closeTopConfirm() {
+  document.getElementById('top-confirm-popup').classList.remove('show');
+}
+
+async function confirmDeleteOrderExecute(orderId) {
+  closeTopConfirm();
+  toast("Удаление...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "admin_delete_order", admin_id: userId, admin_passcode: sessionPasscode, order_id: orderId })
+  });
+  loadRootOrders(true);
+}
+
+function triggerOrderPhotoUpload(orderId) {
+  uploadTargetContext = { type: 'order', id: orderId };
+  document.getElementById('camera-file-input').click();
+}
+
+function triggerProductPhotoUpload(target) {
+  driveModalTarget = target;
+  uploadTargetContext = { type: 'product', target: target };
+  document.getElementById('camera-file-input').click();
+}
+
+function compressImageFile(file, maxSide = 1400, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxSide || height > maxSide) {
+          if (width > height) {
+            height = Math.round((height * maxSide) / width);
+            width = maxSide;
+          } else {
+            width = Math.round((width * maxSide) / height);
+            height = maxSide;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      img.onerror = () => reject(new Error("Не удалось прочитать изображение"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Ошибка чтения файла"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleNativeFileSelect(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  toast("Сжатие и загрузка фото...");
+
+  try {
+    const base64 = await compressImageFile(file, 1400, 0.82);
+
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_upload_photo",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        base64: base64,
+        content_type: "image/jpeg",
+        order_id: (uploadTargetContext && uploadTargetContext.type === 'order') ? uploadTargetContext.id : ""
+      })
+    });
+
+    const d = await res.json();
+    if (d.success && uploadTargetContext && uploadTargetContext.type === 'product') {
+      if (uploadTargetContext.target === 'group') {
+        addGroupPhotoUrl(d.photo_url);
+      } else {
+        addProductPhotoUrl(d.photo_url);
+      }
+      toast("Фото сжато и добавлено!");
+    } else if (d.success) {
+      toast("Фото букета отправлено клиенту!");
+    } else {
+      toast("Ошибка загрузки на сервер");
+    }
+  } catch (err) {
+    console.error("Upload error:", err);
+    toast("Ошибка обработки фотографии");
+  } finally {
+    input.value = "";
+  }
+}
+window.handleNativeFileSelect = handleNativeFileSelect;
+
+function renderProductEditorPhotos(urlsStr) {
+  const box = document.getElementById('prod-photo-strip');
+  const hiddenInput = document.getElementById('prod-edit-photo');
+  hiddenInput.value = urlsStr || "";
+  const urls = (urlsStr || "").split(',').map(s => s.trim()).filter(Boolean);
+
+  if (!urls.length) {
+    box.innerHTML = '<span style="font-size:11px; color:var(--text-muted); padding:4px 0;">Нет фото</span>';
+    return;
+  }
+
+  box.innerHTML = urls.map((u, idx) => `
+    <div class="prod-photo-thumb-wrap">
+      <img src="${u}">
+      <button class="prod-photo-del-btn" onclick="removeProductPhoto(${idx})">✕</button>
+      ${idx > 0 ? `<button class="prod-photo-move-btn prod-photo-move-left" onclick="moveProductPhoto(${idx}, -1)">◄</button>` : ''}
+      ${idx < urls.length - 1 ? `<button class="prod-photo-move-btn prod-photo-move-right" onclick="moveProductPhoto(${idx}, 1)">►</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function moveProductPhoto(idx, delta) {
+  const hiddenInput = document.getElementById('prod-edit-photo');
+  const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+  const targetIdx = idx + delta;
+  if (targetIdx < 0 || targetIdx >= urls.length) return;
+
+  const temp = urls[idx];
+  urls[idx] = urls[targetIdx];
+  urls[targetIdx] = temp;
+  renderProductEditorPhotos(urls.join(', '));
+}
+
+function addProductPhotoUrl(url) {
+  const hiddenInput = document.getElementById('prod-edit-photo');
+  const cur = hiddenInput.value.trim();
+  const updated = cur ? `${cur}, ${url}` : url;
+  renderProductEditorPhotos(updated);
+}
+
+function removeProductPhoto(idx) {
+  const hiddenInput = document.getElementById('prod-edit-photo');
+  const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+  urls.splice(idx, 1);
+  renderProductEditorPhotos(urls.join(', '));
+}
+
+function renderGroupEditorPhotos(urlsStr) {
+  const box = document.getElementById('group-photo-strip');
+  const hiddenInput = document.getElementById('group-edit-photo');
+  hiddenInput.value = urlsStr || "";
+  const urls = (urlsStr || "").split(',').map(s => s.trim()).filter(Boolean);
+
+  if (!urls.length) {
+    box.innerHTML = '<span style="font-size:11px; color:var(--text-muted); padding:4px 0;">Нет фото</span>';
+    return;
+  }
+
+  box.innerHTML = urls.map((u, idx) => `
+    <div class="prod-photo-thumb-wrap">
+      <img src="${u}">
+      <button class="prod-photo-del-btn" onclick="removeGroupPhoto(${idx})">✕</button>
+      ${idx > 0 ? `<button class="prod-photo-move-btn prod-photo-move-left" onclick="moveGroupPhoto(${idx}, -1)">◄</button>` : ''}
+      ${idx < urls.length - 1 ? `<button class="prod-photo-move-btn prod-photo-move-right" onclick="moveGroupPhoto(${idx}, 1)">►</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function moveGroupPhoto(idx, delta) {
+  const hiddenInput = document.getElementById('group-edit-photo');
+  const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+  const targetIdx = idx + delta;
+  if (targetIdx < 0 || targetIdx >= urls.length) return;
+
+  const temp = urls[idx];
+  urls[idx] = urls[targetIdx];
+  urls[targetIdx] = temp;
+  renderGroupEditorPhotos(urls.join(', '));
+}
+
+function addGroupPhotoUrl(url) {
+  const hiddenInput = document.getElementById('group-edit-photo');
+  const cur = hiddenInput.value.trim();
+  const updated = cur ? `${cur}, ${url}` : url;
+  renderGroupEditorPhotos(updated);
+}
+
+function removeGroupPhoto(idx) {
+  const hiddenInput = document.getElementById('group-edit-photo');
+  const urls = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+  urls.splice(idx, 1);
+  renderGroupEditorPhotos(urls.join(', '));
+}
+
+function openDriveMediaModal(target) {
+  driveModalTarget = target;
+  selectedDriveMediaUrls.clear();
+  updateDriveSelectedBtnLabel();
+
+  document.getElementById('drive-media-modal').classList.add('open');
+
+  const cached = localStorage.getItem('flw_drive_media_cache');
+  if (cached) {
+    try {
+      const media = JSON.parse(cached);
+      renderDriveMediaGrid(media);
+    } catch (e) {
+      syncDriveMediaCache();
+    }
+  } else {
+    syncDriveMediaCache();
+  }
+}
+window.openDriveMediaModal = openDriveMediaModal;
+
+function closeDriveMediaModal() { 
+  document.getElementById('drive-media-modal').classList.remove('open'); 
+}
+window.closeDriveMediaModal = closeDriveMediaModal;
+
+async function syncDriveMediaCache(showToast = false) {
+  const box = document.getElementById('drive-media-container');
+  if (showToast) toast("Синхронизация с Google Диском...");
+  else box.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">Загрузка медиа...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_drive_media&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    const media = await res.json();
+    localStorage.setItem('flw_drive_media_cache', JSON.stringify(media));
+    renderDriveMediaGrid(media);
+    if (showToast) toast("Фото Google Диска обновлены");
+  } catch (err) {
+    box.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--red);">Ошибка загрузки диска</div>';
+  }
+}
+window.syncDriveMediaCache = syncDriveMediaCache;
+
+function renderDriveMediaGrid(media) {
+  const box = document.getElementById('drive-media-container');
+  if (!media || !media.length) {
+    box.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:20px;">Папка пуста</div>';
+    return;
+  }
+
+  box.innerHTML = media.map(m => {
+    const isSel = selectedDriveMediaUrls.has(m.url);
+    return `
+      <div class="drive-media-item ${isSel ? 'selected' : ''}" onclick="toggleDrivePhotoSelection('${m.url}', this)">
+        <img src="${m.url}" loading="lazy">
+        <div class="drive-media-check">${isSel ? '✓' : ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleDrivePhotoSelection(url, el) {
+  triggerHaptic('light');
+  if (selectedDriveMediaUrls.has(url)) {
+    selectedDriveMediaUrls.delete(url);
+    el.classList.remove('selected');
+    el.querySelector('.drive-media-check').innerText = '';
+  } else {
+    selectedDriveMediaUrls.add(url);
+    el.classList.add('selected');
+    el.querySelector('.drive-media-check').innerText = '✓';
+  }
+  updateDriveSelectedBtnLabel();
+}
+
+function updateDriveSelectedBtnLabel() {
+  const btn = document.getElementById('drive-apply-selected-btn');
+  if (btn) btn.innerText = `Прикрепить выбранные (${selectedDriveMediaUrls.size})`;
+}
+
+function applyDriveSelectedPhotos() {
+  triggerHaptic('medium');
+  if (!selectedDriveMediaUrls.size) {
+    toast("Выберите хотя бы одну фотографию");
+    return;
+  }
+
+  const urlsToAdd = Array.from(selectedDriveMediaUrls);
+  urlsToAdd.forEach(url => {
+    if (driveModalTarget === 'group') {
+      addGroupPhotoUrl(url);
+    } else {
+      addProductPhotoUrl(url);
+    }
+  });
+
+  toast(`Прикреплено фото: ${urlsToAdd.length}`);
+  closeDriveMediaModal();
+}
+window.applyDriveSelectedPhotos = applyDriveSelectedPhotos;
+
+function populateCategorySelectBoxes() {
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  if (!categories.includes("Цветы")) categories.unshift("Цветы");
+
+  const pOptions = document.getElementById('prod-edit-cat-options');
+  if (pOptions) {
+    pOptions.innerHTML = categories.map(cat => `
+      <div class="custom-select-option" onclick="selectCategoryForProductEditor('${cat}')">${cat}</div>
+    `).join('');
+  }
+
+  const gOptions = document.getElementById('group-edit-cat-options');
+  if (gOptions) {
+    gOptions.innerHTML = categories.map(cat => `
+      <div class="custom-select-option" onclick="selectCategoryForGroupEditor('${cat}')">${cat}</div>
+    `).join('');
+  }
+}
+
+function selectCategoryForProductEditor(cat) {
+  triggerHaptic('selection');
+  document.getElementById('prod-edit-cat-display').innerText = cat;
+  document.getElementById('prod-edit-cat').value = cat;
+  document.getElementById('prod-edit-cat-box').classList.remove('open');
+}
+window.selectCategoryForProductEditor = selectCategoryForProductEditor;
+
+function selectCategoryForGroupEditor(cat) {
+  triggerHaptic('selection');
+  document.getElementById('group-edit-cat-display').innerText = cat;
+  document.getElementById('group-edit-cat').value = cat;
+  document.getElementById('group-edit-cat-box').classList.remove('open');
+}
+window.selectCategoryForGroupEditor = selectCategoryForGroupEditor;
+
+function openCategoriesManagerModal() {
+  triggerHaptic('selection');
+  selectedCategoryProductsForBatch.clear();
+  renderCategoriesManagerList();
+  document.getElementById('categories-manager-modal').classList.add('open');
+}
+window.openCategoriesManagerModal = openCategoriesManagerModal;
+
+function closeCategoriesManagerModal() {
+  triggerHaptic('light');
+  document.getElementById('categories-manager-modal').classList.remove('open');
+}
+window.closeCategoriesManagerModal = closeCategoriesManagerModal;
+
+function renderCategoriesManagerList() {
+  const container = document.getElementById('categories-manager-list');
+  if (!container) return;
+
+  const catMap = {};
+  allRootCatalog.forEach(item => {
+    const cat = item.category || "Без категории";
+    if (!catMap[cat]) catMap[cat] = [];
+    catMap[cat].push(item);
+  });
+
+  const cats = Object.keys(catMap).sort();
+
+  if (!cats.length) {
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; text-align:center; padding:16px;">Каталог пуст</div>';
+    return;
+  }
+
+  container.innerHTML = cats.map(catName => {
+    const items = catMap[catName];
+    return `
+      <div class="cat-item-card" id="cat-card-${encodeURIComponent(catName)}">
+        <div class="cat-item-header" onclick="toggleCatCardAccordion('${encodeURIComponent(catName)}')">
+          <div class="cat-item-title-box">
+            <span class="cat-item-name">${catName}</span>
+            <span class="cat-item-count">${items.length}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation();">
+            <button class="btn-trash-mini" style="font-size:14px; color:var(--gold);" onclick="renameCategoryPrompt('${encodeURIComponent(catName)}')">✏️</button>
+            <span style="font-size:12px; color:var(--gold);">▼</span>
+          </div>
+        </div>
+        <div class="cat-item-products-list">
+          ${items.map(it => {
+            const isChecked = selectedCategoryProductsForBatch.has(String(it.id));
+            const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
+            return `
+              <div class="cat-prod-row">
+                <div style="display:flex; align-items:center; gap:8px; max-width:80%;">
+                  <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:16px; height:16px; font-size:10px;" onclick="toggleCatBatchProduct('${it.id}', this)">${isChecked ? '✓' : ''}</div>
+                  <span style="color:var(--text);">${fullTitle} (${it.price} ₽)</span>
+                </div>
+                <button class="btn-trash-mini" style="color:var(--gold); font-size:11px;" onclick="moveSingleProductCategory('${it.id}')">Перенести</button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updateBatchCategoryBtnLabel();
+}
+
+function toggleCatCardAccordion(encodedCat) {
+  triggerHaptic('light');
+  const card = document.getElementById('cat-card-' + encodedCat);
+  if (card) card.classList.toggle('open');
+}
+window.toggleCatCardAccordion = toggleCatCardAccordion;
+
+function toggleCatBatchProduct(id, el) {
+  triggerHaptic('light');
+  const strId = String(id);
+  if (selectedCategoryProductsForBatch.has(strId)) {
+    selectedCategoryProductsForBatch.delete(strId);
+    el.classList.remove('checked');
+    el.innerText = '';
+  } else {
+    selectedCategoryProductsForBatch.add(strId);
+    el.classList.add('checked');
+    el.innerText = '✓';
+  }
+  updateBatchCategoryBtnLabel();
+}
+window.toggleCatBatchProduct = toggleCatBatchProduct;
+
+function updateBatchCategoryBtnLabel() {
+  const btn = document.getElementById('cat-batch-move-btn');
+  if (!btn) return;
+  const count = selectedCategoryProductsForBatch.size;
+  if (count > 0) {
+    btn.style.display = 'block';
+    btn.innerText = `Перенести выбранные (${count})`;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function createNewCategoryFromManager() {
+  const input = document.getElementById('new-category-name-input');
+  const newCat = input.value.trim();
+  if (!newCat) {
+    toast("Введите название категории");
+    return;
+  }
+  input.value = "";
+  populateCategorySelectBoxes();
+  toast(`Категория «${newCat}» доступна при выборе в товарах`);
+}
+window.createNewCategoryFromManager = createNewCategoryFromManager;
+
+async function renameCategoryPrompt(encodedOldCat) {
+  const oldCat = decodeURIComponent(encodedOldCat);
+  const newCat = prompt(`Новое название для категории «${oldCat}»:`, oldCat);
+  if (!newCat || !newCat.trim() || newCat.trim() === oldCat) return;
+
+  toast("Переименование категории...");
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_rename_category",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        old_category: oldCat,
+        new_category: newCat.trim()
+      })
+    });
+    const d = await res.json();
+    if (d.success) {
+      toast(`Обновлено товаров: ${d.updated || 0}`);
+      await forceSyncRootCatalog();
+      renderCategoriesManagerList();
+    }
+  } catch (e) {
+    toast("Ошибка связи");
+  }
+}
+window.renameCategoryPrompt = renameCategoryPrompt;
+
+async function moveSingleProductCategory(productId) {
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  const targetCat = prompt(`Укажите категорию для переноса товара:\nДоступные: ${categories.join(', ')}`);
+  if (!targetCat || !targetCat.trim()) return;
+
+  toast("Перенос товара...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_batch_change_category",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      target_category: targetCat.trim(),
+      product_ids_json: JSON.stringify([productId])
+    })
+  });
+  toast("Товар перенесен");
+  await forceSyncRootCatalog();
+  renderCategoriesManagerList();
+}
+window.moveSingleProductCategory = moveSingleProductCategory;
+
+async function openBatchMoveCategoryDialog() {
+  if (!selectedCategoryProductsForBatch.size) return;
+  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  const targetCat = prompt(`Укажите целевую категорию для ${selectedCategoryProductsForBatch.size} товаров:\nДоступные: ${categories.join(', ')}`);
+  if (!targetCat || !targetCat.trim()) return;
+
+  toast("Массовый перенос товаров...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_batch_change_category",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      target_category: targetCat.trim(),
+      product_ids_json: JSON.stringify(Array.from(selectedCategoryProductsForBatch))
+    })
+  });
+  toast("Товары успешно перенесены");
+  selectedCategoryProductsForBatch.clear();
+  await forceSyncRootCatalog();
+  renderCategoriesManagerList();
+}
+window.openBatchMoveCategoryDialog = openBatchMoveCategoryDialog;
+
+async function loadRootCatalog(force = false) {
+  const container = document.getElementById('root-catalog-container');
+  const cached = localStorage.getItem('flw_root_catalog_cache');
+
+  if (cached && !force) {
+    try {
+      allRootCatalog = JSON.parse(cached);
+      renderRootCatalogUI();
+      populateCategorySelectBoxes();
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_full_catalog&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootCatalog = await res.json();
+    localStorage.setItem('flw_root_catalog_cache', JSON.stringify(allRootCatalog));
+    renderRootCatalogUI();
+    populateCategorySelectBoxes();
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки каталога</div>';
+  }
+}
+window.loadRootCatalog = loadRootCatalog;
+
+async function forceSyncRootCatalog() {
+  triggerHaptic('medium');
+  toast("Синхронизация каталога...");
+  await loadRootCatalog(true);
+  if (typeof loadCatalog === 'function') loadCatalog(true);
+  toast("Каталог обновлен");
+}
+window.forceSyncRootCatalog = forceSyncRootCatalog;
+
+function renderRootCatalogUI() {
+  const container = document.getElementById('root-catalog-container');
+  if (!container) return;
+
+  const groups = {};
+  allRootCatalog.forEach(item => {
+    const titleKey = (item.title || '').trim();
+    if (!groups[titleKey]) groups[titleKey] = [];
+    groups[titleKey].push(item);
+  });
+
+  const rootCards = [];
+  Object.keys(groups).forEach(key => {
+    const list = groups[key];
+    if (list.length > 1) {
+      rootCards.push({ is_group: true, title: key, items: list });
+    } else {
+      rootCards.push({ is_group: false, item: list[0] });
+    }
+  });
+
+  container.innerHTML = rootCards.map(c => {
+    if (c.is_group) {
+      const activeCount = c.items.filter(i => i.is_active).length;
+      const prices = c.items.map(i => i.price);
+      const minP = Math.min(...prices);
+      const maxP = Math.max(...prices);
+      const photoCount = (c.items[0].photo_url ? c.items[0].photo_url.split(',').length : 0);
+
+      return `
+        <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--gold);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <b>${c.title}</b> <span style="font-size:10px; background:rgba(197,160,89,0.18); color:var(--gold); padding:2px 6px; border-radius:4px; font-weight:800;">Группа (${c.items.length})</span>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Категория: ${c.items[0].category} · Фото: ${photoCount}</div>
+              <div style="font-size:11px; color:var(--amber); margin-top:2px;">Наличие: ${activeCount} из ${c.items.length} активны</div>
+            </div>
+            <div style="text-align:right;">
+              <span style="color:var(--green); font-weight:800; font-size:13px;">${minP === maxP ? minP + ' ₽' : minP + '–' + maxP + ' ₽'}</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditGroupModal('${encodeURIComponent(c.title)}')">⚙️ Редактировать группу</button>
+          </div>
+        </div>
+      `;
+    } else {
+      const it = c.item;
+      const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
+      return `
+        <div class="box-card" style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between;">
+            <b>${fullTitle} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
+            <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
+          </div>
+          <div style="font-size:11px; color:var(--gold); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Категория: ${it.category} · На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="convertProductToGroup('${it.id}')">+ В группу</button>
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
+          </div>
+        </div>
+      `;
+    }
+  }).join('');
+}
+
+function convertProductToGroup(id) {
+  const it = allRootCatalog.find(i => String(i.id) === String(id));
+  if (!it) return;
+
+  editingGroupName = it.title;
+  document.getElementById('group-edit-title').innerText = `Группа: ${it.title}`;
+  document.getElementById('group-edit-name').value = it.title;
+  document.getElementById('group-edit-cat-display').innerText = it.category;
+  document.getElementById('group-edit-cat').value = it.category;
+  document.getElementById('group-edit-desc').value = it.description || "";
+ 
+  const popEl = document.getElementById('group-edit-popular-ui');
+  popEl.classList.toggle('checked', !!it.is_popular);
+  popEl.innerText = it.is_popular ? '✓' : '';
+
+  renderGroupEditorPhotos(it.photo_url || "");
+
+  const tbody = document.getElementById('group-variants-tbody');
+  tbody.innerHTML = "";
+  addGroupVariantRow({ id: it.id, unit: it.unit || "1 шт.", variant: it.variant || "", color: it.color || "", price: it.price, is_active: it.is_active });
+  addGroupVariantRow({ unit: it.unit || "1 шт.", variant: "", color: "", price: it.price, is_active: true });
+
+  checkGroupDisbandCheckboxVisibility();
+  document.getElementById('group-editor-modal').classList.add('open');
+  toast("Создание группы на базе цветка");
+}
+
+function openAddGroupModal() {
+  editingGroupName = null;
+  document.getElementById('group-edit-title').innerText = "Создать группу вариаций";
+  document.getElementById('group-edit-name').value = "";
+  document.getElementById('group-edit-cat-display').innerText = "Цветы";
+  document.getElementById('group-edit-cat').value = "Цветы";
+  document.getElementById('group-edit-desc').value = "";
+ 
+  const popEl = document.getElementById('group-edit-popular-ui');
+  popEl.classList.remove('checked'); popEl.innerText = '';
+ 
+  renderGroupEditorPhotos("");
+
+  const tbody = document.getElementById('group-variants-tbody');
+  tbody.innerHTML = "";
+  addGroupVariantRow({ unit: "15 шт.", variant: "50 см", color: "Красный", price: 3500, is_active: true });
+  addGroupVariantRow({ unit: "15 шт.", variant: "60 см", color: "Красный", price: 4000, is_active: true });
+
+  checkGroupDisbandCheckboxVisibility();
+  document.getElementById('group-editor-modal').classList.add('open');
+}
+
+function openEditGroupModal(encodedTitle) {
+  const title = decodeURIComponent(encodedTitle);
+  editingGroupName = title;
+  const groupItems = allRootCatalog.filter(i => (i.title || '').trim() === title.trim());
+  if (!groupItems.length) return;
+
+  document.getElementById('group-edit-title').innerText = `Группа: ${title}`;
+  document.getElementById('group-edit-name').value = title;
+  document.getElementById('group-edit-cat-display').innerText = groupItems[0].category;
+  document.getElementById('group-edit-cat').value = groupItems[0].category;
+  document.getElementById('group-edit-desc').value = groupItems[0].description || "";
+ 
+  const isPop = groupItems.some(i => i.is_popular);
+  const popEl = document.getElementById('group-edit-popular-ui');
+  popEl.classList.toggle('checked', isPop);
+  popEl.innerText = isPop ? '✓' : '';
+
+  const hasPhoto = groupItems.find(i => i.photo_url);
+  renderGroupEditorPhotos(hasPhoto ? hasPhoto.photo_url : "");
+
+  const tbody = document.getElementById('group-variants-tbody');
+  tbody.innerHTML = "";
+  groupItems.forEach(item => {
+    addGroupVariantRow(item);
+  });
+
+  checkGroupDisbandCheckboxVisibility();
+  document.getElementById('group-editor-modal').classList.add('open');
+}
+
+function closeGroupEditorModal() { document.getElementById('group-editor-modal').classList.remove('open'); }
+
+function addGroupVariantRow(data = {}) {
+  const tbody = document.getElementById('group-variants-tbody');
+  const tr = document.createElement('tr');
+  tr.dataset.id = data.id || "";
+  tr.innerHTML = `
+    <td><input type="text" class="gv-unit" value="${data.unit || '15 шт.'}" placeholder="15 шт."></td>
+    <td><input type="text" class="gv-variant" value="${data.variant || ''}" placeholder="60 см"></td>
+    <td><input type="text" class="gv-color" value="${data.color || ''}" placeholder="Красный"></td>
+    <td><input type="number" class="gv-price" value="${data.price || ''}" placeholder="3500"></td>
+    <td style="text-align:center;">
+      <div class="custom-checkbox ${data.is_active !== false ? 'checked' : ''}" style="width:18px; height:18px; margin:0 auto;" onclick="this.classList.toggle('checked'); this.innerText = this.classList.contains('checked') ? '✓' : '';">${data.is_active !== false ? '✓' : ''}</div>
+    </td>
+    <td><button class="btn-trash-mini" style="color:var(--red); font-size:14px;" onclick="this.closest('tr').remove(); checkGroupDisbandCheckboxVisibility();">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  checkGroupDisbandCheckboxVisibility();
+}
+
+function checkGroupDisbandCheckboxVisibility() {
+  const count = document.querySelectorAll('#group-variants-tbody tr').length;
+  const wrap = document.getElementById('group-disband-checkbox-wrap');
+  if (wrap) {
+    wrap.style.display = (count === 1) ? 'flex' : 'none';
+  }
+}
+
+async function saveGroupEditor() {
+  const title = document.getElementById('group-edit-name').value.trim();
+  const cat = document.getElementById('group-edit-cat').value.trim() || document.getElementById('group-edit-cat-display').innerText.trim();
+  const photo = document.getElementById('group-edit-photo').value.trim();
+  const desc = document.getElementById('group-edit-desc').value.trim();
+  const isPop = document.getElementById('group-edit-popular-ui').classList.contains('checked');
+
+  if (!title) { toast("Укажите базовое название группы"); return; }
+  if (!cat) { toast("Укажите категорию товара"); return; }
+
+  const rows = Array.from(document.querySelectorAll('#group-variants-tbody tr'));
+  if (!rows.length) { toast("Добавьте хотя бы одну вариацию"); return; }
+
+  let hasPriceError = false;
+  const variants = rows.map(r => {
+    const pVal = parseFloat(r.querySelector('.gv-price').value) || 0;
+    if (pVal <= 0) hasPriceError = true;
+    return {
+      id: r.dataset.id || null,
+      unit: r.querySelector('.gv-unit').value.trim() || '1 шт.',
+      variant: r.querySelector('.gv-variant').value.trim(),
+      color: r.querySelector('.gv-color').value.trim(),
+      price: pVal,
+      is_active: r.querySelector('.custom-checkbox').classList.contains('checked')
+    };
+  });
+
+  if (hasPriceError) {
+    toast("Укажите цену для всех вариаций товара (не может быть пустой или 0)");
+    return;
+  }
+
+  const shouldDisband = (rows.length === 1) && document.getElementById('group-disband-ui').classList.contains('checked');
+
+  if (shouldDisband) {
+    toast("Расформирование группы...");
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_disband_group",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        group_title: editingGroupName || title,
+        title: title,
+        category: cat,
+        photo_url: photo,
+        description: desc,
+        is_popular: isPop,
+        keep_variant_json: JSON.stringify(variants[0])
+      })
+    });
+    toast("Группа расформирована в одиночный товар!");
+  } else {
+    toast("Сохранение группы...");
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_save_group",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        title: title,
+        category: cat,
+        photo_url: photo,
+        description: desc,
+        is_popular: isPop,
+        variants_json: JSON.stringify(variants)
+      })
+    });
+    toast("Группа товаров сохранена!");
+  }
+
+  closeGroupEditorModal();
+  forceSyncRootCatalog();
+}
+
+function openAddProductModal() {
+  editingProductId = null;
+  document.getElementById('prod-edit-title').innerText = "Новый одиночный товар";
+  document.getElementById('prod-edit-name').value = "";
+  document.getElementById('prod-edit-unit').value = "1 шт.";
+  document.getElementById('prod-edit-variant').value = "";
+  document.getElementById('prod-edit-color').value = "";
+  document.getElementById('prod-edit-cat-display').innerText = "Цветы";
+  document.getElementById('prod-edit-cat').value = "Цветы";
+  document.getElementById('prod-edit-price').value = "";
+  document.getElementById('prod-edit-desc').value = "";
+ 
+  const actEl = document.getElementById('prod-edit-active-ui');
+  actEl.classList.add('checked'); actEl.innerText = '✓';
+  const popEl = document.getElementById('prod-edit-popular-ui');
+  popEl.classList.remove('checked'); popEl.innerText = '';
+
+  renderProductEditorPhotos("");
+  document.getElementById('product-editor-modal').classList.add('open');
+}
+
+function openEditProductModal(id) {
+  const item = allRootCatalog.find(i => String(i.id) === String(id));
+  if (!item) return;
+  editingProductId = item.id;
+  document.getElementById('prod-edit-title').innerText = `Товар ID: ${item.id}`;
+  document.getElementById('prod-edit-name').value = item.title;
+  document.getElementById('prod-edit-unit').value = item.unit || "1 шт.";
+  document.getElementById('prod-edit-variant').value = item.variant || "";
+  document.getElementById('prod-edit-color').value = item.color || "";
+  document.getElementById('prod-edit-cat-display').innerText = item.category || "Цветы";
+  document.getElementById('prod-edit-cat').value = item.category || "Цветы";
+  document.getElementById('prod-edit-price').value = item.price;
+  document.getElementById('prod-edit-desc').value = item.description || "";
+ 
+  const actEl = document.getElementById('prod-edit-active-ui');
+  actEl.classList.toggle('checked', !!item.is_active);
+  actEl.innerText = item.is_active ? '✓' : '';
+
+  const popEl = document.getElementById('prod-edit-popular-ui');
+  popEl.classList.toggle('checked', !!item.is_popular);
+  popEl.innerText = item.is_popular ? '✓' : '';
+
+  renderProductEditorPhotos(item.photo_url || "");
+  document.getElementById('product-editor-modal').classList.add('open');
+}
+function closeProductEditorModal() { document.getElementById('product-editor-modal').classList.remove('open'); }
+
+async function saveProductEditor() {
+  const priceVal = parseFloat(document.getElementById('prod-edit-price').value) || 0;
+  if (priceVal <= 0) {
+    toast("Укажите цену товара (не может быть 0 или пустой)");
+    return;
+  }
+
+  const catVal = document.getElementById('prod-edit-cat').value.trim() || document.getElementById('prod-edit-cat-display').innerText.trim();
+
+  const payload = {
+    action: editingProductId ? "admin_update_product" : "admin_add_product",
+    admin_id: userId, admin_passcode: sessionPasscode,
+    id: editingProductId,
+    title: document.getElementById('prod-edit-name').value.trim(),
+    unit: document.getElementById('prod-edit-unit').value.trim(),
+    variant: document.getElementById('prod-edit-variant').value.trim(),
+    color: document.getElementById('prod-edit-color').value.trim(),
+    category: catVal,
+    price: priceVal,
+    photo_url: document.getElementById('prod-edit-photo').value.trim(),
+    description: document.getElementById('prod-edit-desc').value.trim(),
+    is_active: document.getElementById('prod-edit-active-ui').classList.contains('checked'),
+    is_popular: document.getElementById('prod-edit-popular-ui').classList.contains('checked')
+  };
+  await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+  toast("Каталог обновлен");
+  closeProductEditorModal();
+  forceSyncRootCatalog();
+}
+
+async function deleteProductRoot(id) {
+  if (!confirm("Удалить этот товар из базы?")) return;
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "admin_delete_product", admin_id: userId, admin_passcode: sessionPasscode, id: id })
+  });
+  forceSyncRootCatalog();
+}
+
+async function loadRootClients(force = false) {
+  const container = document.getElementById('root-clients-container');
+  const cached = localStorage.getItem('flw_root_clients_cache');
+
+  if (cached && !force) {
+    try {
+      allRootClients = JSON.parse(cached);
+      renderRootClients(allRootClients);
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_clients&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootClients = await res.json();
+    localStorage.setItem('flw_root_clients_cache', JSON.stringify(allRootClients));
+    renderRootClients(allRootClients);
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки клиентов</div>';
+  }
+}
+window.loadRootClients = loadRootClients;
+
+function filterRootClients() {
+  const q = document.getElementById('root-client-search').value.toLowerCase().trim();
+  const filtered = allRootClients.filter(c => 
+    (c.name && c.name.toLowerCase().includes(q)) ||
+    (c.phone && c.phone.includes(q)) ||
+    (c.username && c.username.toLowerCase().includes(q))
+  );
+  renderRootClients(filtered);
+}
+
+function renderRootClients(clients) {
+  const container = document.getElementById('root-clients-container');
+  container.innerHTML = clients.map(c => {
+    const hasTgUser = c.username && c.username !== 'скрыт' && c.username.length > 2;
+    const tgLink = hasTgUser 
+      ? `https://t.me/${c.username.replace('@','')}`
+      : (!c.user_id.startsWith('anon_') ? `tg://user?id=${c.user_id}` : '');
+
+    const isClientAdmin = c.is_admin === true || String(c.is_admin).trim().toUpperCase() === 'TRUE' || String(c.user_id) === ADMIN_TELEGRAM_ID;
+
+    return `
+      <div class="box-card" style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between;">
+          <div>
+            <b>${c.name}</b> ${isClientAdmin ? '<span style="font-size:10px; background:rgba(13,148,104,0.18); color:var(--green); padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}<br>
+            <span style="font-size:12px; color:var(--text-muted);">${c.phone}</span>
+          </div>
+          <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${c.total_spent} ₽</span></div>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Telegram: ${c.username || 'скрыт'} · Рег: ${c.reg_date}</div>
+ 
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;">
+          <a href="tel:${c.phone}" class="btn-metro btn-emerald" style="font-size:11px; padding:7px; text-decoration:none;">📞 Позвонить</a>
+          ${tgLink ? `
+            <a href="${tgLink}" target="_blank" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--gold); text-decoration:none;">💬 Написать</a>
+          ` : `
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; opacity:0.45;" disabled>💬 Чат скрыт</button>
+          `}
+        </div>
+
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt('${c.user_id}', ${c.total_spent})">Изменить выкуп</button>
+          <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteUserRoot('${c.user_id}')">Сбросить</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function editSpentPrompt(uid, current) {
+  const val = prompt("Новая сумма выкупа (₽):", current);
+  if (!val || isNaN(val)) return;
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "admin_update_spent", admin_id: userId, admin_passcode: sessionPasscode, target_user_id: uid, total_spent: parseFloat(val) })
+  });
+  loadRootClients(true);
+}
+
+async function deleteUserRoot(uid) {
+  if (!confirm("Сбросить аккаунт клиента?")) return;
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "admin_delete_user", admin_id: userId, admin_passcode: sessionPasscode, target_user_id: uid })
+  });
+  loadRootClients(true);
+}
+
+function selectRootNotifTab(val, label) {
+  const hiddenInput = document.getElementById('root-notif-tab');
+  const displaySpan = document.getElementById('root-notif-tab-display');
+  const selectBox = document.getElementById('root-notif-tab-box');
+  if (hiddenInput) hiddenInput.value = val;
+  if (displaySpan) displaySpan.innerText = label;
+  if (selectBox) selectBox.classList.remove('open');
+}
+window.selectRootNotifTab = selectRootNotifTab;
+
+async function loadRootNotifications(force = false) {
+  const container = document.getElementById('root-notifs-container');
+  const cached = localStorage.getItem('flw_root_notifs_cache');
+
+  if (cached && !force) {
+    try {
+      allRootNotifs = JSON.parse(cached);
+      renderRootNotifications();
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_notifications&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootNotifs = await res.json();
+    localStorage.setItem('flw_root_notifs_cache', JSON.stringify(allRootNotifs));
+    renderRootNotifications();
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px 0;">Ошибка загрузки уведомлений</div>';
+  }
+}
+window.loadRootNotifications = loadRootNotifications;
+
+function renderRootNotifications() {
+  const container = document.getElementById('root-notifs-container');
+  if (!container) return;
+
+  if (!allRootNotifs.length) {
+    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Рассылок пока нет</div>';
+    return;
+  }
+
+  container.innerHTML = allRootNotifs.map(n => {
+    const targetTitle = getTabDisplayTitle(n.target_tab);
+    return `
+      <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--gold)' : 'var(--border)'};">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+          <div>
+            <b style="font-size:13px; color:var(--text);">${n.title}</b>
+            <span style="font-size:10px; margin-left:6px; color:${n.is_active ? 'var(--gold)' : 'var(--text-muted)'}; font-weight:800;">
+              ${n.is_active ? 'АКТИВНО' : 'В АРХИВЕ'}
+            </span>
+          </div>
+          <span style="font-size:10px; color:var(--text-muted);">${n.created_at || ''}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:6px;">${n.text}</div>
+        <div style="font-size:11px; color:var(--gold); margin-bottom:8px;">Целевой экран: <b>${targetTitle}</b></div>
+
+        <div style="display:flex; gap:6px;">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="toggleNotificationActiveRoot('${n.id}')">
+            ${n.is_active ? 'В архив' : 'Восстановить'}
+          </button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="repeatNotificationRoot('${n.id}')">
+            Повторить TG
+          </button>
+          <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteNotificationRoot('${n.id}')">
+            Удалить
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function submitCreateNotification() {
+  const title = document.getElementById('root-notif-title').value.trim();
+  const text = document.getElementById('root-notif-text').value.trim();
+  const targetTab = document.getElementById('root-notif-tab').value.trim() || 'catalog';
+  const sendTg = document.getElementById('root-notif-tg-ui').classList.contains('checked');
+
+  if (!title || !text) {
+    toast("Заполните заголовок и текст");
+    return;
+  }
+
+  toast("Создание и отправка...");
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: "admin_create_notification",
+        admin_id: userId,
+        admin_passcode: sessionPasscode,
+        title: title,
+        text: text,
+        target_tab: targetTab,
+        tg_broadcast: sendTg
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('root-notif-title').value = '';
+      document.getElementById('root-notif-text').value = '';
+      toast(sendTg ? "Уведомление отправлено всем клиентам!" : "Уведомление добавлено в приложение!");
+      loadRootNotifications(true);
+    }
+  } catch (e) {
+    toast("Ошибка создания уведомления");
+  }
+}
+
+async function toggleNotificationActiveRoot(id) {
+  toast("Обновление...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_toggle_notification",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id
+    })
+  });
+  loadRootNotifications(true);
+}
+
+async function repeatNotificationRoot(id) {
+  if (!confirm("Повторно отправить это оповещение в Telegram всем покупателям?")) return;
+  toast("Рассылка...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_repeat_notification",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id
+    })
+  });
+  toast("Сообщение отправлено!");
+}
+
+async function deleteNotificationRoot(id) {
+  if (!confirm("Удалить это уведомление и очистить его статистику?")) return;
+  toast("Удаление...");
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_delete_notification",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id
+    })
+  });
+  loadRootNotifications(true);
+}
+
+function switchStatsPeriod(period) {
+  currentStatsPeriod = period;
+  ['today', '7days', 'month'].forEach(p => {
+    const el = document.getElementById('tab-stat-' + p);
+    if (el) el.classList.toggle('active', p === period);
+  });
+  renderRootStats();
+}
+window.switchStatsPeriod = switchStatsPeriod;
+
+async function loadRootStats(period = 'today') {
+  currentStatsPeriod = period;
+  try {
+    const res = await fetch(`${API_URL}?action=admin_stats&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    cachedStatsData = await res.json();
+    renderRootStats();
+  } catch (e) {
+    toast("Ошибка загрузки аналитики");
+  }
+}
+window.loadRootStats = loadRootStats;
+
+function renderRootStats() {
+  if (!cachedStatsData) return;
+
+  let totalVisits = 0;
+  let totalOrdersCount = 0;
+  let totalRevenue = 0;
+  let totalCompleted = 0;
+
+  const breakdownBox = document.getElementById('stats-daily-breakdown');
+  const breakdownTbody = document.getElementById('stats-daily-tbody');
+
+  if (currentStatsPeriod === 'today') {
+    if (breakdownBox) breakdownBox.style.display = 'none';
+    totalVisits = cachedStatsData.today?.visits || 0;
+    totalOrdersCount = cachedStatsData.today?.orders?.count || 0;
+    totalRevenue = cachedStatsData.today?.orders?.total || 0;
+    totalCompleted = cachedStatsData.today?.orders?.completed || 0;
+  } else if (currentStatsPeriod === '7days') {
+    if (breakdownBox) breakdownBox.style.display = 'block';
+    const list = cachedStatsData.past7days || [];
+    list.forEach(d => {
+      totalVisits += d.visits;
+      totalOrdersCount += d.orders_count;
+      totalRevenue += d.orders_total;
+      totalCompleted += d.completed_count;
+    });
+
+    if (breakdownTbody) {
+      breakdownTbody.innerHTML = list.map(d => `
+        <tr>
+          <td><b>${d.date}</b></td>
+          <td>${d.visits}</td>
+          <td>${d.orders_count} (${d.completed_count})</td>
+          <td style="color:var(--green); font-weight:700;">${d.orders_total} ₽</td>
+        </tr>
+      `).join('');
+    }
+  } else if (currentStatsPeriod === 'month') {
+    if (breakdownBox) breakdownBox.style.display = 'none';
+    const list = cachedStatsData.past7days || [];
+    list.forEach(d => {
+      totalVisits += d.visits;
+      totalOrdersCount += d.orders_count;
+      totalRevenue += d.orders_total;
+      totalCompleted += d.completed_count;
+    });
+  }
+
+  const vEl = document.getElementById('stat-val-visits');
+  const oEl = document.getElementById('stat-val-orders');
+  const rEl = document.getElementById('stat-val-revenue');
+  const cEl = document.getElementById('stat-val-completed');
+
+  if (vEl) vEl.innerText = totalVisits;
+  if (oEl) oEl.innerText = totalOrdersCount;
+  if (rEl) rEl.innerText = `${totalRevenue} ₽`;
+  if (cEl) cEl.innerText = totalCompleted;
+
+  const pList = document.getElementById('stats-products-list');
+  if (pList) {
+    const products = cachedStatsData.products_views || [];
+    if (!products.length) {
+      pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о просмотрах</div>';
+    } else {
+      pList.innerHTML = products.slice(0, 15).map((p, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+          <div><b>${idx + 1}.</b> ${p.title}</div>
+          <div style="color:var(--gold); font-weight:800;">${p.views} просм.</div>
+        </div>
+      `).join('');
+    }
+  }
+
+  const nList = document.getElementById('stats-notifs-list');
+  if (nList) {
+    const notifs = cachedStatsData.notifications_stats || [];
+    if (!notifs.length) {
+      nList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о рассылках</div>';
+    } else {
+      nList.innerHTML = notifs.map(n => `
+        <div style="background:var(--card-inner); border-radius:6px; padding:8px 10px; margin-bottom:6px; border:1px solid var(--border); font-size:12px;">
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${n.title}</div>
+          <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
+            <span>Показов: <b style="color:var(--text);">${n.views}</b></span>
+            <span>Прочтений: <b style="color:var(--gold);">${n.reads}</b></span>
+            <span>Переходов: <b style="color:var(--green);">${n.clicks}</b></span>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+async function loadRootFaq(force = false) {
+  const container = document.getElementById('root-faq-container');
+  const cached = localStorage.getItem('flw_root_faq_cache');
+
+  if (cached && !force) {
+    try {
+      allRootFaq = JSON.parse(cached);
+      renderRootFaqUI();
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${API_URL}?action=admin_faq&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`);
+    allRootFaq = await res.json();
+    localStorage.setItem('flw_root_faq_cache', JSON.stringify(allRootFaq));
+    renderRootFaqUI();
+  } catch (e) {
+    if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки FAQ</div>';
+  }
+}
+window.loadRootFaq = loadRootFaq;
+
+function renderRootFaqUI() {
+  const container = document.getElementById('root-faq-container');
+  if (!container) return;
+
+  container.innerHTML = allRootFaq.map(f => `
+    <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${f.is_active ? 'var(--green)' : 'var(--red)'};">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="font-weight:700; font-size:13px; max-width:70%;">${f.question}</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:10px; font-weight:800; color:${f.is_active ? 'var(--green)' : 'var(--red)'};">
+            ${f.is_active ? 'АКТИВЕН' : 'СКРЫТ'}
+          </span>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
+        </div>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin:4px 0;">${f.answer}</div>
+      <div style="display:flex; gap:6px; margin-top:6px;">
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditFaqModal('${f.id}')">Редактировать</button>
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:${f.is_active ? 'var(--red)' : 'var(--green)'};" onclick="toggleFaqActiveRoot('${f.id}', ${!f.is_active})">
+          ${f.is_active ? 'Скрыть' : 'Показать'}
+        </button>
+        <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteFaqRoot('${f.id}')">Удалить</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function moveFaqOrder(id, direction) {
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_move_faq",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: id,
+      direction: direction
+    })
+  });
+  loadRootFaq(true);
+  cachedFaqData = null;
+  localStorage.removeItem('flw_faq_cache');
+}
+
+function openAddFaqModal() {
+  editingFaqId = null;
+  document.getElementById('faq-edit-title').innerText = "Новый вопрос";
+  document.getElementById('faq-edit-q').value = "";
+  document.getElementById('faq-edit-a').value = "";
+  const actEl = document.getElementById('faq-edit-active-ui');
+  actEl.classList.add('checked'); actEl.innerText = '✓';
+  document.getElementById('faq-editor-modal').classList.add('open');
+}
+
+function openEditFaqModal(id) {
+  const f = allRootFaq.find(i => String(i.id) === String(id));
+  if (!f) return;
+  editingFaqId = f.id;
+  document.getElementById('faq-edit-title').innerText = `Вопрос ID: ${f.id}`;
+  document.getElementById('faq-edit-q').value = f.question;
+  document.getElementById('faq-edit-a').value = f.answer;
+  const actEl = document.getElementById('faq-edit-active-ui');
+  actEl.classList.toggle('checked', !!f.is_active);
+  actEl.innerText = f.is_active ? '✓' : '';
+  document.getElementById('faq-editor-modal').classList.add('open');
+}
+function closeFaqEditorModal() { document.getElementById('faq-editor-modal').classList.remove('open'); }
+
+async function saveFaqEditor() {
+  const q = document.getElementById('faq-edit-q').value.trim();
+  const a = document.getElementById('faq-edit-a').value.trim();
+  const isActive = document.getElementById('faq-edit-active-ui').classList.contains('checked');
+  if (!q || !a) return;
+
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_update_faq",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: editingFaqId || "new",
+      question: q,
+      answer: a,
+      is_active: isActive
+    })
+  });
+  closeFaqEditorModal();
+  loadRootFaq(true);
+  cachedFaqData = null;
+  localStorage.removeItem('flw_faq_cache');
+}
+
+async function toggleFaqActiveRoot(id, nextState) {
+  const f = allRootFaq.find(i => String(i.id) === String(id));
+  if (!f) return;
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: "admin_update_faq",
+      admin_id: userId,
+      admin_passcode: sessionPasscode,
+      id: f.id,
+      question: f.question,
+      answer: f.answer,
+      is_active: nextState
+    })
+  });
+  loadRootFaq(true);
+  cachedFaqData = null;
+  localStorage.removeItem('flw_faq_cache');
+}
+
+async function deleteFaqRoot(id) {
+  if (!confirm("Удалить этот вопрос?")) return;
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: "admin_delete_faq", admin_id: userId, admin_passcode: sessionPasscode, id: id })
+  });
+  loadRootFaq(true);
+  cachedFaqData = null;
+  localStorage.removeItem('flw_faq_cache');
+}
