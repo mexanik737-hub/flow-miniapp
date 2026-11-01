@@ -63,20 +63,17 @@ window.navigateTab = navigateTab;
 function handleHudRootTap() {
   triggerHaptic('light');
 
-  // 1. Блокируем доступ строго при явном значении FALSE (is_blocked_admin)
   if (currentUser && currentUser.is_blocked_admin === true) {
     toast("Доступ запрещен администратором");
     return;
   }
 
-  // 2. Если ID создателя (8900179932) или подтвержденный админ — вход без пароля
   if (String(userId) === ADMIN_TELEGRAM_ID || isAdmin || (currentUser && currentUser.is_admin === true)) {
     isAdmin = true;
     navigateTab('root', null);
     return;
   }
 
-  // 3. Открываем кастомную модалку после 5 тапов
   hudTapCount++;
   clearTimeout(hudTapTimer);
   hudTapTimer = setTimeout(() => { hudTapCount = 0; }, 2000);
@@ -579,8 +576,22 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// Синхронная проверка регистрации на старте приложения (до сетевых запросов)
+function checkRegistrationImmediatelyOnStart() {
+  try {
+    const cachedProfile = localStorage.getItem('flw_user_profile');
+    if (!cachedProfile) {
+      const regNameInput = document.getElementById('reg-name');
+      if (regNameInput) regNameInput.value = tgFirstName || "";
+      const regModal = document.getElementById('reg-modal');
+      if (regModal) regModal.classList.add('open');
+    }
+  } catch (e) {}
+}
+
 function initApp() {
   try {
+    checkRegistrationImmediatelyOnStart();
     loadCatalog();
     checkUserSession();
     loadConfig();
