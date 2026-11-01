@@ -59,7 +59,6 @@ function navigateTab(screenId, btn) {
 }
 window.navigateTab = navigateTab;
 
-// Авторизация и доступ в Root по 5 тапам (без ложных блокировок)
 function handleHudRootTap() {
   triggerHaptic('light');
 
@@ -418,7 +417,7 @@ function contactSupport() {
 }
 window.contactSupport = contactSupport;
 
-// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА (С ФИЛЬТРАЦИЕЙ ПО REG_TS) -------------------
+// ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА (С БЕЙДЖЕМ) -------------------
 
 async function loadNotifications(force = false) {
   const cached = localStorage.getItem('flw_notifs_cache');
@@ -576,22 +575,8 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Синхронная проверка регистрации на старте приложения (до сетевых запросов)
-function checkRegistrationImmediatelyOnStart() {
-  try {
-    const cachedProfile = localStorage.getItem('flw_user_profile');
-    if (!cachedProfile) {
-      const regNameInput = document.getElementById('reg-name');
-      if (regNameInput) regNameInput.value = tgFirstName || "";
-      const regModal = document.getElementById('reg-modal');
-      if (regModal) regModal.classList.add('open');
-    }
-  } catch (e) {}
-}
-
 function initApp() {
   try {
-    checkRegistrationImmediatelyOnStart();
     loadCatalog();
     checkUserSession();
     loadConfig();
