@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Магазин «Цветы»</title>
-  <link rel="stylesheet" href="css/style.css?v=2.5">
+  <link rel="stylesheet" href="css/style.css?v=2.6">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -220,7 +220,7 @@
             <div class="toggle-btn active" id="tab-root-active" onclick="switchRootSubTab('active')">Активные</div>
             <div class="toggle-btn" id="tab-root-archive" onclick="switchRootSubTab('archive')">Архив</div>
           </div>
-          <button class="sync-mini-btn" style="margin-left:8px;" onclick="forceSyncRootOrders(this)" title="Синхронизировать заказы">
+          <button class="sync-mini-btn" style="margin-left:8px;" onclick="loadRootOrders(true)" title="Синхронизировать заказы">
             <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
           </button>
         </div>
@@ -1084,14 +1084,14 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=2.5"></script>
-  <script src="js/utils.js?v=2.5"></script>
-  <script src="js/catalog.js?v=2.5"></script>
-  <script src="js/cart.js?v=2.5"></script>
-  <script src="js/order.js?v=2.5"></script>
-  <script src="js/profile.js?v=2.5"></script>
-  <script src="js/admin.js?v=2.5"></script>
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/config.js?v=2.6"></script>
+  <script src="js/utils.js?v=2.6"></script>
+  <script src="js/catalog.js?v=2.6"></script>
+  <script src="js/cart.js?v=2.6"></script>
+  <script src="js/order.js?v=2.6"></script>
+  <script src="js/profile.js?v=2.6"></script>
+  <script src="js/admin.js?v=2.6"></script>
+  <script src="js/app.js?v=2.6"></script>
 </body>
 </html>
 
