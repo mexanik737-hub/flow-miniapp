@@ -264,7 +264,9 @@ async function checkUserSession() {
 }
 window.checkUserSession = checkUserSession;
 
+let registrationInFlight = false;
 async function submitRegistration() {
+  if (registrationInFlight) return;
   triggerHaptic('medium');
   const name = document.getElementById('reg-name').value.trim() || tgFirstName;
   const phone = document.getElementById('reg-phone').value.trim();
@@ -274,6 +276,13 @@ async function submitRegistration() {
     return;
   }
 
+  registrationInFlight = true;
+  const submitButton = document.querySelector('#reg-modal button.btn-metro');
+  const originalButtonText = submitButton?.innerText || 'Завершить регистрацию';
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.innerText = 'Сохраняем…';
+  }
   toast("Сохранение профиля...");
   try {
     const res = await fetch(API_URL, {
@@ -293,6 +302,12 @@ async function submitRegistration() {
     toast("Регистрация завершена");
   } catch (e) {
     toast("Ошибка связи с базой");
+  } finally {
+    registrationInFlight = false;
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.innerText = originalButtonText;
+    }
   }
 }
 window.submitRegistration = submitRegistration;
