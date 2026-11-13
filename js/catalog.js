@@ -1,5 +1,6 @@
 let currentGallerySlideIdx = 0;
 let galleryHapticTimer = null;
+let dailyChoiceFetchKey = '';
 
 function formatFullItemTitle(title, unit, variant, color) {
   const parts = [];
@@ -66,27 +67,11 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
-async function renderDailyBloom() {
-  try {
-    const container = document.getElementById('daily-bloom-container');
-    if (!container) return;
-
-    if (typeof getDailyBloomItem !== 'function') return;
-    let bloomItem = getDailyBloomItem(displayCatalog, userId);
-    try {
-      const response = await fetch(`${API_URL}?action=get_daily_product`);
-      const choice = await response.json();
-      if (choice && choice.title) {
-        const candidate = displayCatalog.find(item => item.title === choice.title &&
-          (!choice.category || item.category === choice.category));
-        if (candidate) bloomItem = candidate;
-      }
-    } catch (e) { /* Keep deterministic local fallback while offline. */ }
-    if (!bloomItem) {
-      container.innerHTML = '';
-      return;
-    }
-
+function renderDailyBloomCard(container, bloomItem) {
+  if (!bloomItem) {
+    container.innerHTML = '';
+    return;
+  }
     const photos = (bloomItem.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
     const thumb = photos[0] || "";
     const isGroup = bloomItem.is_group;
@@ -114,6 +99,51 @@ async function renderDailyBloom() {
         </div>
       </div>
     `;
+}
+
+async function renderDailyBloom() {
+  try {
+    const container = document.getElementById('daily-bloom-container');
+    if (!container || typeof getDailyBloomItem !== 'function') return;
+
+    let bloomItem = getDailyBloomItem(displayCatalog, userId);
+    const dateKey = getDailyBloomDateKey();
+    const categories = getCategoryConfigList('daily_item_categories').slice().sort();
+    const categoriesKey = JSON.stringify(categories);
+    let cachedChoice = null;
+    try {
+      const raw = localStorage.getItem('flw_daily_product_cache');
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed?.dateKey === dateKey && parsed?.categoriesKey === categoriesKey) {
+        cachedChoice = parsed.choice;
+      }
+    } catch (e) {}
+
+    const applyChoice = choice => {
+      if (!choice?.title) return false;
+      const candidate = displayCatalog.find(item => item.title === choice.title &&
+        (!choice.category || item.category === choice.category));
+      if (!candidate) return false;
+      bloomItem = candidate;
+      renderDailyBloomCard(container, bloomItem);
+      return true;
+    };
+
+    if (!applyChoice(cachedChoice)) renderDailyBloomCard(container, bloomItem);
+    if (cachedChoice) return;
+
+    const requestKey = `${dateKey}:${categoriesKey}`;
+    if (dailyChoiceFetchKey === requestKey) return;
+    dailyChoiceFetchKey = requestKey;
+    fetch(`${API_URL}?action=get_daily_product`)
+      .then(response => response.json())
+      .then(choice => {
+        if (choice?.title) {
+          localStorage.setItem('flw_daily_product_cache', JSON.stringify({ dateKey, categoriesKey, choice }));
+          applyChoice(choice);
+        }
+      })
+      .catch(() => { /* The cached or deterministic local choice remains visible. */ });
   } catch (err) {
     console.error("Daily bloom render error:", err);
   }
