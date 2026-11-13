@@ -1,6 +1,7 @@
 let selectedDeliveryTimeValue = '';
 let checkoutSaveForNext = false;
 let paymentConfirmationInFlight = false;
+let finalOrderSubmitInFlight = false;
 
 function generateDynamicDeliveryTimeSlots() {
   const nowParts = new Intl.DateTimeFormat('en-GB', {
@@ -442,6 +443,14 @@ async function submitFinalOrder() {
 
   const shopComm = document.getElementById('ord-shop-comment').value.trim();
 
+  if (finalOrderSubmitInFlight) return;
+  finalOrderSubmitInFlight = true;
+  const confirmButton = document.querySelector('#order-confirm-modal .order-confirm-actions button:last-child');
+  const confirmButtonLabel = confirmButton?.textContent;
+  if (confirmButton) {
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Оформляем заказ…';
+  }
   toast("Создание заказа...");
   try {
     const res = await fetch(API_URL, {
@@ -466,32 +475,66 @@ async function submitFinalOrder() {
     const data = await res.json();
     if (data.success) {
       triggerHaptic('success');
-      clearCartStorage();
-      const asmCheck = document.getElementById('cart-assembly-checkbox-ui');
-      if (asmCheck) {
-        asmCheck.classList.remove('checked');
-        asmCheck.innerText = '';
-      }
-      updateCartUI();
-      renderCatalog(filteredCatalog);
-      closeOrderConfirmation();
-      const nextCheckout = readCheckoutFormState();
-      if (checkoutSaveForNext) localStorage.setItem(checkoutStorageKey('next'), JSON.stringify(nextCheckout));
-      else localStorage.removeItem(checkoutStorageKey('next'));
-      localStorage.removeItem(checkoutStorageKey('draft'));
-      closeOrderModal();
+      const saveForNext = checkoutSaveForNext;
 
-      if (needAssembly) {
-        openAssemblyCallModal(data.order_id);
-      } else {
-        openPaymentModal(data.order_id, currentFinalOrderAmount, new Date().toISOString());
+      // Show the next step as soon as the server confirms creation. A cosmetic
+      // cart/catalog refresh must not leave a successfully created order hidden.
+      let nextStepOpened = false;
+      try {
+        closeOrderConfirmation();
+        closeOrderModal();
+        if (needAssembly) openAssemblyCallModal(data.order_id);
+        else openPaymentModal(data.order_id, currentFinalOrderAmount, new Date().toISOString());
+        nextStepOpened = true;
+      } catch (uiError) {
+        console.error('Order created but next-step modal failed:', uiError);
+        try {
+          document.getElementById('order-confirm-modal')?.classList.remove('open');
+          document.getElementById('order-modal')?.classList.remove('open');
+          if (needAssembly) openAssemblyCallModal(data.order_id);
+          else openPaymentModal(data.order_id, currentFinalOrderAmount);
+          nextStepOpened = true;
+        } catch (fallbackError) {
+          console.error('Order next-step fallback failed:', fallbackError);
+        }
       }
-      resetCheckoutForm();
+      if (!nextStepOpened) {
+        toast('Заказ создан. Его можно открыть в профиле.');
+        navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+      }
+      try {
+        const nextCheckout = readCheckoutFormState();
+        if (saveForNext) localStorage.setItem(checkoutStorageKey('next'), JSON.stringify(nextCheckout));
+        else localStorage.removeItem(checkoutStorageKey('next'));
+        localStorage.removeItem(checkoutStorageKey('draft'));
+      } catch (storageError) {
+        console.error('Order created; checkout draft cleanup failed:', storageError);
+      }
+      try { resetCheckoutForm(); }
+      catch (uiError) { console.error('Order created; checkout form reset failed:', uiError); }
+      try {
+        clearCartStorage();
+        const asmCheck = document.getElementById('cart-assembly-checkbox-ui');
+        if (asmCheck) {
+          asmCheck.classList.remove('checked');
+          asmCheck.innerText = '';
+        }
+        updateCartUI();
+        renderCatalog(filteredCatalog);
+      } catch (uiError) {
+        console.error('Order created; cart refresh failed:', uiError);
+      }
     } else {
       toast(data.error || 'Не удалось оформить заказ');
     }
   } catch (e) {
     toast("Ошибка связи");
+  } finally {
+    finalOrderSubmitInFlight = false;
+    if (confirmButton) {
+      confirmButton.disabled = false;
+      confirmButton.textContent = confirmButtonLabel || 'Подтвердить заказ';
+    }
   }
 }
 
