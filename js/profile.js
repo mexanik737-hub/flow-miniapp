@@ -298,7 +298,15 @@ async function submitRegistration() {
     localStorage.setItem(`flw_read_notifs_${userId}`, JSON.stringify(readNotificationIds));
     document.getElementById('reg-modal').classList.remove('open');
     renderProfileUI();
-    await loadNotifications(true);
+    if (currentUser.newly_registered) {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'notify_new_user_alert', user_id: userId, registration_ts: currentUser.notifications_from_ts }),
+        keepalive: true
+      }).catch(() => {});
+    }
+    loadNotifications(true);
     toast("Регистрация завершена");
   } catch (e) {
     toast("Ошибка связи с базой");
