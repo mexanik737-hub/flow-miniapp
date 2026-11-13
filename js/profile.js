@@ -124,7 +124,7 @@ function saveNewAddressFromModal() {
   if (!addr) { toast("Укажите улицу и номер дома"); return; }
 
   if (!selectedSavedAddrSuggestion || !selectedSavedAddrSuggestion.data?.house || !selectedSavedAddrSuggestion.data?.geo_lat || !selectedSavedAddrSuggestion.data?.geo_lon) {
-    toast("Выберите точный адрес с номером дома из подсказок DaData");
+    toast("Выберите точный адрес с номером дома из подсказок");
     return;
   }
 
@@ -236,6 +236,7 @@ async function checkUserSession() {
       currentUser = user;
       isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || user.is_admin === true || String(user.is_admin).toUpperCase() === 'TRUE');
       localStorage.setItem('flw_user_profile', JSON.stringify(user));
+      readNotificationIds = JSON.parse(localStorage.getItem(`flw_read_notifs_${userId}`) || '[]');
 
       if (user.address && String(user.address).startsWith('[')) {
         try {
@@ -258,6 +259,7 @@ async function checkUserSession() {
     }
   } catch (e) {
     if (currentUser) renderProfileUI();
+    else document.getElementById('reg-modal')?.classList.add('open');
   }
 }
 window.checkUserSession = checkUserSession;
@@ -274,12 +276,20 @@ async function submitRegistration() {
 
   toast("Сохранение профиля...");
   try {
-    const res = await fetch(`${API_URL}?action=get_or_register_user&user_id=${userId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&username=${encodeURIComponent(tgUsername)}`);
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'get_or_register_user', user_id: userId, name, phone, username: tgUsername })
+    });
     currentUser = await res.json();
+    if (!currentUser.exists || currentUser.error) throw new Error('Registration failed');
     isAdmin = (String(userId) === ADMIN_TELEGRAM_ID || currentUser.is_admin === true || String(currentUser.is_admin).toUpperCase() === 'TRUE');
     localStorage.setItem('flw_user_profile', JSON.stringify(currentUser));
+    readNotificationIds = [];
+    localStorage.setItem(`flw_read_notifs_${userId}`, JSON.stringify(readNotificationIds));
     document.getElementById('reg-modal').classList.remove('open');
     renderProfileUI();
+    await loadNotifications(true);
     toast("Регистрация завершена");
   } catch (e) {
     toast("Ошибка связи с базой");
@@ -474,3 +484,4 @@ function forceSyncUserOrders(btnEl) {
   toast("Заказы обновлены");
 }
 window.forceSyncUserOrders = forceSyncUserOrders;
+

@@ -94,11 +94,17 @@ function renderRootOrders() {
     const hasDistinctRecipient = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
     const safeAddr = (ord.address || "").replace(/'/g, "\\'");
 
+    const statusClass = ord.status.startsWith('Отменен') ? 'st-cancelled'
+      : ord.status === 'Завершен' ? 'st-completed'
+      : ord.status === 'В пути' || ord.status === 'Готов к выдаче' ? 'st-transit'
+      : ord.status === 'Ожидает подтверждения оплаты' ? 'st-check-pay'
+      : ord.status === 'Ожидает оплаты' ? 'st-await-pay' : 'st-building';
+
     return `
       <div class="box-card" style="margin-bottom:10px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
           <b>${ord.order_id}</b>
-          <span class="status-badge st-building">${ord.status}</span>
+          <span class="status-badge ${statusClass}">${ord.status}</span>
         </div>
         <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
           <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
@@ -678,7 +684,12 @@ function applyDriveSelectedPhotos() {
 window.applyDriveSelectedPhotos = applyDriveSelectedPhotos;
 
 function populateCategorySelectBoxes() {
-  const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
+  const categories = Array.from(new Set([
+    ...allRootCatalog.map(c => c.category).filter(Boolean),
+    ...getCategoryConfigList('custom_categories'),
+    ...getCategoryConfigList('available_categories'),
+    ...getCategoryConfigList('daily_item_categories')
+  ]));
   if (!categories.includes("Цветы")) categories.unshift("Цветы");
 
   const pOptions = document.getElementById('prod-edit-cat-options');
@@ -737,6 +748,9 @@ function renderCategoriesManagerList() {
     catMap[cat].push(item);
   });
 
+  [...getCategoryConfigList('custom_categories'), ...getCategoryConfigList('available_categories')]
+    .forEach(cat => { if (cat && !catMap[cat]) catMap[cat] = []; });
+
   const cats = Object.keys(catMap).sort();
 
   if (!cats.length) {
@@ -747,7 +761,7 @@ function renderCategoriesManagerList() {
   container.innerHTML = cats.map(catName => {
     const items = catMap[catName];
     return `
-      <div class="cat-item-card" id="cat-card-${encodeURIComponent(catName)}">
+    <div class="cat-item-card" id="cat-card-${encodeURIComponent(catName)}">
         <div class="cat-item-header" onclick="toggleCatCardAccordion('${encodeURIComponent(catName)}')">
           <div class="cat-item-title-box">
             <span class="cat-item-name">${catName}</span>
@@ -822,11 +836,75 @@ async function createNewCategoryFromManager() {
     toast("Введите название категории");
     return;
   }
-  input.value = "";
-  populateCategorySelectBoxes();
-  toast(`Категория «${newCat}» доступна при выборе в товарах`);
+  const customCategories = getCategoryConfigList('custom_categories');
+  if (customCategories.some(cat => cat.toLocaleLowerCase() === newCat.toLocaleLowerCase())) {
+    toast('Такая категория уже существует');
+    return;
+  }
+  customCategories.push(newCat);
+  const availableCategories = Array.from(new Set([
+    ...getCategoryConfigList('available_categories'), ...customCategories,
+    ...allRootCatalog.map(item => item.category).filter(Boolean)
+  ]));
+  try {
+    const saved = await saveRootConfigValue('custom_categories', customCategories);
+    if (!saved) throw new Error('Не удалось сохранить категорию');
+    await saveRootConfigValue('available_categories', availableCategories);
+    input.value = '';
+    populateCategorySelectBoxes();
+    setupFilterDropdown();
+    renderCategoriesManagerList();
+    toast(`Категория «${newCat}» сохранена`);
+  } catch (e) {
+    toast('Не удалось сохранить категорию');
+  }
 }
 window.createNewCategoryFromManager = createNewCategoryFromManager;
+
+async function saveRootConfigValue(key, value) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: 'admin_save_config', admin_id: userId,
+      admin_passcode: sessionPasscode, key, value: JSON.stringify(value)
+    })
+  });
+  const data = await res.json();
+  if (!data.success) return false;
+  SERVER_CONFIG[key] = JSON.stringify(value);
+  localStorage.setItem('flw_config_cache', JSON.stringify(SERVER_CONFIG));
+  return true;
+}
+
+function renderRootDailyCategories() {
+  const container = document.getElementById('root-daily-categories-list');
+  if (!container) return;
+  const categories = Array.from(new Set([
+    ...allRootCatalog.map(item => item.category).filter(Boolean),
+    ...getCategoryConfigList('custom_categories'), ...getCategoryConfigList('available_categories')
+  ])).sort((a, b) => a.localeCompare(b, 'ru'));
+  const selected = new Set(getCategoryConfigList('daily_item_categories'));
+  container.innerHTML = categories.map(cat => `
+    <label class="daily-category-option">
+      <input type="checkbox" value="${cat.replace(/"/g, '&quot;')}" ${selected.has(cat) ? 'checked' : ''}>
+      <span>${cat}</span>
+    </label>
+  `).join('') || '<span class="daily-category-empty">Сначала добавьте категорию товаров</span>';
+}
+
+async function saveRootDailyCategories() {
+  const selected = Array.from(document.querySelectorAll('#root-daily-categories-list input:checked')).map(input => input.value);
+  if (!selected.length) { toast('Выберите хотя бы одну категорию'); return; }
+  if (await saveRootConfigValue('daily_item_categories', selected)) {
+    renderRootDailyCategories();
+    renderDailyBloom();
+    toast('Категории товара дня сохранены');
+  } else {
+    toast('Не удалось сохранить категории');
+  }
+}
+window.saveRootDailyCategories = saveRootDailyCategories;
 
 async function renameCategoryPrompt(encodedOldCat) {
   const oldCat = decodeURIComponent(encodedOldCat);
@@ -848,9 +926,16 @@ async function renameCategoryPrompt(encodedOldCat) {
     });
     const d = await res.json();
     if (d.success) {
+      for (const key of ['custom_categories', 'available_categories', 'daily_item_categories']) {
+        const names = getCategoryConfigList(key);
+        const replaced = names.map(name => name === oldCat ? newCat.trim() : name);
+        if (JSON.stringify(names) !== JSON.stringify(replaced)) await saveRootConfigValue(key, replaced);
+      }
       toast(`Обновлено товаров: ${d.updated || 0}`);
       await forceSyncRootCatalog();
+      setupFilterDropdown();
       renderCategoriesManagerList();
+      renderRootDailyCategories();
     }
   } catch (e) {
     toast("Ошибка связи");
@@ -915,6 +1000,7 @@ async function loadRootCatalog(force = false) {
       allRootCatalog = JSON.parse(cached);
       renderRootCatalogUI();
       populateCategorySelectBoxes();
+      renderRootDailyCategories();
     } catch (e) {}
   }
 
@@ -924,6 +1010,7 @@ async function loadRootCatalog(force = false) {
     localStorage.setItem('flw_root_catalog_cache', JSON.stringify(allRootCatalog));
     renderRootCatalogUI();
     populateCategorySelectBoxes();
+    renderRootDailyCategories();
   } catch (e) {
     if (container) container.innerHTML = '<div style="color:var(--text-muted); padding:16px 0; text-align:center;">Ошибка загрузки каталога</div>';
   }
@@ -987,11 +1074,10 @@ function renderRootCatalogUI() {
       `;
     } else {
       const it = c.item;
-      const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
       return `
         <div class="box-card" style="margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between;">
-            <b>${fullTitle} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
+            <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
             <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
           </div>
           <div style="font-size:11px; color:var(--gold); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
@@ -1618,7 +1704,7 @@ function renderRootStats() {
       pList.innerHTML = products.slice(0, 15).map((p, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
           <div><b>${idx + 1}.</b> ${p.title}</div>
-          <div style="color:var(--gold); font-weight:800;">${p.views} просм.</div>
+          <div style="color:var(--gold); font-weight:800;">${p.views} просм. · ${p.unique_views || 0} уник.</div>
         </div>
       `).join('');
     }
@@ -1792,3 +1878,4 @@ async function deleteFaqRoot(id) {
   cachedFaqData = null;
   localStorage.removeItem('flw_faq_cache');
 }
+

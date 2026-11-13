@@ -1,0 +1,5 @@
+# Local Apps Script mirror contains server configuration and must stay out of the public frontend repository.
+/sources/apps-script/
+
+# Local recovery archives are not project assets.
+/BACKUP-2026-11-13/

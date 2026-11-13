@@ -1,43 +1,46 @@
+let selectedDeliveryTimeValue = '';
+let checkoutSaveForNext = false;
+
 function generateDynamicDeliveryTimeSlots() {
-  const now = new Date();
-  const curHour = now.getHours();
-  const curMin = now.getMinutes();
+  const nowParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date());
+  const curHour = Number(nowParts.find(part => part.type === 'hour')?.value || 0);
+  const curMin = Number(nowParts.find(part => part.type === 'minute')?.value || 0);
   const optionsBox = document.getElementById('time-select-options');
   const displaySpan = document.getElementById('selected-time-display');
+  if (!optionsBox || !displaySpan) return;
 
   let slots = [];
-
-  if (curHour < 19) {
-    if (curHour >= 9 && curHour < 18 || (curHour === 18 && curMin <= 30)) {
-      slots.push({ label: "Как можно скорее (в течение 1–2 часов с учетом сборки)", val: "Как можно скорее (1-2 часа)" });
-    }
-
-    if (curHour < 12) {
-      slots.push({ label: "Сегодня: 14:00 – 17:00", val: "Сегодня 14:00 - 17:00" });
-      slots.push({ label: "Сегодня: 17:00 – 20:00", val: "Сегодня 17:00 - 20:00" });
-    } else if (curHour < 15) {
-      slots.push({ label: "Сегодня: 15:00 – 18:00", val: "Сегодня 15:00 - 18:00" });
-      slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
-    } else if (curHour < 17) {
-      slots.push({ label: "Сегодня: 18:00 – 20:00", val: "Сегодня 18:00 - 20:00" });
-    }
+  const nowMinute = curHour * 60 + curMin;
+  const todayWindows = [[10, 12], [12, 14], [14, 16], [16, 18], [18, 20]];
+  if (nowMinute >= 9 * 60 && nowMinute < 18 * 60 + 30) {
+    slots.push({ label: 'Как можно скорее (1–2 часа)', val: 'Как можно скорее (1-2 часа)' });
   }
+  todayWindows.forEach(([start, end]) => {
+    if (nowMinute < end * 60) {
+      const interval = `${String(start).padStart(2, '0')}:00 - ${String(end).padStart(2, '0')}:00`;
+      slots.push({ label: `Сегодня, ${interval.replace(' - ', '–')}`, val: `Сегодня ${interval}` });
+    }
+  });
+  todayWindows.forEach(([start, end]) => {
+    const interval = `${String(start).padStart(2, '0')}:00 - ${String(end).padStart(2, '0')}:00`;
+    slots.push({ label: `Завтра, ${interval.replace(' - ', '–')}`, val: `Завтра ${interval}` });
+  });
+  slots.push({ label: 'Другой день (согласовать)', val: 'Другой день (согласовать)' });
 
-  slots.push({ label: "Завтра: 11:00 – 14:00", val: "Завтра 11:00 - 14:00" });
-  slots.push({ label: "Завтра: 14:00 – 17:00", val: "Завтра 14:00 - 17:00" });
-  slots.push({ label: "Завтра: 17:00 – 20:00", val: "Завтра 17:00 - 20:00" });
-  slots.push({ label: "Завтра: в интервале с 10:00 до 20:00", val: "Завтра 10:00 - 20:00" });
-
-  displaySpan.innerText = slots[0].label;
   optionsBox.innerHTML = slots.map(s => `
-    <div class="custom-select-option" onclick="selectDeliveryTime('${s.label}')">${s.label}</div>
+    <div class="custom-select-option" onclick="selectDeliveryTime('${s.val}', '${s.label}')">${s.label}</div>
   `).join('');
+  selectDeliveryTime(slots[0].val, slots[0].label);
 }
 
-function selectDeliveryTime(val) {
+function selectDeliveryTime(val, label = val) {
   triggerHaptic('selection');
-  document.getElementById('selected-time-display').innerText = val;
+  selectedDeliveryTimeValue = val;
+  document.getElementById('selected-time-display').innerText = label;
   document.getElementById('time-select-box').classList.remove('open');
+  saveCheckoutDraft();
 }
 
 function onAddressInput(query) {
@@ -138,6 +141,7 @@ function openOrderModal() {
   } else {
     savedBox.style.display = 'none';
   }
+  restoreCheckoutDraft();
   recalcOrderFinalTotal();
   document.getElementById('order-modal').classList.add('open');
 }
@@ -181,6 +185,7 @@ function applySavedAddressToOrder(idx, btn) {
   } else {
     onAddressInput(a.address);
   }
+  saveCheckoutDraft();
 }
 
 function setDeliveryType(type) {
@@ -191,6 +196,7 @@ function setDeliveryType(type) {
   document.getElementById('delivery-extra-fields').style.display = type === 'delivery' ? 'block' : 'none';
   document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
   recalcOrderFinalTotal();
+  saveCheckoutDraft();
 }
 
 function setRecipientType(type) {
@@ -199,6 +205,162 @@ function setRecipientType(type) {
   document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
   document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
   document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
+  saveCheckoutDraft();
+}
+
+function checkoutStorageKey(kind) {
+  return `flw_checkout_${kind}_${String(userId || 'guest')}`;
+}
+
+function readCheckoutFormState() {
+  const value = id => document.getElementById(id)?.value || '';
+  return {
+    deliveryType: orderDelType,
+    recipientType: orderRecType,
+    recipientName: value('ord-rec-name'),
+    recipientPhone: value('ord-rec-phone'),
+    address: value('ord-suggest-input'),
+    entrance: value('ord-entrance'),
+    floor: value('ord-floor'),
+    apartment: value('ord-apt'),
+    intercom: value('ord-intercom'),
+    courierComment: value('ord-comment'),
+    shopComment: value('ord-shop-comment'),
+    deliveryTime: selectedDeliveryTimeValue,
+    deliveryLabel: document.getElementById('selected-time-display')?.innerText || '',
+    selectedGeoAddress,
+    deliveryCost: currentDeliveryCost,
+    distanceKm: currentDistanceKm,
+    saveAddress: ordSaveAddrChecked,
+    saveForNext: checkoutSaveForNext
+  };
+}
+
+function saveCheckoutDraft() {
+  const modal = document.getElementById('order-modal');
+  if (!modal || !modal.classList.contains('open')) return;
+  try { localStorage.setItem(checkoutStorageKey('draft'), JSON.stringify(readCheckoutFormState())); } catch (e) {}
+}
+
+function applyCheckoutDraft(draft) {
+  if (!draft) return;
+  const set = (id, field) => { const el = document.getElementById(id); if (el) el.value = draft[field] || ''; };
+  set('ord-rec-name', 'recipientName');
+  set('ord-rec-phone', 'recipientPhone');
+  set('ord-suggest-input', 'address');
+  set('ord-entrance', 'entrance');
+  set('ord-floor', 'floor');
+  set('ord-apt', 'apartment');
+  set('ord-intercom', 'intercom');
+  set('ord-comment', 'courierComment');
+  set('ord-shop-comment', 'shopComment');
+  setDeliveryType(draft.deliveryType === 'pickup' ? 'pickup' : 'delivery');
+  setRecipientType(draft.recipientType === 'other' ? 'other' : 'self');
+  selectedGeoAddress = draft.selectedGeoAddress || null;
+  currentDeliveryCost = Number(draft.deliveryCost) || 0;
+  currentDistanceKm = Number(draft.distanceKm) || 0;
+  selectedDeliveryTimeValue = draft.deliveryTime || '';
+  const timeLabel = document.getElementById('selected-time-display');
+  if (timeLabel && draft.deliveryLabel) timeLabel.innerText = draft.deliveryLabel;
+  ordSaveAddrChecked = !!draft.saveAddress;
+  const saveAddressUi = document.getElementById('ord-save-addr-checkbox-ui');
+  if (saveAddressUi) {
+    saveAddressUi.classList.toggle('checked', ordSaveAddrChecked);
+    saveAddressUi.innerText = ordSaveAddrChecked ? '✓' : '';
+  }
+  checkoutSaveForNext = !!draft.saveForNext;
+  const saveNextUi = document.getElementById('checkout-save-next');
+  if (saveNextUi) {
+    saveNextUi.classList.toggle('checked', checkoutSaveForNext);
+    saveNextUi.innerText = checkoutSaveForNext ? '✓' : '';
+  }
+  recalcOrderFinalTotal();
+}
+
+function restoreCheckoutDraft() {
+  let draft = null;
+  try {
+    const draftRaw = localStorage.getItem(checkoutStorageKey('draft'));
+    if (draftRaw) draft = JSON.parse(draftRaw);
+    else {
+      const nextRaw = localStorage.getItem(checkoutStorageKey('next'));
+      if (nextRaw) {
+        draft = JSON.parse(nextRaw);
+        localStorage.removeItem(checkoutStorageKey('next'));
+      }
+    }
+  } catch (e) {}
+  if (draft) applyCheckoutDraft(draft);
+  else {
+    checkoutSaveForNext = false;
+    selectedDeliveryTimeValue = '';
+    const saveNextUi = document.getElementById('checkout-save-next');
+    if (saveNextUi) { saveNextUi.classList.remove('checked'); saveNextUi.innerText = ''; }
+  }
+}
+
+function toggleCheckoutSaveNext() {
+  checkoutSaveForNext = !checkoutSaveForNext;
+  const checkbox = document.getElementById('checkout-save-next');
+  if (checkbox) {
+    checkbox.classList.toggle('checked', checkoutSaveForNext);
+    checkbox.innerText = checkoutSaveForNext ? '✓' : '';
+  }
+  saveCheckoutDraft();
+}
+window.toggleCheckoutSaveNext = toggleCheckoutSaveNext;
+
+function openOrderConfirmation() {
+  saveCheckoutDraft();
+  const lines = [];
+  const recipient = orderRecType === 'other'
+    ? `${document.getElementById('ord-rec-name')?.value || ''} (${document.getElementById('ord-rec-phone')?.value || ''})`
+    : `${currentUser?.name || 'Клиент'} (${currentUser?.phone || ''})`;
+  lines.push(`Получатель: ${recipient}`);
+  lines.push(`Способ получения: ${orderDelType === 'delivery' ? 'Доставка' : 'Самовывоз'}`);
+  if (orderDelType === 'delivery') {
+    lines.push(`Адрес: ${document.getElementById('ord-suggest-input')?.value || 'не указан'}`);
+    lines.push(`Время: ${document.getElementById('selected-time-display')?.innerText || ''}`);
+    const courier = document.getElementById('ord-comment')?.value.trim();
+    if (courier) lines.push(`Комментарий курьеру: ${courier}`);
+  }
+  const shopComment = document.getElementById('ord-shop-comment')?.value.trim();
+  if (shopComment) lines.push(`Комментарий салону: ${shopComment}`);
+  const items = Object.entries(cart).map(([key, qty]) => {
+    const [id, unit, variant, color] = key.split(':::');
+    const item = catalog.find(entry => String(entry.id) === String(id));
+    if (!item) return null;
+    return `• ${formatFullItemTitle(item.title, unit || item.unit, variant, color)} × ${qty}`;
+  }).filter(Boolean);
+  lines.push('', 'Состав:', ...items, '', `Итого: ${currentFinalOrderAmount} ₽`);
+  const summary = document.getElementById('order-confirm-summary');
+  if (summary) summary.textContent = lines.join('\n');
+  document.getElementById('order-confirm-modal')?.classList.add('open');
+}
+window.openOrderConfirmation = openOrderConfirmation;
+
+function closeOrderConfirmation() {
+  document.getElementById('order-confirm-modal')?.classList.remove('open');
+}
+window.closeOrderConfirmation = closeOrderConfirmation;
+
+function resetCheckoutForm() {
+  ['ord-rec-name','ord-rec-phone','ord-suggest-input','ord-entrance','ord-floor','ord-apt','ord-intercom','ord-comment','ord-shop-comment']
+    .forEach(id => { const input = document.getElementById(id); if (input) input.value = ''; });
+  orderDelType = 'delivery';
+  orderRecType = 'self';
+  selectedGeoAddress = null;
+  currentDeliveryCost = 0;
+  currentDistanceKm = 0;
+  selectedDeliveryTimeValue = '';
+  ordSaveAddrChecked = false;
+  checkoutSaveForNext = false;
+  document.getElementById('ord-save-addr-checkbox-ui')?.classList.remove('checked');
+  const saveNextUi = document.getElementById('checkout-save-next');
+  if (saveNextUi) { saveNextUi.classList.remove('checked'); saveNextUi.innerText = ''; }
+  setDeliveryType('delivery');
+  setRecipientType('self');
+  generateDynamicDeliveryTimeSlots();
 }
 
 async function submitFinalOrder() {
@@ -247,7 +409,7 @@ async function submitFinalOrder() {
     if (!street) { toast("Укажите улицу и номер дома"); return; }
 
     if (!selectedGeoAddress || !selectedGeoAddress.data?.house || !selectedGeoAddress.data?.geo_lat || !selectedGeoAddress.data?.geo_lon) {
-      toast("Выберите точный адрес с номером дома из подсказок DaData");
+      toast("Выберите точный адрес с номером дома из подсказок");
       return;
     }
 
@@ -257,7 +419,7 @@ async function submitFinalOrder() {
     }
 
     fullAddr = `${street}, под. ${ent}, эт. ${flr}, кв. ${apt} (домофон: ${intc})${comm ? ' [курьеру: '+comm+']' : ''}`;
-    dTime = document.getElementById('selected-time-display').innerText;
+    dTime = selectedDeliveryTimeValue || document.getElementById('selected-time-display').innerText;
 
     if (ordSaveAddrChecked && savedAddresses.length < 3) {
       savedAddresses.push({
@@ -311,6 +473,11 @@ async function submitFinalOrder() {
       }
       updateCartUI();
       renderCatalog(filteredCatalog);
+      closeOrderConfirmation();
+      const nextCheckout = readCheckoutFormState();
+      if (checkoutSaveForNext) localStorage.setItem(checkoutStorageKey('next'), JSON.stringify(nextCheckout));
+      else localStorage.removeItem(checkoutStorageKey('next'));
+      localStorage.removeItem(checkoutStorageKey('draft'));
       closeOrderModal();
 
       if (needAssembly) {
@@ -318,6 +485,9 @@ async function submitFinalOrder() {
       } else {
         openPaymentModal(data.order_id, currentFinalOrderAmount, new Date().toISOString());
       }
+      resetCheckoutForm();
+    } else {
+      toast(data.error || 'Не удалось оформить заказ');
     }
   } catch (e) {
     toast("Ошибка связи");
@@ -340,12 +510,12 @@ function openPaymentModal(orderId, amount, createdAtStr = null) {
   document.getElementById('pay-modal-order-id').innerText = `Оплата ${orderId}`;
   document.getElementById('pay-modal-amount').innerText = `${amount} ₽`;
 
-  let durationSec = 15 * 60;
+  let durationSec = 15 * 60 + 10;
   if (createdAtStr) {
     const createdTs = parseOrderDateToTs(createdAtStr);
     if (createdTs) {
       const elapsedSec = Math.floor((Date.now() - createdTs) / 1000);
-      durationSec = Math.max(0, (15 * 60) - elapsedSec);
+      durationSec = Math.max(0, (15 * 60 + 10) - elapsedSec);
     }
   }
 
@@ -455,16 +625,48 @@ async function confirmPaymentByClient() {
   triggerHaptic('medium');
   toast("Отправка подтверждения...");
   try {
-    await fetch(API_URL, {
+    const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: "client_paid", order_id: activePaymentOrderId })
     });
+    const result = await res.json();
+    if (!result.success) { toast(result.error || 'Не удалось отправить подтверждение'); return; }
     triggerHaptic('success');
-    toast("Оплата отправлена на проверку!");
     closePaymentModal();
-    navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+    showPaymentWaitModal();
   } catch (e) {
     toast("Сбой отправки");
   }
 }
+
+function showPaymentWaitModal() {
+  const modal = document.getElementById('payment-wait-modal');
+  const box = modal?.querySelector('.payment-wait-confetti');
+  if (!modal || !box) return;
+  box.replaceChildren();
+  const colors = ['#e5c158', '#0d9f67', '#f472b6', '#60a5fa', '#fb923c'];
+  for (let i = 0; i < 54; i++) {
+    const piece = document.createElement('span');
+    piece.style.left = `${(i * 37) % 100}%`;
+    piece.style.backgroundColor = colors[i % colors.length];
+    piece.style.animationDelay = `${(i % 15) * 35}ms`;
+    piece.style.transform = `rotate(${(i * 61) % 360}deg)`;
+    box.appendChild(piece);
+  }
+  modal.classList.add('open');
+}
+
+function openOrdersFromPaymentWait() {
+  document.getElementById('payment-wait-modal')?.classList.remove('open');
+  navigateTab('profile', document.querySelectorAll('.dock-tab')[2]);
+}
+window.openOrdersFromPaymentWait = openOrdersFromPaymentWait;
+
+function initCheckoutDraftAutosave() {
+  ['ord-rec-name','ord-rec-phone','ord-suggest-input','ord-entrance','ord-floor','ord-apt','ord-intercom','ord-comment','ord-shop-comment']
+    .forEach(id => document.getElementById(id)?.addEventListener('input', saveCheckoutDraft));
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initCheckoutDraftAutosave);
+else initCheckoutDraftAutosave();
+

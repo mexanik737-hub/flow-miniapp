@@ -65,7 +65,7 @@ function handleHudRootTap() {
   triggerHaptic('light');
 
   // 1. Если в базе явно стоит запрет
-  if (currentUser && (currentUser.is_blocked_admin === true || currentUser.is_admin === false || String(currentUser.is_admin).toUpperCase() === 'FALSE' || String(currentUser.is_admin) === 'ЛОЖЬ')) {
+  if (currentUser && currentUser.is_blocked_admin === true) {
     toast("Доступ запрещен администратором");
     return;
   }
@@ -84,27 +84,54 @@ function handleHudRootTap() {
 
   if (hudTapCount >= 5) {
     hudTapCount = 0;
-    const pass = prompt("Код доступа Root:");
-    if (pass) {
-      sessionPasscode = pass.trim();
-      toast("Проверка доступа...");
-      fetch(`${API_URL}?action=admin_orders&admin_id=${userId}&admin_passcode=${encodeURIComponent(sessionPasscode)}`)
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            isAdmin = true;
-            toast("Доступ подтвержден");
-            navigateTab('root', null);
-          } else {
-            sessionPasscode = "";
-            toast("Неверный код доступа");
-          }
-        })
-        .catch(() => toast("Ошибка проверки доступа"));
-    }
+    openRootAccessModal();
   }
 }
 window.handleHudRootTap = handleHudRootTap;
+
+function openRootAccessModal() {
+  const input = document.getElementById('root-access-code');
+  const modal = document.getElementById('root-access-modal');
+  if (input) input.value = '';
+  if (modal) modal.classList.add('open');
+  if (input) input.focus();
+}
+window.openRootAccessModal = openRootAccessModal;
+
+function closeRootAccessModal() {
+  const modal = document.getElementById('root-access-modal');
+  if (modal) modal.classList.remove('open');
+}
+window.closeRootAccessModal = closeRootAccessModal;
+
+async function submitRootAccessCode() {
+  const input = document.getElementById('root-access-code');
+  const passcode = String(input?.value || '').trim();
+  if (!passcode) { toast('Введите код доступа'); return; }
+  sessionPasscode = passcode;
+  toast('Проверка доступа...');
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'admin_orders', admin_id: userId, admin_passcode: sessionPasscode })
+    });
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      isAdmin = true;
+      closeRootAccessModal();
+      toast('Доступ подтвержден');
+      navigateTab('root', null);
+    } else {
+      sessionPasscode = '';
+      toast('Неверный код доступа');
+    }
+  } catch (e) {
+    sessionPasscode = '';
+    toast('Ошибка проверки доступа');
+  }
+}
+window.submitRootAccessCode = submitRootAccessCode;
 
 function toggleEditorFabVisibility(forceState = null) {
   isFabVisible = (forceState !== null) ? forceState : !isFabVisible;
@@ -124,6 +151,7 @@ window.toggleEditorFabVisibility = toggleEditorFabVisibility;
 
 function applyConfigToUI(cfg) {
   SERVER_CONFIG = cfg;
+  if (typeof renderDailyBloom === 'function') renderDailyBloom();
   localStorage.setItem('flw_config_cache', JSON.stringify(cfg));
 
   const sbpBtn = document.getElementById('pay-sbp-btn');
@@ -303,6 +331,7 @@ async function toggleAboutFaqSection() {
   triggerHaptic('selection');
   const container = document.getElementById('about-faq-container');
   const arrow = document.getElementById('faq-section-arrow');
+  const label = document.getElementById('faq-expand-label');
   if (!container) return;
 
   const isHidden = window.getComputedStyle(container).display === 'none';
@@ -310,11 +339,13 @@ async function toggleAboutFaqSection() {
   if (!isHidden) {
     container.style.display = 'none';
     if (arrow) arrow.style.transform = 'rotate(0deg)';
+    if (label) label.innerText = 'раскрыть';
     return;
   }
 
   container.style.display = 'block';
   if (arrow) arrow.style.transform = 'rotate(180deg)';
+  if (label) label.innerText = '';
 
   const cached = localStorage.getItem('flw_faq_cache');
   if (cached) {
@@ -389,7 +420,14 @@ window.contactSupport = contactSupport;
 // ------------------- СИСТЕМА УВЕДОМЛЕНИЙ КЛИЕНТА -------------------
 
 async function loadNotifications(force = false) {
-  const cached = localStorage.getItem('flw_notifs_cache');
+  const uid = String(userId || '');
+  const cacheKey = `flw_notifs_cache_${uid}`;
+  if (!currentUser || !currentUser.phone || uid.startsWith('anon_')) {
+    clientNotifications = [];
+    if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
+    return;
+  }
+  const cached = localStorage.getItem(cacheKey);
   if (cached && !force) {
     try {
       clientNotifications = JSON.parse(cached);
@@ -398,11 +436,11 @@ async function loadNotifications(force = false) {
   }
 
   try {
-    const res = await fetch(`${API_URL}?action=get_notifications`);
+    const res = await fetch(`${API_URL}?action=get_notifications&user_id=${encodeURIComponent(uid)}`);
     const serverNotifs = await res.json();
     if (Array.isArray(serverNotifs)) {
       clientNotifications = serverNotifs;
-      localStorage.setItem('flw_notifs_cache', JSON.stringify(clientNotifications));
+      localStorage.setItem(cacheKey, JSON.stringify(clientNotifications));
       if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
     }
   } catch (e) {}
@@ -410,6 +448,7 @@ async function loadNotifications(force = false) {
 window.loadNotifications = loadNotifications;
 
 function openNotificationsModal() {
+  if (!currentUser || !currentUser.phone) return;
   triggerHaptic('selection');
   const container = document.getElementById('notifications-list');
   if (!container) return;
@@ -459,7 +498,7 @@ function clickNotificationItem(id, targetTab) {
   const strId = String(id);
   if (!(readNotificationIds || []).includes(strId)) {
     readNotificationIds.push(strId);
-    localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
+    localStorage.setItem(`flw_read_notifs_${userId}`, JSON.stringify(readNotificationIds));
     if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
 
     fetch(API_URL, {
@@ -494,7 +533,7 @@ function markAllNotificationsAsRead() {
     }
   });
 
-  localStorage.setItem('flw_read_notifs', JSON.stringify(readNotificationIds));
+  localStorage.setItem(`flw_read_notifs_${userId}`, JSON.stringify(readNotificationIds));
   if (typeof updateNotificationsBadge === 'function') updateNotificationsBadge();
   openNotificationsModal();
   toast("Все уведомления прочитаны");
@@ -546,12 +585,12 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // Инициализация при полной готовности DOM
-function initApp() {
+async function initApp() {
   try {
+    await checkUserSession();
     loadCatalog();
-    checkUserSession();
     loadConfig();
-    loadNotifications();
+    if (currentUser?.phone) loadNotifications();
     if (typeof updateCartUI === 'function') updateCartUI();
     checkDataHashesAndSync();
   } catch (e) {
@@ -577,3 +616,4 @@ setInterval(() => {
   }
   checkDataHashesAndSync();
 }, 180000);
+

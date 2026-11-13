@@ -62,9 +62,6 @@
       <div class="catalog-top-bar">
         <div class="catalog-active-filter-label" id="catalog-filter-summary">Показано: <b>Все</b></div>
         <div class="catalog-top-actions">
-          <button class="sync-mini-btn" onclick="forceSyncCatalogManual(this)" title="Обновить каталог">
-            <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-          </button>
           <button class="filter-btn-pill" onclick="openFilterModal()" data-config-key="txt_btn_filters">Фильтры</button>
         </div>
       </div>
@@ -134,9 +131,6 @@
           <div style="font-size:12px; font-weight:800; color:var(--gold); text-transform:uppercase;" data-config-key="txt_prof_orders_title">
             Мои заказы
           </div>
-          <button class="sync-mini-btn" style="width:28px; height:28px;" onclick="forceSyncUserOrders(this)" title="Обновить заказы">
-            <svg viewBox="0 0 24 24" style="width:13px; height:13px;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-          </button>
         </div>
         <div id="user-orders-list">
           <div style="text-align:center; color:var(--text-muted); padding:14px 0; font-size:12px;">Заказов пока нет</div>
@@ -168,7 +162,7 @@
         <div style="font-size:12px; font-weight:800; color:var(--gold); text-transform:uppercase; margin-bottom:8px;" data-config-key="txt_map_section_title">
           Мы на карте
         </div>
-        <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative; cursor:pointer;" onclick="openYandexRoute()">
+        <div style="width:100%; height:200px; border-radius:10px; overflow:hidden; border:1px solid var(--border-accent); position:relative;">
           <iframe 
             id="yandex-map-iframe"
             src="about:blank" 
@@ -184,7 +178,7 @@
       <div class="box-card neon-glow">
         <div style="font-size:12px; font-weight:800; color:var(--gold); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleAboutFaqSection()">
           <span data-config-key="txt_faq_section_title">Часто задаваемые вопросы (FAQ)</span>
-          <span id="faq-section-arrow" style="font-size:13px; color:var(--gold); transition:transform 0.2s ease;">▼</span>
+          <span style="display:flex; align-items:center; gap:6px;"><span id="faq-expand-label" style="font-size:10px; color:var(--text-muted); text-transform:none;">раскрыть</span><span id="faq-section-arrow" style="font-size:13px; color:var(--gold); transition:transform 0.2s ease;">▼</span></span>
         </div>
         <div id="about-faq-container" style="display:none;"></div>
       </div>
@@ -242,6 +236,12 @@
           <button class="sync-mini-btn" onclick="forceSyncRootCatalog(this)" title="Синхронизировать каталог">
             <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
           </button>
+        </div>
+        <div class="root-daily-category-card">
+          <div class="root-daily-category-title">Товар дня · категории выбора</div>
+          <div class="root-daily-category-hint">Товар меняется один раз в день по московскому времени, в 09:00.</div>
+          <div id="root-daily-categories-list" class="root-daily-categories-list"></div>
+          <button class="btn-metro btn-secondary" style="margin-top:8px;" onclick="saveRootDailyCategories()">Сохранить категории</button>
         </div>
         <div id="root-catalog-container"></div>
       </div>
@@ -394,6 +394,20 @@
     </nav>
   </div>
 
+  <!-- Модалка доступа к Root -->
+  <div class="modal-overlay" id="root-access-modal">
+    <div class="modal-sheet root-access-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Доступ для сотрудников</div>
+        <button class="close-btn" onclick="closeRootAccessModal()">✕</button>
+      </div>
+      <div class="root-access-mark">✿</div>
+      <p class="root-access-hint">Введите код доступа, чтобы открыть панель магазина.</p>
+      <input type="password" id="root-access-code" class="metro-input root-access-input" placeholder="Код доступа" autocomplete="current-password">
+      <button class="btn-metro" onclick="submitRootAccessCode()">Продолжить</button>
+    </div>
+  </div>
+
   <!-- Модалка уведомлений клиента -->
   <div class="modal-overlay" id="notifications-modal">
     <div class="modal-sheet">
@@ -404,7 +418,6 @@
       <div id="notifications-list" style="margin-bottom:14px;"></div>
       <div style="display:flex; gap:8px;">
         <button class="btn-metro btn-secondary" onclick="markAllNotificationsAsRead()">Прочитать все</button>
-        <button class="btn-metro" onclick="closeNotificationsModal()">Закрыть</button>
       </div>
     </div>
   </div>
@@ -451,6 +464,8 @@
         </div>
         <div class="custom-select-options" id="filter-cat-options"></div>
       </div>
+
+      <label class="filter-in-stock-row"><input type="checkbox" id="filter-in-stock"> Товары в наличии</label>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
         <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (до):</label>
@@ -629,7 +644,25 @@
         </div>
       </div>
 
-      <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
+      <div class="custom-checkbox-wrap" onclick="toggleCheckoutSaveNext()" style="margin:0 0 10px;">
+        <div class="custom-checkbox" id="checkout-save-next"></div>
+        <span style="font-size:12px; color:var(--text-muted);">Сохранить данные для следующего заказа</span>
+      </div>
+      <button class="btn-metro" onclick="openOrderConfirmation()">Оформить заказ</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="order-confirm-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">Подтверждение заказа</div>
+        <button class="close-btn" onclick="closeOrderConfirmation()">✕</button>
+      </div>
+      <div id="order-confirm-summary" class="order-confirm-summary"></div>
+      <div class="order-confirm-actions">
+        <button class="btn-metro btn-secondary" onclick="closeOrderConfirmation()">Вернуться к оформлению</button>
+        <button class="btn-metro" onclick="submitFinalOrder()">Подтвердить заказ</button>
+      </div>
     </div>
   </div>
 
@@ -694,6 +727,16 @@
           ✅ Я оплатил
         </button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="payment-wait-modal">
+    <div class="modal-sheet payment-wait-sheet">
+      <div class="payment-wait-confetti" aria-hidden="true"></div>
+      <div class="payment-wait-icon">🎉</div>
+      <div class="modal-title">Ожидайте подтверждения оплаты</div>
+      <p>Мы проверим поступление оплаты и обновим статус заказа.</p>
+      <button class="btn-metro" onclick="openOrdersFromPaymentWait()">Перейти в заказы</button>
     </div>
   </div>
 
@@ -1051,3 +1094,4 @@
   <script src="js/app.js?v=2.5"></script>
 </body>
 </html>
+

@@ -66,13 +66,22 @@ function buildDisplayCatalog() {
   displayCatalog = rawDisplay.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0));
 }
 
-function renderDailyBloom() {
+async function renderDailyBloom() {
   try {
     const container = document.getElementById('daily-bloom-container');
     if (!container) return;
 
     if (typeof getDailyBloomItem !== 'function') return;
-    const bloomItem = getDailyBloomItem(displayCatalog, userId);
+    let bloomItem = getDailyBloomItem(displayCatalog, userId);
+    try {
+      const response = await fetch(`${API_URL}?action=get_daily_product`);
+      const choice = await response.json();
+      if (choice && choice.title) {
+        const candidate = displayCatalog.find(item => item.title === choice.title &&
+          (!choice.category || item.category === choice.category));
+        if (candidate) bloomItem = candidate;
+      }
+    } catch (e) { /* Keep deterministic local fallback while offline. */ }
     if (!bloomItem) {
       container.innerHTML = '';
       return;
@@ -85,7 +94,7 @@ function renderDailyBloom() {
     container.innerHTML = `
       <div class="daily-bloom-card" onclick="triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
         <div class="daily-bloom-header">
-          <span class="daily-bloom-tag">✨ Букет дня</span>
+          <span class="daily-bloom-tag">✨ Товар дня</span>
           <span class="daily-bloom-time">Обновление в 09:00</span>
         </div>
         <div class="daily-bloom-content">
@@ -112,7 +121,11 @@ function renderDailyBloom() {
 window.renderDailyBloom = renderDailyBloom;
 
 function setupFilterDropdown() {
-  const cats = Array.from(new Set(catalog.map(c => c.category).filter(Boolean)));
+  const cats = Array.from(new Set([
+    ...catalog.map(c => c.category).filter(Boolean),
+    ...getCategoryConfigList('custom_categories'),
+    ...getCategoryConfigList('available_categories')
+  ])).sort((a, b) => a.localeCompare(b, 'ru'));
   const optionsBox = document.getElementById('filter-cat-options');
   if (!optionsBox) return;
 
@@ -164,16 +177,18 @@ function applyFilters() {
   triggerHaptic('medium');
   const cat = selectedFilterCategoryValue;
   const maxPrice = parseFloat(document.getElementById('filter-price-input')?.value) || 10000;
+  const inStockOnly = !!document.getElementById('filter-in-stock')?.checked;
 
   filteredCatalog = displayCatalog.filter(item => {
     const catMatch = (cat === 'Все' || item.category === cat);
     const priceMatch = (item.price <= maxPrice);
-    return catMatch && priceMatch;
+    const stockMatch = !inStockOnly || item.is_active;
+    return catMatch && priceMatch && stockMatch;
   });
 
   renderCatalog(filteredCatalog);
   const sumEl = document.getElementById('catalog-filter-summary');
-  if (sumEl) sumEl.innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽)</b>`;
+  if (sumEl) sumEl.innerHTML = `Показано: <b>${cat} (до ${maxPrice} ₽${inStockOnly ? ', в наличии' : ''})</b>`;
   closeFilterModal();
   toast(`Найдено позиций: ${filteredCatalog.length}`);
 }
@@ -182,6 +197,8 @@ window.applyFilters = applyFilters;
 function resetFilters() {
   triggerHaptic('medium');
   selectFilterCategory('Все');
+  const inStock = document.getElementById('filter-in-stock');
+  if (inStock) inStock.checked = false;
   const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
   const maxP = prices.length ? Math.max(...prices) : 10000;
   const rangeEl = document.getElementById('filter-price-range');
@@ -397,7 +414,7 @@ function openProductModal(id, targetVariant = null, targetUnit = null, targetCol
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: "track_stat", type: "product_view", ref_id: String(statRefId) })
+    body: JSON.stringify({ action: "track_stat", type: "product_view", ref_id: String(statRefId), user_id: String(userId || '') })
   }).catch(() => {});
 
   setupUniversalVariantChips(item, matchedInGroup ? selectedGroupPack : null, matchedInGroup ? selectedGroupVariant : null, matchedInGroup ? selectedGroupColor : null);
@@ -638,3 +655,4 @@ function adjustPopQty(delta) {
   if (q) q.innerText = popQty; 
 }
 window.adjustPopQty = adjustPopQty;
+

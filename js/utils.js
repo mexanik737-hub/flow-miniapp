@@ -103,17 +103,51 @@ function initPhoneMask(id) {
   const input = document.getElementById(id);
   if (!input) return;
 
+  const format = digits => {
+    let value = String(digits || '').replace(/\D/g, '');
+    if (value.startsWith('7') || value.startsWith('8')) value = value.substring(1);
+    value = value.substring(0, 10);
+    let result = '8 (';
+    if (value.length) result += value.substring(0, 3);
+    if (value.length >= 3) result += ') ' + value.substring(3, 6);
+    if (value.length >= 6) result += '-' + value.substring(6, 8);
+    if (value.length >= 8) result += '-' + value.substring(8, 10);
+    return result;
+  };
+
+  const caretForDigitCount = (formatted, count) => {
+    if (count <= 0) return 3;
+    let seen = 0;
+    for (let i = 3; i < formatted.length; i++) {
+      if (/\d/.test(formatted[i]) && ++seen >= count) return i + 1;
+    }
+    return formatted.length;
+  };
+
+  input.addEventListener('keydown', event => {
+    if (!['Backspace', 'Delete'].includes(event.key) || input.selectionStart !== input.selectionEnd) return;
+    let index = event.key === 'Backspace' ? input.selectionStart - 1 : input.selectionStart;
+    const step = event.key === 'Backspace' ? -1 : 1;
+    while (index >= 3 && index < input.value.length && !/\d/.test(input.value[index])) index += step;
+    if (index < 3 || index >= input.value.length) return;
+    event.preventDefault();
+    const digitIndex = input.value.slice(3, index).replace(/\D/g, '').length;
+    let digits = input.value.slice(3).replace(/\D/g, '');
+    digits = digits.slice(0, digitIndex) + digits.slice(digitIndex + 1);
+    input.value = format(digits);
+    const caret = caretForDigitCount(input.value, digitIndex);
+    input.setSelectionRange(caret, caret);
+  });
+
   input.addEventListener('input', () => {
-    let val = input.value.replace(/\D/g, '');
-    if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
-
-    let formatted = '8 (';
-    if (val.length > 0) formatted += val.substring(0, 3);
-    if (val.length >= 3) formatted += ') ' + val.substring(3, 6);
-    if (val.length >= 6) formatted += '-' + val.substring(6, 8);
-    if (val.length >= 8) formatted += '-' + val.substring(8, 10);
-
-    input.value = formatted;
+    const start = input.selectionStart || 0;
+    const before = input.value.slice(0, start).replace(/\D/g, '').length;
+    const prior = input.value;
+    const normalized = format(prior);
+    const normalizedBefore = Math.max(0, before - (prior.trimStart().startsWith('8') || prior.trimStart().startsWith('7') ? 1 : 0));
+    input.value = normalized;
+    const caret = caretForDigitCount(normalized, normalizedBefore);
+    input.setSelectionRange(caret, caret);
   });
 }
 
@@ -167,6 +201,7 @@ function toggleOrderSaveAddressCheckbox() {
     chk.classList.toggle('checked', ordSaveAddrChecked);
     chk.innerText = ordSaveAddrChecked ? '✓' : '';
   }
+  if (typeof saveCheckoutDraft === 'function') saveCheckoutDraft();
 }
 window.toggleOrderSaveAddressCheckbox = toggleOrderSaveAddressCheckbox;
 
@@ -225,28 +260,43 @@ function getTabDisplayTitle(tabKey) {
   }
 }
 
+function getCategoryConfigList(key) {
+  const raw = SERVER_CONFIG && SERVER_CONFIG[key];
+  if (Array.isArray(raw)) return raw.map(value => String(value).trim()).filter(Boolean);
+  if (raw && typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map(value => String(value).trim()).filter(Boolean);
+    } catch (e) {}
+  }
+  return [];
+}
+
 // ----------------- МЕХАНИКА №1: БУКЕТ ДНЯ (ОТСЕЧКА СТРОГО В 09:00) -----------------
 
 function getDailyBloomDateKey() {
-  const d = new Date();
-  if (d.getHours() < 9) {
-    d.setDate(d.getDate() - 1);
-  }
-  const yr = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${yr}-${mo}-${day}`;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date());
+  const part = name => Number(parts.find(item => item.type === name)?.value || 0);
+  const date = new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
+  if (part('hour') < 9) date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
 }
 
 function getDailyBloomItem(itemsList, currentUid) {
   try {
     if (!itemsList || !itemsList.length) return null;
-    const activeItems = itemsList.filter(it => it.is_active);
-    const pool = activeItems.length ? activeItems : itemsList;
+    const eligibleCategories = getCategoryConfigList('daily_item_categories');
+    const filteredItems = eligibleCategories.length
+      ? itemsList.filter(it => eligibleCategories.includes(String(it.category || '')))
+      : itemsList;
+    const activeItems = filteredItems.filter(it => it.is_active);
+    const pool = activeItems.length ? activeItems : filteredItems.length ? filteredItems : itemsList.filter(it => it.is_active);
     if (!pool.length) return null;
 
     const dateKey = getDailyBloomDateKey();
-    const seedString = `${currentUid || 'client'}_${dateKey}`;
+    const seedString = `daily_${dateKey}`;
 
     let hash = 0;
     for (let i = 0; i < seedString.length; i++) {
@@ -418,3 +468,4 @@ function stopCartPetals() {
   }, 650);
 }
 window.stopCartPetals = stopCartPetals;
+
