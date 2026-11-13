@@ -550,6 +550,13 @@ async function checkDataHashesAndSync() {
     const savedHashesStr = localStorage.getItem('flw_data_hashes');
     const localHashes = savedHashesStr ? JSON.parse(savedHashesStr) : {};
 
+    // Первый запуск уже загружает каталог и конфигурацию напрямую. Сохраняем
+    // хэши для следующих сверок, но не запускаем те же запросы повторно.
+    if (!savedHashesStr) {
+      localStorage.setItem('flw_data_hashes', JSON.stringify(serverHashes));
+      return;
+    }
+
     if (localHashes.catalog_hash !== serverHashes.catalog_hash || localHashes.table_edit_ts !== serverHashes.table_edit_ts) {
       if (typeof loadCatalog === 'function') loadCatalog(true);
     }
@@ -587,9 +594,24 @@ document.addEventListener('visibilitychange', () => {
 // Инициализация при полной готовности DOM
 async function initApp() {
   try {
+    let hasRegisteredClientCache = false;
+    try {
+      const cachedUser = JSON.parse(localStorage.getItem('flw_user_profile') || 'null');
+      hasRegisteredClientCache = !!(cachedUser?.phone && userId && !String(userId).startsWith('anon_'));
+    } catch (e) {}
+
+    // Для уже зарегистрированного клиента отрисовываем сохранённые данные
+    // сразу, пока параллельно проверяются профиль и свежесть данных на сервере.
+    if (hasRegisteredClientCache) {
+      loadCatalog();
+      loadConfig();
+    }
+
     await checkUserSession();
-    loadCatalog();
-    loadConfig();
+    if (!hasRegisteredClientCache) {
+      loadCatalog();
+      loadConfig();
+    }
     if (currentUser?.phone) loadNotifications();
     if (typeof updateCartUI === 'function') updateCartUI();
     checkDataHashesAndSync();
