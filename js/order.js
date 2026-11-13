@@ -1,5 +1,6 @@
 let selectedDeliveryTimeValue = '';
 let checkoutSaveForNext = false;
+let paymentConfirmationInFlight = false;
 
 function generateDynamicDeliveryTimeSlots() {
   const nowParts = new Intl.DateTimeFormat('en-GB', {
@@ -621,22 +622,33 @@ function copyPaymentAmount() {
 }
 
 async function confirmPaymentByClient() {
-  if (!activePaymentOrderId) return;
+  if (!activePaymentOrderId || paymentConfirmationInFlight) return;
+  paymentConfirmationInFlight = true;
+  const orderId = activePaymentOrderId;
   triggerHaptic('medium');
-  toast("Отправка подтверждения...");
+  closePaymentModal();
+  showPaymentWaitModal();
+  toast("Подтверждение отправлено. Проверяем оплату...");
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: "client_paid", order_id: activePaymentOrderId })
+      body: JSON.stringify({ action: "client_paid", order_id: orderId })
     });
     const result = await res.json();
-    if (!result.success) { toast(result.error || 'Не удалось отправить подтверждение'); return; }
+    if (!result.success) {
+      document.getElementById('payment-wait-modal')?.classList.remove('open');
+      document.getElementById('payment-modal')?.classList.add('open');
+      toast(result.error || 'Не удалось отправить подтверждение');
+      return;
+    }
     triggerHaptic('success');
-    closePaymentModal();
-    showPaymentWaitModal();
   } catch (e) {
-    toast("Сбой отправки");
+    // The server may have accepted the request before the connection timed out.
+    // Keep the waiting screen visible; the customer can still open the orders list.
+    toast("Нет ответа от сервера. Проверьте статус в заказах; не оплачивайте повторно.");
+  } finally {
+    paymentConfirmationInFlight = false;
   }
 }
 
