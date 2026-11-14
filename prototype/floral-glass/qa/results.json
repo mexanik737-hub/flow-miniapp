@@ -1,0 +1,101 @@
+{
+  "browser": "Playwright + Chromium headless shell",
+  "viewportWidths": [
+    320,
+    360,
+    390,
+    430,
+    768,
+    1440
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "responsive": "no horizontal overflow",
+  "screenshots": [
+    "cart-light.png",
+    "catalog-dark.png",
+    "catalog-light.png",
+    "category-sheet-light.png",
+    "checkout-light.png",
+    "contact-sheet.png",
+    "courier-dialog-light.png",
+    "nested-confirm-light.png",
+    "product-sheet-light.png",
+    "responsive-dark-1440.png",
+    "responsive-dark-320.png",
+    "responsive-dark-360.png",
+    "responsive-dark-390.png",
+    "responsive-dark-430.png",
+    "responsive-dark-768.png",
+    "responsive-light-1440.png",
+    "responsive-light-320.png",
+    "responsive-light-360.png",
+    "responsive-light-390.png",
+    "responsive-light-430.png",
+    "responsive-light-768.png",
+    "root-broadcasts-light.png",
+    "root-desktop-light.png",
+    "root-faq-light.png",
+    "root-orders-light.png",
+    "ui-kit-buttons-light.png",
+    "ui-kit-controls-light.png",
+    "ui-kit-feedback-light.png",
+    "ui-kit-overlays-light.png",
+    "variant-editor-light.png"
+  ],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "externalRequests": [],
+  "tests": [
+    "catalog renders and resizes",
+    "one-line to three-line title and missing-image/badge states",
+    "unavailable product state",
+    "dark/light theme",
+    "dependent option unlock",
+    "price deltas",
+    "add to cart",
+    "checkout route",
+    "pickup hides address",
+    "local checkout clears cart",
+    "six Root panels",
+    "Dialog + nested ConfirmDialog",
+    "repeatable category fields",
+    "variant editor row add",
+    "all resources local"
+  ],
+  "layoutMatrix": {
+    "screens": [
+      "catalog",
+      "cart",
+      "checkout",
+      "root",
+      "kit",
+      "root:orders",
+      "root:catalog",
+      "root:clients",
+      "root:broadcasts",
+      "root:stats",
+      "root:faq"
+    ],
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      768,
+      1440
+    ],
+    "checks": 60,
+    "horizontalOverflow": false,
+    "inlineStyleAttributes": 0
+  },
+  "runtime": {
+    "javascriptConsoleErrors": 0,
+    "failedRequests": 0,
+    "externalRequests": 0,
+    "browser": "Chrome for Testing 151.0.7922.34",
+    "playwright": "1.62.1"
+  }
+}
