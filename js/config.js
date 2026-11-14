@@ -37,8 +37,8 @@ function applyTelegramTheme() {
   const scheme = tg?.colorScheme || 'dark';
   document.documentElement.setAttribute('data-theme', scheme);
   if (tg) {
-    tg.setHeaderColor(scheme === 'light' ? '#ffffff' : '#090c12');
-    tg.setBackgroundColor(scheme === 'light' ? '#f8fafc' : '#090c12');
+    tg.setHeaderColor(scheme === 'light' ? '#faf9f5' : '#222527');
+    tg.setBackgroundColor(scheme === 'light' ? '#f2f0e9' : '#17191b');
   }
 }
 applyTelegramTheme();
