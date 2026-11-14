@@ -223,7 +223,7 @@ window.toggleTextEditingMode = toggleTextEditingMode;
 
 document.addEventListener('click', async (e) => {
   if (!isTextEditActive) return;
-  if (e.target.closest('#floating-editor-btn')) return;
+  if (e.target.closest('#floating-editor-btn, .fg-dialog-layer')) return;
 
   e.preventDefault();
   e.stopPropagation();
@@ -233,7 +233,7 @@ document.addEventListener('click', async (e) => {
 
   const key = target.dataset.configKey;
   const curVal = target.innerText.trim();
-  const newVal = prompt("Изменить текст:", curVal);
+  const newVal = await floralPrompt("Изменить текст", curVal);
 
   if (newVal !== null && newVal.trim() !== "" && newVal.trim() !== curVal) {
     const cleanVal = newVal.trim();

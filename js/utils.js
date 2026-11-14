@@ -418,6 +418,7 @@ function animatePetals() {
 }
 
 function startCartPetals() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   try {
     petalsCanvas = document.getElementById('cart-petals-canvas');
     if (!petalsCanvas) return;

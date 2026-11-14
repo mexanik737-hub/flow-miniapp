@@ -101,8 +101,8 @@ function renderRootOrders() {
       : ord.status === 'Ожидает оплаты' ? 'st-await-pay' : 'st-building';
 
     return `
-      <div class="box-card" style="margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+      <article class="order-record">
+        <div class="order-record__header">
           <b>${ord.order_id}</b>
           <span class="status-badge ${statusClass}">${ord.status}</span>
         </div>
@@ -143,7 +143,7 @@ function renderRootOrders() {
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="triggerOrderPhotoUpload('${ord.order_id}')">📸 Фото букета</button>
           <button class="btn-metro btn-danger" style="font-size:11px; padding:7px;" onclick="openTopConfirm('${ord.order_id}')">Удалить заказ</button>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 }
@@ -908,7 +908,7 @@ window.saveRootDailyCategories = saveRootDailyCategories;
 
 async function renameCategoryPrompt(encodedOldCat) {
   const oldCat = decodeURIComponent(encodedOldCat);
-  const newCat = prompt(`Новое название для категории «${oldCat}»:`, oldCat);
+  const newCat = await floralPrompt(`Новое название для категории «${oldCat}»`, oldCat);
   if (!newCat || !newCat.trim() || newCat.trim() === oldCat) return;
 
   toast("Переименование категории...");
@@ -945,7 +945,7 @@ window.renameCategoryPrompt = renameCategoryPrompt;
 
 async function moveSingleProductCategory(productId) {
   const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
-  const targetCat = prompt(`Укажите категорию для переноса товара:\nДоступные: ${categories.join(', ')}`);
+  const targetCat = await floralPrompt('Перенос товара в категорию', '', `Доступные категории: ${categories.join(', ')}`);
   if (!targetCat || !targetCat.trim()) return;
 
   toast("Перенос товара...");
@@ -969,7 +969,7 @@ window.moveSingleProductCategory = moveSingleProductCategory;
 async function openBatchMoveCategoryDialog() {
   if (!selectedCategoryProductsForBatch.size) return;
   const categories = Array.from(new Set(allRootCatalog.map(c => c.category).filter(Boolean)));
-  const targetCat = prompt(`Укажите целевую категорию для ${selectedCategoryProductsForBatch.size} товаров:\nДоступные: ${categories.join(', ')}`);
+  const targetCat = await floralPrompt(`Перенос ${selectedCategoryProductsForBatch.size} товаров`, '', `Доступные категории: ${categories.join(', ')}`);
   if (!targetCat || !targetCat.trim()) return;
 
   toast("Массовый перенос товаров...");
@@ -1356,7 +1356,7 @@ async function saveProductEditor() {
 }
 
 async function deleteProductRoot(id) {
-  if (!confirm("Удалить этот товар из базы?")) return;
+  if (!await floralConfirm("Удалить этот товар из базы?", { title: 'Удалить товар', confirmLabel: 'Удалить', danger: true })) return;
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
@@ -1437,7 +1437,7 @@ function renderRootClients(clients) {
 }
 
 async function editSpentPrompt(uid, current) {
-  const val = prompt("Новая сумма выкупа (₽):", current);
+  const val = await floralPrompt('Новая сумма выкупа (₽)', current);
   if (!val || isNaN(val)) return;
   await fetch(API_URL, {
     method: 'POST',
@@ -1448,7 +1448,7 @@ async function editSpentPrompt(uid, current) {
 }
 
 async function deleteUserRoot(uid) {
-  if (!confirm("Сбросить аккаунт клиента?")) return;
+  if (!await floralConfirm("Сбросить аккаунт клиента?", { title: 'Сбросить клиента', confirmLabel: 'Сбросить', danger: true })) return;
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
@@ -1584,7 +1584,7 @@ async function toggleNotificationActiveRoot(id) {
 }
 
 async function repeatNotificationRoot(id) {
-  if (!confirm("Повторно отправить это оповещение в Telegram всем покупателям?")) return;
+  if (!await floralConfirm("Повторно отправить это оповещение в Telegram всем покупателям?", { title: 'Повторить рассылку', confirmLabel: 'Отправить', danger: false })) return;
   toast("Рассылка...");
   await fetch(API_URL, {
     method: 'POST',
@@ -1600,7 +1600,7 @@ async function repeatNotificationRoot(id) {
 }
 
 async function deleteNotificationRoot(id) {
-  if (!confirm("Удалить это уведомление и очистить его статистику?")) return;
+  if (!await floralConfirm("Удалить это уведомление и очистить его статистику?", { title: 'Удалить уведомление', confirmLabel: 'Удалить', danger: true })) return;
   toast("Удаление...");
   await fetch(API_URL, {
     method: 'POST',
@@ -1868,7 +1868,7 @@ async function toggleFaqActiveRoot(id, nextState) {
 }
 
 async function deleteFaqRoot(id) {
-  if (!confirm("Удалить этот вопрос?")) return;
+  if (!await floralConfirm("Удалить этот вопрос?", { title: 'Удалить вопрос', confirmLabel: 'Удалить', danger: true })) return;
   await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },

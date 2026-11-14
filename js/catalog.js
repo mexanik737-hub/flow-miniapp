@@ -68,37 +68,7 @@ function buildDisplayCatalog() {
 }
 
 function renderDailyBloomCard(container, bloomItem) {
-  if (!bloomItem) {
-    container.innerHTML = '';
-    return;
-  }
-    const photos = (bloomItem.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
-    const thumb = photos[0] || "";
-    const isGroup = bloomItem.is_group;
-
-    container.innerHTML = `
-      <div class="daily-bloom-card" onclick="triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
-        <div class="daily-bloom-header">
-          <span class="daily-bloom-tag">✨ Товар дня</span>
-          <span class="daily-bloom-time">Обновление в 09:00</span>
-        </div>
-        <div class="daily-bloom-content">
-          <div class="daily-bloom-thumb">
-            ${thumb ? `<img src="${thumb}" alt="${bloomItem.title}">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:28px;">🌸</div>'}
-          </div>
-          <div class="daily-bloom-info">
-            <div class="daily-bloom-title">${bloomItem.title}</div>
-            <div class="daily-bloom-unit">${bloomItem.unit || 'Премиальная срезка'}</div>
-            <div class="daily-bloom-footer">
-              <span class="daily-bloom-price">${isGroup ? 'от ' : ''}${bloomItem.price} ₽</span>
-              <button class="daily-bloom-btn" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${bloomItem.id}')">
-                Выбрать
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+  renderStorefrontHero(container, bloomItem);
 }
 
 async function renderDailyBloom() {
@@ -156,6 +126,7 @@ function setupFilterDropdown() {
     ...getCategoryConfigList('custom_categories'),
     ...getCategoryConfigList('available_categories')
   ])).sort((a, b) => a.localeCompare(b, 'ru'));
+  renderStorefrontCollections(displayCatalog);
   const optionsBox = document.getElementById('filter-cat-options');
   if (!optionsBox) return;
 
@@ -304,7 +275,11 @@ function renderCatalog(items) {
   const el = document.getElementById('catalog-wrap');
   if (!el) return;
 
-  el.innerHTML = (items || []).map(p => {
+  syncCategoryTiles();
+  el.innerHTML = (items || []).map(renderShopCard).join('') || '<p class="empty-state">Нет подходящих товаров</p>';
+}
+
+function renderShopCard(p) {
     const photos = (p.photo_url || "").split(',').map(s => s.trim()).filter(Boolean);
     const firstPhoto = photos[0] || "";
     const inCartQty = getCartItemQuantity(p.id);
@@ -313,23 +288,23 @@ function renderCatalog(items) {
     const isGroup = p.is_group;
 
     return `
-      <div class="product-card ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="triggerHaptic('selection'); openProductModal('${p.id}')">
-        <div class="product-thumb">
-          ${isHit ? `<div class="hit-badge">🔥 Хит</div>` : ''}
-          ${firstPhoto ? `<img src="${firstPhoto}" alt="${p.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
+      <div class="product-card product-card--tile ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="triggerHaptic('selection'); openProductModal('${p.id}')">
+        <div class="product-card__media">
+          ${isHit ? `<div class="product-card__badges"><span class="shop-badge">Хит</span></div>` : ''}
+          ${firstPhoto ? `<img class="product-card__image" src="${shopEscape(firstPhoto)}" alt="${shopEscape(p.title)}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
           <div class="thumb-placeholder-box" style="${firstPhoto ? 'display:none;' : ''}">
             <span class="thumb-placeholder-icon">🌸</span>
             <span class="thumb-placeholder-text">Фото пока не добавили</span>
           </div>
         </div>
-        <div class="product-body">
+        <div class="product-card__body">
           <div>
-            <div class="product-title">${p.title}</div>
-            <div class="product-unit">${p.unit || '1 шт.'}</div>
+            <h3 class="product-card__title">${shopEscape(p.title)}</h3>
+            <div class="product-card__meta"><span>${shopEscape(p.unit || '1 шт.')}</span><span class="product-card__availability" data-state="${isAvailable ? 'available' : 'unavailable'}">${isAvailable ? 'В наличии' : 'Недоступен'}</span></div>
           </div>
-          <div class="product-footer">
+          <div class="product-card__footer">
             ${isAvailable ? `
-              <span class="product-price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
+              <span class="product-card__price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
               <div id="product-action-${p.id}">
                 ${isGroup ? `
                   <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${p.id}')">Выбрать</button>
@@ -354,7 +329,6 @@ function renderCatalog(items) {
         </div>
       </div>
     `;
-  }).join('');
 }
 window.renderCatalog = renderCatalog;
 
@@ -596,8 +570,8 @@ function updateSelectedGroupVariantUI(preserveSlide = false) {
     if (popD) popD.innerText = matchedVariant.description || activePopItem.description || 'Свежесрезанные сортовые цветы высшей категории.';
     if (addBtn) {
       addBtn.innerText = "Добавить в заказ";
-      addBtn.style.background = "linear-gradient(135deg, var(--green) 0%, #087f52 100%)";
-      addBtn.style.color = "#fff";
+      addBtn.style.removeProperty("background");
+      addBtn.style.removeProperty("color");
       addBtn.disabled = false;
     }
     if (qtyBox) qtyBox.style.display = 'flex';
