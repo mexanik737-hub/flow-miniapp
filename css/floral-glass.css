@@ -86,3 +86,13 @@ button {cursor:pointer}
 .stats-summary-grid .stat-summary-card:first-child {grid-column:1/-1;background:linear-gradient(125deg,var(--fg-brand),color-mix(in srgb,var(--fg-brand) 75%,var(--fg-botanical)));color:var(--fg-brand-contrast)}
 .stat-summary-card:first-child :is(.stat-summary-val,.stat-summary-label) {color:inherit}
 .stat-summary-card .stat-summary-val {font-size:clamp(22px,3vw,34px)}
+
+.overlay-checkout {padding:0;align-items:stretch;background:var(--fg-bg);backdrop-filter:none}
+.overlay-checkout .modal-sheet {width:100%;max-width:1480px;margin:0 auto;height:100dvh;max-height:100dvh;padding:clamp(20px,4vw,64px) clamp(16px,4vw,64px) max(28px,env(safe-area-inset-bottom));border:0;border-radius:0;box-shadow:none;background:var(--fg-bg)}
+.overlay-checkout .modal-header {align-items:start;margin-bottom:24px}
+.overlay-checkout .modal-title {margin:0;font-size:clamp(36px,5vw,68px);letter-spacing:-.06em}
+.checkout-layout {display:grid;align-items:start;gap:18px}
+.checkout-layout>section {min-width:0}
+.checkout-layout h3 {margin:0 0 18px;font-size:clamp(17px,2vw,25px);letter-spacing:-.04em}
+.checkout-panel {padding:clamp(16px,2vw,28px);border:1px solid var(--fg-border);border-radius:22px;background:var(--fg-surface);box-shadow:var(--fg-shadow-card)}
+@media(min-width:768px){.checkout-layout {grid-template-columns:minmax(0,1.65fr) minmax(270px,1fr)}}
