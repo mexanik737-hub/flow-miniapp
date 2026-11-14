@@ -101,8 +101,8 @@ function renderRootOrders() {
       : ord.status === 'Ожидает оплаты' ? 'st-await-pay' : 'st-building';
 
     return `
-      <div class="box-card" style="margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+      <article class="order-record">
+        <div class="order-record__header">
           <b>${ord.order_id}</b>
           <span class="status-badge ${statusClass}">${ord.status}</span>
         </div>
@@ -143,7 +143,7 @@ function renderRootOrders() {
           <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="triggerOrderPhotoUpload('${ord.order_id}')">📸 Фото букета</button>
           <button class="btn-metro btn-danger" style="font-size:11px; padding:7px;" onclick="openTopConfirm('${ord.order_id}')">Удалить заказ</button>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 }

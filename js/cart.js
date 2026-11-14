@@ -219,27 +219,18 @@ function renderCartItems() {
     const fullTitle = formatFullItemTitle(item.title, selectedUnit || item.unit, selectedVar, selectedColor);
 
     return `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
-        <div style="display:flex; align-items:center; gap:8px; max-width:68%;">
-          ${isAssemblyMode ? `
-            <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:18px; height:18px;" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓' : ''}</div>
-          ` : ''}
-          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="triggerHaptic('selection'); openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}')">
-            <div style="width:44px; height:44px; border-radius:10px; overflow:hidden; background:var(--card-inner); flex-shrink:0; border:1px solid var(--border-accent); box-shadow:0 4px 12px rgba(0,0,0,0.25);">
-              ${thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; align-items:center; justify-content:center; height:100%;">🌸</div>'}
-            </div>
-            <div>
-              <div style="font-size:12px; font-weight:700; line-height:1.25; color:var(--text);">${fullTitle}</div>
-              <div style="font-size:11px; color:var(--gold); margin-top:2px;">${item.price} ₽ × ${qty} шт. = ${item.price * qty} ₽</div>
-            </div>
-          </div>
+      <article class="cart-item">
+        <button class="cart-photo" type="button" aria-label="Открыть товар" onclick="openProductModal(${item.id}, '${selectedVar || ''}', '${selectedUnit || ''}', '${selectedColor || ''}'); triggerHaptic('selection')">
+          ${thumb ? `<img class="cart-item__image" src="${shopEscape(thumb)}" alt="">` : '✳'}
+        </button>
+        <div><h3 class="cart-item__title">${shopEscape(fullTitle)}</h3>
+          <p class="cart-item__options">${item.price} ₽ × ${qty} шт.</p>
+          ${isAssemblyMode ? `<button class="assembly-choice" aria-pressed="${isChecked}" onclick="toggleItemAssemblySelection('${cartKey}')">${isChecked ? '✓ В букете' : '+ В букет'}</button>` : ''}
         </div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', -1)">–</button>
-          <span style="font-size:14px; font-weight:800; min-width:18px; text-align:center; color:var(--text);">${qty}</span>
-          <button class="qty-btn" onclick="modifyCartByKey('${cartKey}', 1)">+</button>
+        <div class="cart-item__price"><strong>${item.price * qty} ₽</strong>
+          <div class="cart-item__actions"><button class="qty-btn" onclick="modifyCartByKey('${cartKey}', -1)">−</button><span>${qty}</span><button class="qty-btn" onclick="modifyCartByKey('${cartKey}', 1)">+</button></div>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Магазин «Цветы»</title>
-  <link rel="stylesheet" href="css/style.css?v=2.7">
-  <link rel="stylesheet" href="css/floral-glass.css?v=1">
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/floral-tokens.css?v=3"><link rel="stylesheet" href="css/floral-components.css?v=3"><link rel="stylesheet" href="css/floral-layout.css?v=3"><link rel="stylesheet" href="css/floral-glass.css?v=3">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
@@ -35,14 +35,11 @@
 
   <input type="file" id="camera-file-input" accept="image/*" style="display:none;" onchange="handleNativeFileSelect(this)">
 
-  <div class="app-wrapper">
+  <div class="app-wrapper app-shell">
     <!-- Двойной парящий HUD с колокольчиком уведомлений -->
-    <header>
+    <header class="shop-header">
       <div class="header-pills-row">
-        <div class="hud-pill" onclick="handleHudRootTap()">
-          <span class="hud-brand" data-config-key="txt_shop_title">ЦВЕТЫ</span>
-          <span class="hud-address" data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</span>
-        </div>
+        <button type="button" class="wordmark" onclick="handleHudRootTap()"><span class="wordmark__seal" aria-hidden="true">✳</span><span><strong data-config-key="txt_shop_title">ЦВЕТЫ</strong><small data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</small></span></button>
         
         <div class="hud-right-group">
           <div class="hud-notif-btn" onclick="openNotificationsModal()" title="Уведомления">
@@ -59,6 +56,9 @@
     <!-- Экран 1: Каталог -->
     <section id="screen-catalog" class="screen active">
       <div id="daily-bloom-container"></div>
+      <nav id="catalog-categories" class="category-strip" aria-label="Категории"></nav>
+      <section class="bento-showcase" id="catalog-features" aria-label="Подборки"></section>
+      <div class="section-heading"><h2>Композиции</h2></div>
 
       <div class="catalog-top-bar">
         <div class="catalog-active-filter-label" id="catalog-filter-summary">Показано: <b>Все</b></div>
@@ -66,16 +66,17 @@
           <button class="filter-btn-pill" onclick="openFilterModal()" data-config-key="txt_btn_filters">Фильтры</button>
         </div>
       </div>
-      <div class="catalog-grid" id="catalog-wrap"></div>
+      <div class="product-grid" id="catalog-wrap"></div>
     </section>
 
     <!-- Экран 2: Корзина -->
     <section id="screen-cart" class="screen">
-      <div class="box-card neon-glow" id="cart-items-container">
+      <div class="page-heading"><h1 class="page-title">Корзина</h1></div>
+      <div class="cart-layout"><div class="cart-list" id="cart-items-container">
         <div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:13px;" data-config-key="txt_cart_empty">Корзина пуста</div>
       </div>
 
-      <div class="box-card neon-glow" id="cart-checkout-card" style="display:none;">
+      <div class="order-summary" id="cart-checkout-card" style="display:none;">
         <div style="background:var(--card-inner); border:1px solid var(--border-accent); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:12px;">
           <div class="custom-checkbox-wrap" onclick="toggleCartAssemblyMode()">
             <div class="custom-checkbox" id="cart-assembly-checkbox-ui"></div>
@@ -94,10 +95,11 @@
         </div>
         <button class="btn-metro" onclick="openOrderModal()" data-config-key="txt_btn_checkout">Оформить заказ</button>
       </div>
-    </section>
+    </div></section>
 
     <!-- Экран 3: Профиль -->
     <section id="screen-profile" class="screen">
+      <div class="page-heading"><h1 class="page-title">Профиль</h1></div>
       <div class="box-card neon-glow">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:11px; text-transform:uppercase; color:var(--gold); font-weight:700;" data-config-key="txt_prof_card_title">Карточка клиента</span>
@@ -141,7 +143,8 @@
 
     <!-- Экран 4: О нас -->
     <section id="screen-about" class="screen">
-      <div class="box-card neon-glow" style="text-align:center;">
+      <div class="page-heading"><h1 class="page-title">О салоне</h1></div>
+      <div class="box-card shop-intro" style="text-align:center;">
         <div class="shop-logo-circle">
           <img src="https://lh3.googleusercontent.com/d/11wr24313xER0faf6aw-259D-9-32PZu8" alt="Цветы">
         </div>
@@ -185,7 +188,7 @@
       </div>
 
       <!-- Техподдержка -->
-      <div class="box-card neon-glow" style="text-align:center;">
+      <div class="box-card shop-intro" style="text-align:center;">
         <button class="btn-metro btn-warm-support" onclick="contactSupport()" data-config-key="txt_btn_support">
           💬 Техническая поддержка
         </button>
@@ -197,6 +200,7 @@
 
     <!-- Экран 5: Root (Панель управления) -->
     <section id="screen-root" class="screen">
+      <div class="page-heading"><h1 class="page-title">Управление магазином</h1></div>
       <div class="box-card" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-color:var(--border-accent);">
         <div>
           <b style="font-size:13px; color:var(--gold);">Режим редактирования</b>
@@ -205,14 +209,14 @@
         <div class="custom-checkbox" id="root-toggle-editor-btn" style="width:24px; height:24px; font-size:14px;" onclick="toggleEditorFabVisibility()"></div>
       </div>
 
-      <div class="root-tabs-grid">
-        <button type="button" class="toggle-btn active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</button>
-        <button type="button" class="toggle-btn" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</button>
-        <button type="button" class="toggle-btn" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</button>
-        <button type="button" class="toggle-btn" id="tab-root-notifs" onclick="switchRootSection('notifs')">Уведомления</button>
-        <button type="button" class="toggle-btn" id="tab-root-stats" onclick="switchRootSection('stats')">Статистика</button>
-        <button type="button" class="toggle-btn" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</button>
-      </div>
+      <div class="root-layout"><nav class="root-nav" aria-label="Разделы управления">
+        <button type="button" class="root-nav__item active" id="tab-root-orders" onclick="switchRootSection('orders')">Заказы</button>
+        <button type="button" class="root-nav__item" id="tab-root-catalog" onclick="switchRootSection('catalog')">Товары</button>
+        <button type="button" class="root-nav__item" id="tab-root-clients" onclick="switchRootSection('clients')">Клиенты</button>
+        <button type="button" class="root-nav__item" id="tab-root-notifs" onclick="switchRootSection('notifs')">Уведомления</button>
+        <button type="button" class="root-nav__item" id="tab-root-stats" onclick="switchRootSection('stats')">Статистика</button>
+        <button type="button" class="root-nav__item" id="tab-root-faq" onclick="switchRootSection('faq')">FAQ</button>
+      </nav><div class="root-content">
 
       <!-- Заказы -->
       <div id="root-sec-orders">
@@ -370,37 +374,37 @@
         </div>
         <div id="root-faq-container"></div>
       </div>
-    </section>
+    </div></div></section>
   </div>
 
   <!-- Док навигации -->
   <div class="dock-pill-container">
-    <nav class="dock-pill" id="dock-pill-bar">
-      <button class="dock-tab active" onclick="navigateTab('catalog', this)">
+    <nav class="dock-pill glass-dock" id="dock-pill-bar">
+      <button class="dock-link dock-tab active" onclick="navigateTab('catalog', this)">
         <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
         <span data-config-key="txt_tab_catalog">Каталог</span>
       </button>
-      <button class="dock-tab" onclick="navigateTab('cart', this)">
+      <button class="dock-link dock-tab" onclick="navigateTab('cart', this)">
         <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
         <span>Корзина (<b id="cart-counter">0</b>)</span>
       </button>
-      <button class="dock-tab" onclick="navigateTab('profile', this)">
+      <button class="dock-link dock-tab" onclick="navigateTab('profile', this)">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         <span data-config-key="txt_tab_profile">Профиль</span>
       </button>
-      <button class="dock-tab" onclick="navigateTab('about', this)">
+      <button class="dock-link dock-tab" onclick="navigateTab('about', this)">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
         <span data-config-key="txt_tab_about">О нас</span>
       </button>
-    </nav>
+    <span class="glass-dock__lens" aria-hidden="true"></span></nav>
   </div>
 
   <!-- Модалка доступа к Root -->
-  <div class="modal-overlay" id="root-access-modal">
-    <div class="modal-sheet root-access-sheet">
+  <div class="modal-overlay overlay-dialog" id="root-access-modal">
+    <div role="dialog" aria-modal="true" aria-label="Доступ для сотрудников" class="modal-sheet root-access-sheet">
       <div class="modal-header">
         <div class="modal-title">Доступ для сотрудников</div>
-        <button class="close-btn" onclick="closeRootAccessModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeRootAccessModal()">✕</button>
       </div>
       <div class="root-access-mark">✿</div>
       <p class="root-access-hint">Введите код доступа, чтобы открыть панель магазина.</p>
@@ -410,11 +414,11 @@
   </div>
 
   <!-- Модалка уведомлений клиента -->
-  <div class="modal-overlay" id="notifications-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="notifications-modal">
+    <div role="dialog" aria-modal="true" aria-label="Уведомления" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title">Уведомления</div>
-        <button class="close-btn" onclick="closeNotificationsModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeNotificationsModal()">✕</button>
       </div>
       <div id="notifications-list" style="margin-bottom:14px;"></div>
       <div style="display:flex; gap:8px;">
@@ -424,11 +428,11 @@
   </div>
 
   <!-- Модалка управления категориями в Root -->
-  <div class="modal-overlay" id="categories-manager-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="categories-manager-modal">
+    <div role="dialog" aria-modal="true" aria-label="Категории товаров" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title">Категории товаров</div>
-        <button class="close-btn" onclick="closeCategoriesManagerModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeCategoriesManagerModal()">✕</button>
       </div>
 
       <div style="background:var(--card-inner); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:12px;">
@@ -450,11 +454,11 @@
   </div>
 
   <!-- Модалка фильтров -->
-  <div class="modal-overlay" id="filter-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="filter-modal">
+    <div role="dialog" aria-modal="true" aria-label="Фильтры каталога" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title">Фильтры каталога</div>
-        <button class="close-btn" onclick="closeFilterModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeFilterModal()">✕</button>
       </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Категория цветов:</label>
@@ -485,8 +489,8 @@
   </div>
 
   <!-- Модалка регистрации -->
-  <div class="modal-overlay" id="reg-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-dialog" id="reg-modal">
+    <div role="dialog" aria-modal="true" aria-label="Регистрация в сервисе" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title">Регистрация в сервисе</div>
       </div>
@@ -504,11 +508,11 @@
   </div>
 
   <!-- Модалка карточки букета -->
-  <div class="modal-overlay" id="product-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="product-modal">
+    <div role="dialog" aria-modal="true" aria-label="Букет" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="pop-title">Букет</div>
-        <button class="close-btn" onclick="closeProductModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeProductModal()">✕</button>
       </div>
 
       <div class="pop-gallery-wrapper">
@@ -554,12 +558,13 @@
   </div>
 
   <!-- Модалка оформления заказа -->
-  <div class="modal-overlay" id="order-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-editor" id="order-modal">
+    <div role="dialog" aria-modal="true" aria-label="Оформление заказа" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title">Оформление заказа</div>
-        <button class="close-btn" onclick="closeOrderModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeOrderModal()">✕</button>
       </div>
+      <div class="editor-fields"><section>
 
       <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
         <div class="toggle-btn active" id="btn-del" onclick="setDeliveryType('delivery')">🚚 Доставка</div>
@@ -627,7 +632,7 @@
         🔔 <b>Уведомление:</b> Как только флорист закончит сборку букета, статус заказа сменится на «Готов к выдаче», и вам поступит уведомление в Telegram.
       </div>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий салону (необязательно):</label>
+      </section><section><label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Комментарий салону (необязательно):</label>
       <input type="text" id="ord-shop-comment" class="metro-input" placeholder="Пожелания по сборке, цвету ленты...">
 
       <div style="background:var(--card-inner); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:12px;">
@@ -649,15 +654,15 @@
         <div class="custom-checkbox" id="checkout-save-next"></div>
         <span style="font-size:12px; color:var(--text-muted);">Сохранить данные для следующего заказа</span>
       </div>
-      <button class="btn-metro" onclick="openOrderConfirmation()">Оформить заказ</button>
+      </section></div><button class="btn-metro" onclick="openOrderConfirmation()">Оформить заказ</button>
     </div>
   </div>
 
-  <div class="modal-overlay" id="order-confirm-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-dialog" id="order-confirm-modal">
+    <div role="dialog" aria-modal="true" aria-label="Подтверждение заказа" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title">Подтверждение заказа</div>
-        <button class="close-btn" onclick="closeOrderConfirmation()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeOrderConfirmation()">✕</button>
       </div>
       <div id="order-confirm-summary" class="order-confirm-summary"></div>
       <div class="order-confirm-actions">
@@ -668,11 +673,11 @@
   </div>
 
   <!-- Модалка звонка в магазин при согласовании букета -->
-  <div class="modal-overlay" id="assembly-call-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-dialog" id="assembly-call-modal">
+    <div role="dialog" aria-modal="true" aria-label="Заказ оформлен" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="asm-modal-title">Заказ оформлен</div>
-        <button class="close-btn" onclick="closeAssemblyModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeAssemblyModal()">✕</button>
       </div>
 
       <div style="text-align:center; padding:10px 0 16px 0;">
@@ -693,11 +698,11 @@
   </div>
 
   <!-- Модалка оплаты с оригинальным QR-кодом СБП -->
-  <div class="modal-overlay" id="payment-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="payment-modal">
+    <div role="dialog" aria-modal="true" aria-label="Оплата заказа" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="pay-modal-order-id">Оплата заказа</div>
-        <button class="close-btn" onclick="closePaymentModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closePaymentModal()">✕</button>
       </div>
 
       <div style="text-align:center; padding:10px 0 16px 0;">
@@ -731,8 +736,8 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="payment-wait-modal">
-    <div class="modal-sheet payment-wait-sheet">
+  <div class="modal-overlay overlay-dialog" id="payment-wait-modal">
+    <div role="dialog" aria-modal="true" aria-label="Ожидайте подтверждения оплаты" class="modal-sheet payment-wait-sheet">
       <div class="payment-wait-confetti" aria-hidden="true"></div>
       <div class="payment-wait-icon">🎉</div>
       <div class="modal-title">Ожидайте подтверждения оплаты</div>
@@ -742,11 +747,11 @@
   </div>
 
   <!-- Модалка редактирования профиля -->
-  <div class="modal-overlay" id="edit-profile-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="edit-profile-modal">
+    <div role="dialog" aria-modal="true" aria-label="Изменить данные профиля" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title">Изменить данные профиля</div>
-        <button class="close-btn" onclick="closeEditProfileModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeEditProfileModal()">✕</button>
       </div>
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Ваше имя: *</label>
       <input type="text" id="edit-prof-name" class="metro-input" placeholder="Иван">
@@ -759,11 +764,11 @@
   </div>
 
   <!-- Модалка адреса -->
-  <div class="modal-overlay" id="add-saved-addr-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="add-saved-addr-modal">
+    <div role="dialog" aria-modal="true" aria-label="Новый сохраненный адрес" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="saved-addr-modal-title">Новый сохраненный адрес</div>
-        <button class="close-btn" onclick="closeAddSavedAddressModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeAddSavedAddressModal()">✕</button>
       </div>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название адреса: *</label>
@@ -788,12 +793,13 @@
   </div>
 
   <!-- Модалка одиночного товара для Root -->
-  <div class="modal-overlay" id="product-editor-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-editor" id="product-editor-modal">
+    <div role="dialog" aria-modal="true" aria-label="Товар" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="prod-edit-title">Товар</div>
-        <button class="close-btn" onclick="closeProductEditorModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeProductEditorModal()">✕</button>
       </div>
+      <div class="editor-fields"><section>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Название товара: *</label>
       <input type="text" id="prod-edit-name" class="metro-input" placeholder="Роза Эквадор">
@@ -822,7 +828,7 @@
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Цена (₽): *</label>
       <input type="number" id="prod-edit-price" class="metro-input" placeholder="3600">
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Прикрепленные фотографии (стрелками можно менять порядок):</label>
+      </section><section><label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Прикрепленные фотографии (стрелками можно менять порядок):</label>
       <div class="prod-photo-strip" id="prod-photo-strip"></div>
       <input type="hidden" id="prod-edit-photo">
 
@@ -848,17 +854,18 @@
         <span style="font-size:13px; font-weight:700; color:var(--gold);">🔥 Популярный товар (Хит продаж)</span>
       </div>
 
-      <button class="btn-metro" onclick="saveProductEditor()">Сохранить товар</button>
+      </section></div><button class="btn-metro" onclick="saveProductEditor()">Сохранить товар</button>
     </div>
   </div>
 
   <!-- Модалка группы товаров в Root -->
-  <div class="modal-overlay" id="group-editor-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-editor" id="group-editor-modal">
+    <div role="dialog" aria-modal="true" aria-label="Группа товаров" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="group-edit-title">Группа товаров</div>
-        <button class="close-btn" onclick="closeGroupEditorModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeGroupEditorModal()">✕</button>
       </div>
+      <div class="editor-fields"><section>
 
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Базовое название группы: *</label>
       <input type="text" id="group-edit-name" class="metro-input" placeholder="Например: Роза Эквадор или Хризантема">
@@ -875,7 +882,7 @@
         <input type="text" id="group-edit-cat" class="metro-input" style="margin:0; flex:1;" placeholder="Или введите новую...">
       </div>
 
-      <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общие фотографии группы (стрелками можно менять порядок):</label>
+      </section><section><label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Общие фотографии группы (стрелками можно менять порядок):</label>
       <div class="prod-photo-strip" id="group-photo-strip"></div>
       <input type="hidden" id="group-edit-photo">
 
@@ -923,20 +930,20 @@
         </table>
       </div>
 
-      <button class="btn-metro" onclick="saveGroupEditor()">Сохранить всю группу</button>
+      </section></div><button class="btn-metro" onclick="saveGroupEditor()">Сохранить всю группу</button>
     </div>
   </div>
 
   <!-- Модалка выбора фото из Google Диска (2/3 экрана с мультивыбором и синхронизацией) -->
-  <div class="modal-overlay" id="drive-media-modal">
-    <div class="modal-sheet sheet-drive-two-thirds">
+  <div class="modal-overlay overlay-sheet" id="drive-media-modal">
+    <div role="dialog" aria-modal="true" aria-label="Фото из Google Диска" class="modal-sheet sheet-drive-two-thirds">
       <div class="modal-header" style="margin-bottom:8px;">
         <div class="modal-title">Фото из Google Диска</div>
         <div style="display:flex; align-items:center; gap:8px;">
           <button class="sync-mini-btn" onclick="syncDriveMediaCache(true, this)" title="Синхронизировать с диском">
             <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
           </button>
-          <button class="close-btn" onclick="closeDriveMediaModal()">✕</button>
+          <button aria-label="Закрыть" class="close-btn" onclick="closeDriveMediaModal()">✕</button>
         </div>
       </div>
       <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Отметьте нужные фотографии галочками:</div>
@@ -953,11 +960,11 @@
   </div>
 
   <!-- Модалка смены статуса (Root) -->
-  <div class="modal-overlay" id="status-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-dialog" id="status-modal">
+    <div role="dialog" aria-modal="true" aria-label="Сменить статус" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="status-modal-title">Сменить статус</div>
-        <button class="close-btn" onclick="closeStatusModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeStatusModal()">✕</button>
       </div>
       <div class="toggle-grid" style="grid-template-columns:1fr 1fr;">
         <button class="toggle-btn" style="color:var(--amber);" onclick="applyStatusChoice('Ожидает оплаты')">Ожидает оплаты</button>
@@ -973,11 +980,11 @@
   </div>
 
   <!-- Модалка состава заказа в Root -->
-  <div class="modal-overlay" id="edit-items-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-editor" id="edit-items-modal">
+    <div role="dialog" aria-modal="true" aria-label="Состав заказа" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="edit-items-modal-title">Состав заказа</div>
-        <button class="close-btn" onclick="closeEditItemsModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeEditItemsModal()">✕</button>
       </div>
 
       <div id="edit-order-client-info" style="font-size:12px; line-height:1.45; background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:12px; border:1px solid var(--border);"></div>
@@ -1013,11 +1020,11 @@
   </div>
 
   <!-- Модалка данных для курьера -->
-  <div class="modal-overlay" id="courier-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="courier-modal">
+    <div role="dialog" aria-modal="true" aria-label="Данные для курьера" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="courier-modal-title">Данные для курьера</div>
-        <button class="close-btn" onclick="closeCourierModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeCourierModal()">✕</button>
       </div>
 
       <div class="courier-card-block">
@@ -1065,11 +1072,11 @@
   </div>
 
   <!-- Модалка FAQ в Root -->
-  <div class="modal-overlay" id="faq-editor-modal">
-    <div class="modal-sheet">
+  <div class="modal-overlay overlay-sheet" id="faq-editor-modal">
+    <div role="dialog" aria-modal="true" aria-label="Вопрос FAQ" class="modal-sheet">
       <div class="modal-header">
         <div class="modal-title" id="faq-edit-title">Вопрос FAQ</div>
-        <button class="close-btn" onclick="closeFaqEditorModal()">✕</button>
+        <button aria-label="Закрыть" class="close-btn" onclick="closeFaqEditorModal()">✕</button>
       </div>
       <label style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Вопрос: *</label>
       <input type="text" id="faq-edit-q" class="metro-input" placeholder="Например: Как хранить цветы?">
@@ -1085,15 +1092,16 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=2.7"></script>
-  <script src="js/utils.js?v=2.7"></script>
-  <script src="js/catalog.js?v=2.7"></script>
-  <script src="js/cart.js?v=2.7"></script>
-  <script src="js/order.js?v=2.7"></script>
-  <script src="js/profile.js?v=2.7"></script>
-  <script src="js/floral-dialogs.js?v=1"></script>
-  <script src="js/admin.js?v=2.7"></script>
-  <script src="js/app.js?v=2.7"></script>
+  <script src="js/config.js?v=3"></script>
+  <script src="js/utils.js?v=3"></script>
+  <script src="js/storefront.js?v=3"></script>
+  <script src="js/catalog.js?v=3"></script>
+  <script src="js/cart.js?v=3"></script>
+  <script src="js/order.js?v=3"></script>
+  <script src="js/profile.js?v=3"></script>
+  <script src="js/floral-dialogs.js?v=4"></script>
+  <script src="js/admin.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>
 

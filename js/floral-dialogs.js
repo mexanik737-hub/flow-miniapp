@@ -2,6 +2,7 @@
 (function () {
   function openDialog({ title, message = '', value = '', placeholder = '', confirmLabel = 'Продолжить', danger = false, input = false }) {
     return new Promise(resolve => {
+      const previousFocus = document.activeElement;
       const layer = document.createElement('div');
       layer.className = 'fg-dialog-layer';
       layer.setAttribute('role', 'presentation');
@@ -39,8 +40,14 @@
       dialog.append(actions);
       layer.append(dialog);
       document.body.append(layer);
-      const finish = result => { document.removeEventListener('keydown', onKey); layer.remove(); resolve(result); };
+      const finish = result => { document.removeEventListener('keydown', onKey); layer.remove(); previousFocus?.focus(); resolve(result); };
       const onKey = event => {
+        const first = field || cancel;
+        if (event.key === 'Tab' && event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); accept.focus();
+        } else if (event.key === 'Tab' && !event.shiftKey && document.activeElement === accept) {
+          event.preventDefault(); first.focus();
+        }
         if (event.key === 'Escape') finish(null);
         if (event.key === 'Enter' && input && document.activeElement === field) finish(field.value);
       };

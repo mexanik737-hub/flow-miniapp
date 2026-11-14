@@ -223,7 +223,7 @@ window.toggleTextEditingMode = toggleTextEditingMode;
 
 document.addEventListener('click', async (e) => {
   if (!isTextEditActive) return;
-  if (e.target.closest('#floating-editor-btn')) return;
+  if (e.target.closest('#floating-editor-btn, .fg-dialog-layer')) return;
 
   e.preventDefault();
   e.stopPropagation();
