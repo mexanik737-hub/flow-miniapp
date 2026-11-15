@@ -218,9 +218,9 @@ function createUtilsContext(initialNodes = []) {
   return { context, document, body, FakeElement, FakeMutationObserver };
 }
 
-test('all JavaScript files pass the Node parser', t => {
+test('all JavaScript files pass the Node parser', async t => {
   for (const file of javascriptFiles) {
-    t.test(path.relative(root, file), () => {
+    await t.test(path.relative(root, file), () => {
       const result = require('node:child_process').spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
       assert.equal(result.status, 0, result.stderr || result.stdout);
     });

@@ -14,4 +14,5 @@
 - Дефекты исправлены: категории сериализуются через JSON + `shopEscape`, номера показывают `—` если поле невалидно, numeric string aggregation числовая, missing order fields не ломают Root, ID `0` остаётся update.
 - Добавлен dependency-free Node test suite, документ `TESTING.md`, CI workflow. Вызовы `fetch` тестируются только через mock endpoint.
 - Независимые Security/QA/Frontend reviews завершены; выводы и границы сведены в QA отчёт. Backend auth и загрузки реальных сервисов остаются вне проверки.
-- Последний запуск: `node --test tests/regression.test.js` — 31/31; требуется финальный повтор после всех изменений и проверка diff.
+- Первичный GitHub Actions run на Node 20 обнаружил не-awaited parser subtests; добавлен `await` для каждого вложенного `t.test`, чтобы тест ожидал завершения subtests во всех поддерживаемых Node версиях.
+- После этого исправления локальный повтор: `node --test tests/regression.test.js` — 31/31; `diff --check` прошёл. Follow-up commit отправлен, нужно дождаться новой GitHub Actions проверки.

@@ -25,7 +25,7 @@
 | Business fixtures | cart variant key/quantity, delivery/pickup order payload, duplicate submit, registration validation, editor ID `0`, Root sections, delete cancel |
 | Keyboard/ARIA/DOM | Enter repeat suppression, Enter/Space exactly once, checkbox role/state, peer `aria-pressed`, dynamic leaf observer и добавление nested control |
 | `git -c core.whitespace=cr-at-eol diff --check` | Прошло для tracked diff; staged/untracked файлы будут перепроверены перед commit |
-| GitHub Actions | Добавлен PR workflow для Node 20 syntax/regression и patch whitespace; GitHub-hosted execution ожидает обновления PR |
+| GitHub Actions | Первый Node 20 run поймал не-awaited nested parser subtests; добавлено ожидание `await t.test(...)`, follow-up отправлен, повторный hosted run ожидается |
 | Browser automation | Не запускалась: нет установленного Playwright runner; существующая страница вызывает внешний Apps Script при загрузке. Автоматические тесты не используют браузер и не обращаются к сети |
 
 Backend авторизация Root, Apps Script, Google Sheets, Telegram, платежные провайдеры и production data остаются непроверенными и неизмененными.
