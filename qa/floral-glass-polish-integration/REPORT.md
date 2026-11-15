@@ -55,7 +55,7 @@
 
 Команда: `node --test tests/regression.test.js` (Node.js 20+). Текущий последний запуск: **31 тест пройден, 0 ошибок**. Набор проверяет parser для всех JS modules, escaping и восстановление IDs из inline handlers, category payload, Root шаблоны и URL схемы, malformed API shapes, числовые edge cases, корзину и composite keys, delivery/pickup checkout exact payload + duplicate submit, registration validation, editor ID `0`, Root section switching, отмену удаления, keyboard Enter/Space, ARIA и dynamic MutationObserver.
 
-GitHub Actions `.github/workflows/frontend-regression.yml` выполняет test command и `git diff --check` для PR в `main`. Первый Node 20 run выявил, что вложенные parser subtests не ожидались родительским тестом; исправлено через `await t.test(...)`. Локально повторно подтверждено 31/31 на Node.js 24; исправление отправлено отдельным follow-up commit, CI повторно проверяется.
+GitHub Actions `.github/workflows/frontend-regression.yml` выполняет test command и `git diff --check` для PR в `main`. Первый Node 20 run выявил, что вложенные parser subtests не ожидались родительским тестом; исправлено через `await t.test(...)`. После follow-up commit GitHub Actions на Node 20 завершился успешно: parser/regression step и `git diff --check` прошли.
 
 ### Ограничения и риски
 
