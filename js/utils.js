@@ -47,10 +47,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function syncClickTargetState(el) {
-  if (!el.matches('.toggle-btn, .custom-checkbox-wrap')) return;
-  const pressed = el.classList.contains('active') || !!el.querySelector('.custom-checkbox.checked');
-  el.setAttribute('aria-pressed', String(pressed));
+  if (el.matches('.toggle-btn')) {
+    el.setAttribute('aria-pressed', String(el.classList.contains('active')));
+  } else if (el.matches('.custom-checkbox-wrap')) {
+    const checked = el.classList.contains('checked') || !!el.querySelector('.custom-checkbox.checked');
+    el.setAttribute('aria-checked', String(checked));
+  }
 }
+
+function removeLeafClickTarget(el) {
+  if (!el?.dataset?.keyboardClickTarget) return;
+  el.removeAttribute('role');
+  el.removeAttribute('tabindex');
+  el.removeAttribute('aria-pressed');
+  el.removeAttribute('aria-checked');
+  delete el.dataset.keyboardClickTarget;
+}
+
+function syncToggleClickTargetGroup(el) {
+  if (!el.matches('.toggle-btn')) return;
+  const group = el.closest('.toggle-grid');
+  const peers = group ? group.querySelectorAll('.toggle-btn') : [el];
+  peers.forEach(syncClickTargetState);
+}
+window.syncToggleClickTargetGroup = syncToggleClickTargetGroup;
 
 function enhanceLeafClickTargets(root = document) {
   const candidates = [];
@@ -59,7 +79,7 @@ function enhanceLeafClickTargets(root = document) {
   candidates.forEach(el => {
     if (el.matches('button, a, input, select, textarea, [role="button"]')) return;
     if (el.querySelector('button, a, input, select, textarea, [onclick], [role="button"]')) return;
-    el.setAttribute('role', 'button');
+    el.setAttribute('role', el.matches('.custom-checkbox-wrap') ? 'checkbox' : 'button');
     el.setAttribute('tabindex', '0');
     el.dataset.keyboardClickTarget = 'true';
     syncClickTargetState(el);
@@ -69,9 +89,17 @@ function enhanceLeafClickTargets(root = document) {
 document.addEventListener('DOMContentLoaded', () => {
   enhanceLeafClickTargets();
   const clickTargetObserver = new MutationObserver(records => {
-    records.forEach(record => record.addedNodes.forEach(node => {
-      if (node.nodeType === 1) enhanceLeafClickTargets(node);
-    }));
+    records.forEach(record => {
+      record.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        const parentTarget = record.target.closest?.('[data-keyboard-click-target]');
+        if (parentTarget && (node.matches('button, a, input, select, textarea, [onclick], [role="button"], [role="checkbox"]') ||
+            node.querySelector('button, a, input, select, textarea, [onclick], [role="button"], [role="checkbox"]'))) {
+          removeLeafClickTarget(parentTarget);
+        }
+        enhanceLeafClickTargets(node);
+      });
+    });
   });
   clickTargetObserver.observe(document.body, { childList: true, subtree: true });
 
@@ -89,7 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('click', event => {
     const target = event.target.closest?.('[data-keyboard-click-target]');
-    if (target) syncClickTargetState(target);
+    if (target?.matches('.toggle-btn')) syncToggleClickTargetGroup(target);
+    else if (target) syncClickTargetState(target);
   });
 });
 

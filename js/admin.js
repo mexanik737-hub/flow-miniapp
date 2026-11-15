@@ -1,6 +1,22 @@
 let selectedDriveMediaUrls = new Set();
 let selectedCategoryProductsForBatch = new Set();
 
+function rootFiniteNumber(value) {
+  if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) return null;
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function rootNumberLabel(value) {
+  const number = rootFiniteNumber(value);
+  return number === null ? '—' : String(number);
+}
+
+function sumRootNumbers(rows, key) {
+  return (Array.isArray(rows) ? rows : []).reduce((sum, row) => sum + (rootFiniteNumber(row?.[key]) ?? 0), 0);
+}
+
 window.switchRootSection = function(sec) {
   const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
 
@@ -46,6 +62,7 @@ window.switchRootSubTab = function(tab) {
   const tabArchive = document.getElementById('tab-root-archive');
   if (tabActive) tabActive.classList.toggle('active', tab === 'active');
   if (tabArchive) tabArchive.classList.toggle('active', tab === 'archive');
+  if (tabActive && typeof syncToggleClickTargetGroup === 'function') syncToggleClickTargetGroup(tabActive);
   renderRootOrders();
 };
 
@@ -68,8 +85,10 @@ function renderRootOrders() {
   const container = document.getElementById('root-orders-container');
   if (!container) return;
 
-  const filtered = allRootOrders.filter(ord => {
-    const isClosed = ord.status === 'Завершен' || ord.status.startsWith('Отменен');
+  const filtered = (Array.isArray(allRootOrders) ? allRootOrders : []).filter(ord => {
+    if (!ord || typeof ord !== 'object') return false;
+    const status = typeof ord.status === 'string' ? ord.status : '';
+    const isClosed = status === 'Завершен' || status.startsWith('Отменен');
     return currentRootSubTab === 'active' ? !isClosed : isClosed;
   });
 
@@ -81,31 +100,35 @@ function renderRootOrders() {
   container.innerHTML = filtered.map(ord => {
     const orderIdArg = shopEscape(JSON.stringify(String(ord.order_id ?? '')));
     const orderAddressArg = shopEscape(JSON.stringify(String(ord.address ?? '')));
-    const isAwaiting = (ord.status === 'Ожидает оплаты' || ord.status === 'Ожидает подтверждения оплаты');
-    const isAssembly = (ord.status === 'Ожидает согласования упаковки');
+    const status = typeof ord.status === 'string' ? ord.status : '';
+    const isAwaiting = (status === 'Ожидает оплаты' || status === 'Ожидает подтверждения оплаты');
+    const isAssembly = (status === 'Ожидает согласования упаковки');
     const deliveryCostText = ord.delivery_type === 'delivery' 
       ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
       : '0 ₽ (Самовывоз)';
 
-    const itemsListText = (ord.items || []).map(i => {
+    const itemsListText = (Array.isArray(ord.items) ? ord.items : []).filter(i => i && typeof i === 'object').map(i => {
       const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
       const bqTag = i.in_bouquet ? ' [в букет]' : '';
-      return `• ${shopEscape(fullTitle)} × ${Number(i.qty) || 0} шт. = ${(Number(i.price) || 0) * (Number(i.qty) || 0)} ₽${bqTag}`;
+      const quantity = rootFiniteNumber(i.qty);
+      const price = rootFiniteNumber(i.price);
+      const amount = quantity !== null && price !== null ? String(price * quantity) : '—';
+      return `• ${shopEscape(fullTitle)} × ${rootNumberLabel(i.qty)} шт. = ${amount} ₽${bqTag}`;
     }).join('<br>');
 
-    const hasDistinctRecipient = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
+    const hasDistinctRecipient = typeof ord.recipient_info === 'string' && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
 
-    const statusClass = ord.status.startsWith('Отменен') ? 'st-cancelled'
-      : ord.status === 'Завершен' ? 'st-completed'
-      : ord.status === 'В пути' || ord.status === 'Готов к выдаче' ? 'st-transit'
-      : ord.status === 'Ожидает подтверждения оплаты' ? 'st-check-pay'
-      : ord.status === 'Ожидает оплаты' ? 'st-await-pay' : 'st-building';
+    const statusClass = status.startsWith('Отменен') ? 'st-cancelled'
+      : status === 'Завершен' ? 'st-completed'
+      : status === 'В пути' || status === 'Готов к выдаче' ? 'st-transit'
+      : status === 'Ожидает подтверждения оплаты' ? 'st-check-pay'
+      : status === 'Ожидает оплаты' ? 'st-await-pay' : 'st-building';
 
     return `
       <article class="order-record">
         <div class="order-record__header">
           <b>${shopEscape(ord.order_id)}</b>
-          <span class="status-badge ${statusClass}">${shopEscape(ord.status)}</span>
+          <span class="status-badge ${statusClass}">${shopEscape(status || 'Статус не указан')}</span>
         </div>
         <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
           <b>Заказчик:</b> ${shopEscape(ord.user_name)} (${shopEscape(ord.user_phone)})<br>
@@ -118,7 +141,7 @@ function renderRootOrders() {
             <b>Состав заказа:</b><br>
             ${itemsListText || '<i>Нет данных о составе</i>'}
           </div>
-          <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${Number(ord.total_amount) || 0} ₽</span>
+          <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${rootNumberLabel(ord.total_amount)}${rootFiniteNumber(ord.total_amount) === null ? '' : ' ₽'}</span>
         </div>
         ${isAssembly ? `
           <div style="background:rgba(197,125,30,0.12); border:1px solid rgba(197,125,30,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
@@ -628,12 +651,14 @@ window.syncDriveMediaCache = syncDriveMediaCache;
 
 function renderDriveMediaGrid(media) {
   const box = document.getElementById('drive-media-container');
-  if (!media || !media.length) {
+  if (!box) return;
+  const entries = Array.isArray(media) ? media.filter(item => item && typeof item === 'object') : [];
+  if (!entries.length) {
     box.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:20px;">Папка пуста</div>';
     return;
   }
 
-  box.innerHTML = media.map(m => {
+  box.innerHTML = entries.map(m => {
     const mediaUrl = String(m.url || '');
     const mediaUrlArg = shopEscape(JSON.stringify(mediaUrl));
     const safeMediaUrl = /^https:\/\//i.test(mediaUrl) ? shopEscape(mediaUrl) : '';
@@ -785,7 +810,7 @@ function renderCategoriesManagerList() {
               <div class="cat-prod-row">
                 <div style="display:flex; align-items:center; gap:8px; max-width:80%;">
                   <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:16px; height:16px; font-size:10px;" onclick="toggleCatBatchProduct(${itemIdArg}, this)">${isChecked ? '✓' : ''}</div>
-                  <span style="color:var(--text);">${shopEscape(fullTitle)} (${Number(it.price) || 0} ₽)</span>
+                  <span style="color:var(--text);">${shopEscape(fullTitle)} (${rootNumberLabel(it.price)}${rootFiniteNumber(it.price) === null ? '' : ' ₽'})</span>
                 </div>
                 <button class="btn-trash-mini" style="color:var(--gold); font-size:11px;" onclick="moveSingleProductCategory(${itemIdArg})">Перенести</button>
               </div>
@@ -1036,8 +1061,8 @@ function renderRootCatalogUI() {
   if (!container) return;
 
   const groups = {};
-  allRootCatalog.forEach(item => {
-    const titleKey = (item.title || '').trim();
+  (Array.isArray(allRootCatalog) ? allRootCatalog : []).filter(item => item && typeof item === 'object').forEach(item => {
+    const titleKey = String(item.title ?? '').trim();
     if (!groups[titleKey]) groups[titleKey] = [];
     groups[titleKey].push(item);
   });
@@ -1055,10 +1080,12 @@ function renderRootCatalogUI() {
   container.innerHTML = rootCards.map(c => {
     if (c.is_group) {
       const activeCount = c.items.filter(i => i.is_active).length;
-      const prices = c.items.map(i => Number(i.price) || 0);
-      const minP = Math.min(...prices);
-      const maxP = Math.max(...prices);
-      const photoCount = (c.items[0].photo_url ? c.items[0].photo_url.split(',').length : 0);
+      const prices = c.items.map(i => rootFiniteNumber(i.price));
+      const hasInvalidPrice = prices.some(price => price === null);
+      const validPrices = prices.filter(price => price !== null);
+      const minP = validPrices.length && !hasInvalidPrice ? Math.min(...validPrices) : null;
+      const maxP = validPrices.length && !hasInvalidPrice ? Math.max(...validPrices) : null;
+      const photoCount = (c.items[0].photo_url ? String(c.items[0].photo_url).split(',').length : 0);
       const titleText = shopEscape(c.title);
       const categoryText = shopEscape(c.items[0].category || '—');
       const titleArg = shopEscape(JSON.stringify(encodeURIComponent(String(c.title ?? ''))));
@@ -1072,7 +1099,7 @@ function renderRootCatalogUI() {
               <div style="font-size:11px; color:var(--amber); margin-top:2px;">Наличие: ${activeCount} из ${c.items.length} активны</div>
             </div>
             <div style="text-align:right;">
-              <span style="color:var(--green); font-weight:800; font-size:13px;">${minP === maxP ? minP + ' ₽' : minP + '–' + maxP + ' ₽'}</span>
+              <span style="color:var(--green); font-weight:800; font-size:13px;">${minP === null ? '—' : minP === maxP ? minP + ' ₽' : minP + '–' + maxP + ' ₽'}</span>
             </div>
           </div>
           <div style="display:flex; gap:6px; margin-top:8px;">
@@ -1087,7 +1114,7 @@ function renderRootCatalogUI() {
         <div class="box-card" style="margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between;">
             <b>${shopEscape(it.title)} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
-            <span style="color:var(--green); font-weight:800;">${Number(it.price) || 0} ₽</span>
+            <span style="color:var(--green); font-weight:800;">${rootNumberLabel(it.price)}${rootFiniteNumber(it.price) === null ? '' : ' ₽'}</span>
           </div>
           <div style="font-size:11px; color:var(--gold); margin:2px 0;">Формат: ${shopEscape(it.unit || '1 шт.')} · Высота: ${shopEscape(it.variant || '—')} · Цвет: ${shopEscape(it.color || '—')}</div>
           <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Категория: ${shopEscape(it.category || '—')} · На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
@@ -1344,7 +1371,7 @@ async function saveProductEditor() {
   const catVal = document.getElementById('prod-edit-cat').value.trim() || document.getElementById('prod-edit-cat-display').innerText.trim();
 
   const payload = {
-    action: editingProductId ? "admin_update_product" : "admin_add_product",
+    action: editingProductId !== null && editingProductId !== undefined ? "admin_update_product" : "admin_add_product",
     admin_id: userId, admin_passcode: sessionPasscode,
     id: editingProductId,
     title: document.getElementById('prod-edit-name').value.trim(),
@@ -1408,8 +1435,10 @@ function filterRootClients() {
 
 function renderRootClients(clients) {
   const container = document.getElementById('root-clients-container');
-  container.innerHTML = clients.map(c => {
-    const userId = String(c.user_id || '');
+  if (!container) return;
+  const safeClients = Array.isArray(clients) ? clients.filter(c => c && typeof c === 'object') : [];
+  container.innerHTML = safeClients.map(c => {
+    const userId = String(c.user_id ?? '');
     const userIdArg = shopEscape(JSON.stringify(userId));
     const username = String(c.username || '');
     const telegramUsername = username.replace(/^@/, '');
@@ -1420,8 +1449,8 @@ function renderRootClients(clients) {
     const rawPhone = String(c.phone || '');
     const telPhone = rawPhone.replace(/[^\d+]/g, '');
     const safeTelPhone = /^\+?\d{5,20}$/.test(telPhone) ? telPhone : '';
-    const totalSpent = Number(c.total_spent);
-    const spentValue = Number.isFinite(totalSpent) ? totalSpent : 0;
+    const spentValue = rootFiniteNumber(c.total_spent);
+    const spentValueArg = JSON.stringify(spentValue);
 
     const isClientAdmin = c.is_admin === true || String(c.is_admin).trim().toUpperCase() === 'TRUE' || userId === String(ADMIN_TELEGRAM_ID);
 
@@ -1432,7 +1461,7 @@ function renderRootClients(clients) {
             <b>${shopEscape(c.name || 'Клиент')}</b> ${isClientAdmin ? '<span style="font-size:10px; background:rgba(13,148,104,0.18); color:var(--green); padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}<br>
             <span style="font-size:12px; color:var(--text-muted);">${shopEscape(rawPhone || '—')}</span>
           </div>
-          <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${spentValue.toLocaleString('ru-RU')} ₽</span></div>
+            <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${spentValue === null ? '—' : spentValue.toLocaleString('ru-RU') + ' ₽'}</span></div>
         </div>
         <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Telegram: ${shopEscape(username || 'скрыт')} · Рег: ${shopEscape(c.reg_date || '—')}</div>
  
@@ -1446,7 +1475,7 @@ function renderRootClients(clients) {
         </div>
 
         <div style="display:flex; gap:6px; margin-top:6px;">
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt(${userIdArg}, ${spentValue})">Изменить выкуп</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt(${userIdArg}, ${spentValueArg})">Изменить выкуп</button>
           <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteUserRoot(${userIdArg})">Сбросить</button>
         </div>
       </div>
@@ -1511,12 +1540,13 @@ function renderRootNotifications() {
   const container = document.getElementById('root-notifs-container');
   if (!container) return;
 
-  if (!allRootNotifs.length) {
+  const notifications = Array.isArray(allRootNotifs) ? allRootNotifs.filter(n => n && typeof n === 'object') : [];
+  if (!notifications.length) {
     container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Рассылок пока нет</div>';
     return;
   }
 
-  container.innerHTML = allRootNotifs.map(n => {
+  container.innerHTML = notifications.map(n => {
     const targetTitle = getTabDisplayTitle(n.target_tab);
     return `
       <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--gold)' : 'var(--border)'};">
@@ -1639,6 +1669,8 @@ function switchStatsPeriod(period) {
     const el = document.getElementById('tab-stat-' + p);
     if (el) el.classList.toggle('active', p === period);
   });
+  const activeTab = document.getElementById('tab-stat-' + period);
+  if (activeTab && typeof syncToggleClickTargetGroup === 'function') syncToggleClickTargetGroup(activeTab);
   renderRootStats();
 }
 window.switchStatsPeriod = switchStatsPeriod;
@@ -1668,39 +1700,35 @@ function renderRootStats() {
 
   if (currentStatsPeriod === 'today') {
     if (breakdownBox) breakdownBox.style.display = 'none';
-    totalVisits = cachedStatsData.today?.visits || 0;
-    totalOrdersCount = cachedStatsData.today?.orders?.count || 0;
-    totalRevenue = cachedStatsData.today?.orders?.total || 0;
-    totalCompleted = cachedStatsData.today?.orders?.completed || 0;
+    totalVisits = rootFiniteNumber(cachedStatsData.today?.visits) ?? '—';
+    totalOrdersCount = rootFiniteNumber(cachedStatsData.today?.orders?.count) ?? '—';
+    totalRevenue = rootFiniteNumber(cachedStatsData.today?.orders?.total) ?? '—';
+    totalCompleted = rootFiniteNumber(cachedStatsData.today?.orders?.completed) ?? '—';
   } else if (currentStatsPeriod === '7days') {
     if (breakdownBox) breakdownBox.style.display = 'block';
-    const list = cachedStatsData.past7days || [];
-    list.forEach(d => {
-      totalVisits += d.visits;
-      totalOrdersCount += d.orders_count;
-      totalRevenue += d.orders_total;
-      totalCompleted += d.completed_count;
-    });
+    const list = Array.isArray(cachedStatsData.past7days) ? cachedStatsData.past7days : [];
+    totalVisits = sumRootNumbers(list, 'visits');
+    totalOrdersCount = sumRootNumbers(list, 'orders_count');
+    totalRevenue = sumRootNumbers(list, 'orders_total');
+    totalCompleted = sumRootNumbers(list, 'completed_count');
 
     if (breakdownTbody) {
-      breakdownTbody.innerHTML = list.map(d => `
+      breakdownTbody.innerHTML = list.filter(d => d && typeof d === 'object').map(d => `
         <tr>
           <td><b>${shopEscape(d.date)}</b></td>
-          <td>${Number(d.visits) || 0}</td>
-          <td>${Number(d.orders_count) || 0} (${Number(d.completed_count) || 0})</td>
-          <td style="color:var(--green); font-weight:700;">${Number(d.orders_total) || 0} ₽</td>
+          <td>${rootNumberLabel(d.visits)}</td>
+          <td>${rootNumberLabel(d.orders_count)} (${rootNumberLabel(d.completed_count)})</td>
+          <td style="color:var(--green); font-weight:700;">${rootNumberLabel(d.orders_total)}${rootFiniteNumber(d.orders_total) === null ? '' : ' ₽'}</td>
         </tr>
       `).join('');
     }
   } else if (currentStatsPeriod === 'month') {
     if (breakdownBox) breakdownBox.style.display = 'none';
-    const list = cachedStatsData.past7days || [];
-    list.forEach(d => {
-      totalVisits += d.visits;
-      totalOrdersCount += d.orders_count;
-      totalRevenue += d.orders_total;
-      totalCompleted += d.completed_count;
-    });
+    const list = Array.isArray(cachedStatsData.past7days) ? cachedStatsData.past7days : [];
+    totalVisits = sumRootNumbers(list, 'visits');
+    totalOrdersCount = sumRootNumbers(list, 'orders_count');
+    totalRevenue = sumRootNumbers(list, 'orders_total');
+    totalCompleted = sumRootNumbers(list, 'completed_count');
   }
 
   const vEl = document.getElementById('stat-val-visits');
@@ -1715,14 +1743,14 @@ function renderRootStats() {
 
   const pList = document.getElementById('stats-products-list');
   if (pList) {
-    const products = cachedStatsData.products_views || [];
+    const products = Array.isArray(cachedStatsData.products_views) ? cachedStatsData.products_views.filter(p => p && typeof p === 'object') : [];
     if (!products.length) {
       pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о просмотрах</div>';
     } else {
       pList.innerHTML = products.slice(0, 15).map((p, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
           <div><b>${idx + 1}.</b> ${shopEscape(p.title)}</div>
-          <div style="color:var(--gold); font-weight:800;">${Number(p.views) || 0} просм. · ${Number(p.unique_views) || 0} уник.</div>
+          <div style="color:var(--gold); font-weight:800;">${rootNumberLabel(p.views)} просм. · ${rootNumberLabel(p.unique_views)} уник.</div>
         </div>
       `).join('');
     }
@@ -1730,7 +1758,7 @@ function renderRootStats() {
 
   const nList = document.getElementById('stats-notifs-list');
   if (nList) {
-    const notifs = cachedStatsData.notifications_stats || [];
+    const notifs = Array.isArray(cachedStatsData.notifications_stats) ? cachedStatsData.notifications_stats.filter(n => n && typeof n === 'object') : [];
     if (!notifs.length) {
       nList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о рассылках</div>';
     } else {
@@ -1738,9 +1766,9 @@ function renderRootStats() {
         <div style="background:var(--card-inner); border-radius:6px; padding:8px 10px; margin-bottom:6px; border:1px solid var(--border); font-size:12px;">
           <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${shopEscape(n.title)}</div>
           <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
-            <span>Показов: <b style="color:var(--text);">${Number(n.views) || 0}</b></span>
-            <span>Прочтений: <b style="color:var(--gold);">${Number(n.reads) || 0}</b></span>
-            <span>Переходов: <b style="color:var(--green);">${Number(n.clicks) || 0}</b></span>
+            <span>Показов: <b style="color:var(--text);">${rootNumberLabel(n.views)}</b></span>
+            <span>Прочтений: <b style="color:var(--gold);">${rootNumberLabel(n.reads)}</b></span>
+            <span>Переходов: <b style="color:var(--green);">${rootNumberLabel(n.clicks)}</b></span>
           </div>
         </div>
       `).join('');
@@ -1774,7 +1802,8 @@ function renderRootFaqUI() {
   const container = document.getElementById('root-faq-container');
   if (!container) return;
 
-  container.innerHTML = allRootFaq.map(f => `
+  const entries = Array.isArray(allRootFaq) ? allRootFaq.filter(f => f && typeof f === 'object') : [];
+  container.innerHTML = entries.map(f => `
     <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${f.is_active ? 'var(--green)' : 'var(--red)'};">
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div style="font-weight:700; font-size:13px; max-width:70%;">${shopEscape(f.question)}</div>
@@ -1852,7 +1881,7 @@ async function saveFaqEditor() {
       action: "admin_update_faq",
       admin_id: userId,
       admin_passcode: sessionPasscode,
-      id: editingFaqId || "new",
+      id: editingFaqId ?? "new",
       question: q,
       answer: a,
       is_active: isActive

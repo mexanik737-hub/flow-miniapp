@@ -39,3 +39,27 @@
 ## Сохранность
 
 Старый worktree, его uncommitted файлы, локальные Apps Script зеркала, backups, тесты и дизайн/QА материалы не переносились и не редактировались. Текущий PR включает только работу отдельного worktree от `64474c47`.
+
+## Дополнение: финальная регрессия и независимые аудиты PR #5
+
+Проверяемый исходный коммит: `ae742bbbc5a6c6271f77cd4b6c9246a46d2f8f46`.
+
+### Независимые результаты
+
+- **Security review:** новых подтверждённых XSS в проверенных шаблонах клиентов/заказов/каталога/FAQ/уведомлений не обнаружено. Подтверждённая проблема осталась в фильтре категорий витрины: необработанное название интерполировалось одновременно в текст и `onclick`. Исправлено JSON serialization + `shopEscape`. Отдельно зафиксированы: серверная авторизация Root не доказана без Apps Script; passcode в query string — унаследованный риск; любой HTTPS URL в Root Drive preview может раскрыть время просмотра внешнему хосту.
+- **Frontend review:** `aria-pressed` соседних checkout toggles рассинхронизировался при смене доставки/получателя; visual checkbox wrappers объявлялись как buttons. Исправлено групповой синхронизацией toggle state и семантикой `role=checkbox` + `aria-checked`. Новый nested interactive node снимает с прежнего leaf target роль/табуляцию.
+- **QA review:** Root orders падал при отсутствующем/non-string status/recipient и ошибочных item полях; `Number(...) || 0` скрывал ошибки чисел и weekly sums могли склеивать строки; редакторы продукта и FAQ трактовали ID `0` как создание. Исправлено и покрыто fixtures.
+- **Test inventory:** в исходном `ae742bb` не было `package.json`, runner, тестов или CI. npm/Playwright package отсутствуют в среде; выбран встроенный `node:test`, без новых runtime dependencies.
+
+### Постоянный набор
+
+Команда: `node --test tests/regression.test.js` (Node.js 20+). Текущий последний запуск: **31 тест пройден, 0 ошибок**. Набор проверяет parser для всех JS modules, escaping и восстановление IDs из inline handlers, category payload, Root шаблоны и URL схемы, malformed API shapes, числовые edge cases, корзину и composite keys, delivery/pickup checkout exact payload + duplicate submit, registration validation, editor ID `0`, Root section switching, отмену удаления, keyboard Enter/Space, ARIA и dynamic MutationObserver.
+
+GitHub Actions `.github/workflows/frontend-regression.yml` выполняет test command и `git diff --check` для PR в `main`.
+
+### Ограничения и риски
+
+- VM тесты запускают реальные JS функции с минимальным mock DOM; HTML-строки проходят round-trip проверку serialized inline args, но браузерный HTML parser не заменён полноценным Playwright тестом.
+- Браузерные тесты не запускались: страница автоматически отправляет GET к настроенному Google Apps Script уже при открытии, а в окружении отсутствует надёжный Playwright runner, который можно включить в CI без новой зависимости. Тестовый `fetch` по умолчанию падает, успешные тестовые записи используют только `mock://api`.
+- Серверная проверка роли/passcode для каждого `admin_*` action не подтверждена: backend в GitHub checkout отсутствует. Production API, Google Sheets, Telegram, платежи и Apps Script не проверялись/не изменялись.
+- PR открыт, не слит. Готовность: frontend regressions исправлены и покрыты; перед merge требуется отдельное подтверждение backend authorization и успешный обычный результат GitHub Actions.

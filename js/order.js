@@ -195,6 +195,7 @@ function setDeliveryType(type) {
   orderDelType = type;
   document.getElementById('btn-del').classList.toggle('active', type === 'delivery');
   document.getElementById('btn-pick').classList.toggle('active', type === 'pickup');
+  if (typeof syncToggleClickTargetGroup === 'function') syncToggleClickTargetGroup(document.getElementById(type === 'delivery' ? 'btn-del' : 'btn-pick'));
   document.getElementById('delivery-extra-fields').style.display = type === 'delivery' ? 'block' : 'none';
   document.getElementById('pickup-extra-fields').style.display = type === 'pickup' ? 'block' : 'none';
   recalcOrderFinalTotal();
@@ -206,6 +207,7 @@ function setRecipientType(type) {
   orderRecType = type;
   document.getElementById('btn-rec-self').classList.toggle('active', type === 'self');
   document.getElementById('btn-rec-other').classList.toggle('active', type === 'other');
+  if (typeof syncToggleClickTargetGroup === 'function') syncToggleClickTargetGroup(document.getElementById(type === 'self' ? 'btn-rec-self' : 'btn-rec-other'));
   document.getElementById('other-rec-fields').style.display = type === 'other' ? 'block' : 'none';
   saveCheckoutDraft();
 }

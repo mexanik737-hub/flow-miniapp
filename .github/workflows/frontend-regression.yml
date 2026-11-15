@@ -1,0 +1,24 @@
+name: Frontend regression
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax and frontend regressions
+        run: node --test tests/regression.test.js
+      - name: Check patch whitespace
+        run: git -c core.whitespace=cr-at-eol diff --check "origin/${GITHUB_BASE_REF}...HEAD"

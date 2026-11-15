@@ -1,12 +1,12 @@
 # Handoff
 
-Цель этой ветки — перенести полезные элементы локальной полировки на актуальный Floral Glass UI. Работа идёт только на `codex/floral-glass-polish-integration` от `64474c47`.
+Цель этой ветки — перенести полезные элементы локальной полировки на актуальный Floral Glass UI и закрепить regression/security tests для PR #5. Работа идёт только на `codex/floral-glass-polish-integration` от `64474c47`.
 
-Перед push/PR:
+Перед последующей передачей:
 
 1. Проверить `git status`, полный diff, скриншоты и QA/transfer matrix.
 2. Перепроверить, что старый checkout не менялся, а `sources/apps-script/` отсутствует в изменениях.
-3. Создать один логический commit, push обычным fast-forward способом и открыть PR в `main`.
+3. Коммитить и обновлять только ветку `codex/floral-glass-polish-integration`; PR #5 уже открыт.
 4. Не выполнять merge/deploy.
 
-Неисполняемый regression harness отсутствует на main. В PR описать browser checks и исторический PR #4 отчёт отдельно, не заявляя повторный запуск старой suite.
+`node --test tests/regression.test.js` запускает воспроизводимые VM regressions. Browser layout, реальные Apps Script, Telegram WebView и серверную авторизацию не проверяли в этом этапе. Не подключать локальный browser к production endpoint.

@@ -125,16 +125,17 @@ function setupFilterDropdown() {
     ...catalog.map(c => c.category).filter(Boolean),
     ...getCategoryConfigList('custom_categories'),
     ...getCategoryConfigList('available_categories')
-  ])).sort((a, b) => a.localeCompare(b, 'ru'));
+  ].filter(category => typeof category === 'string' && category.trim()))).sort((a, b) => a.localeCompare(b, 'ru'));
   renderStorefrontCollections(displayCatalog);
   const optionsBox = document.getElementById('filter-cat-options');
   if (!optionsBox) return;
 
   optionsBox.innerHTML = `
     <div class="custom-select-option" onclick="selectFilterCategory('Все')">Все категории</div>
-  ` + cats.map(c => `
-    <div class="custom-select-option" onclick="selectFilterCategory('${c}')">${c}</div>
-  `).join('');
+  ` + cats.map(c => {
+    const categoryArg = shopEscape(JSON.stringify(String(c)));
+    return `<div class="custom-select-option" onclick="selectFilterCategory(${categoryArg})">${shopEscape(c)}</div>`;
+  }).join('');
 
   const prices = catalog.map(c => Number(c.price) || 0).filter(p => p > 0);
   const minP = prices.length ? Math.min(...prices) : 100;
@@ -288,7 +289,9 @@ function renderShopCard(p) {
     const isGroup = p.is_group;
     const productIdArg = shopEscape(JSON.stringify(String(p.id ?? '')));
     const productDomId = shopEscape(String(p.id ?? ''));
-    const priceValue = Number.isFinite(Number(p.price)) ? Number(p.price) : 0;
+    const parsedPrice = p.price === null || p.price === undefined || (typeof p.price === 'string' && !p.price.trim())
+      ? NaN : Number(p.price);
+    const priceValue = Number.isFinite(parsedPrice) ? parsedPrice : null;
 
     return `
       <div class="product-card product-card--tile ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${productDomId}" onclick="triggerHaptic('selection'); openProductModal(${productIdArg})">
@@ -307,7 +310,7 @@ function renderShopCard(p) {
           </div>
           <div class="product-card__footer">
             ${isAvailable ? `
-              <span class="product-card__price">${isGroup ? 'от ' : ''}${priceValue} ₽</span>
+              <span class="product-card__price">${isGroup ? 'от ' : ''}${priceValue === null ? '—' : `${priceValue} ₽`}</span>
               <div id="product-action-${productDomId}">
                 ${isGroup ? `
                   <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal(${productIdArg})">Выбрать</button>
