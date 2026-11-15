@@ -286,9 +286,12 @@ function renderShopCard(p) {
     const isHit = p.is_popular;
     const isAvailable = p.is_active;
     const isGroup = p.is_group;
+    const productIdArg = shopEscape(JSON.stringify(String(p.id ?? '')));
+    const productDomId = shopEscape(String(p.id ?? ''));
+    const priceValue = Number.isFinite(Number(p.price)) ? Number(p.price) : 0;
 
     return `
-      <div class="product-card product-card--tile ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${p.id}" onclick="triggerHaptic('selection'); openProductModal('${p.id}')">
+      <div class="product-card product-card--tile ${isHit ? 'popular-hit' : ''} ${!isAvailable ? 'out-of-stock' : ''}" id="product-card-${productDomId}" onclick="triggerHaptic('selection'); openProductModal(${productIdArg})">
         <div class="product-card__media">
           ${isHit ? `<div class="product-card__badges"><span class="shop-badge">Хит</span></div>` : ''}
           ${firstPhoto ? `<img class="product-card__image" src="${shopEscape(firstPhoto)}" alt="${shopEscape(p.title)}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
@@ -299,27 +302,27 @@ function renderShopCard(p) {
         </div>
         <div class="product-card__body">
           <div>
-            <h3 class="product-card__title">${shopEscape(p.title)}</h3>
+            <h3 class="product-card__title"><button type="button" class="product-card__open" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal(${productIdArg})">${shopEscape(p.title)}</button></h3>
             <div class="product-card__meta"><span>${shopEscape(p.unit || '1 шт.')}</span><span class="product-card__availability" data-state="${isAvailable ? 'available' : 'unavailable'}">${isAvailable ? 'В наличии' : 'Недоступен'}</span></div>
           </div>
           <div class="product-card__footer">
             ${isAvailable ? `
-              <span class="product-card__price">${isGroup ? 'от ' : ''}${p.price} ₽</span>
-              <div id="product-action-${p.id}">
+              <span class="product-card__price">${isGroup ? 'от ' : ''}${priceValue} ₽</span>
+              <div id="product-action-${productDomId}">
                 ${isGroup ? `
-                  <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${p.id}')">Выбрать</button>
+                  <button class="btn-select-variant ${isGroupInCart(p.id) ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal(${productIdArg})">Выбрать</button>
                 ` : (inCartQty > 0 ? `
                   <div class="cart-active-stepper" onclick="event.stopPropagation();">
                     ${inCartQty === 1 ? `
-                      <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${p.id}')">🗑️</button>
+                      <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart(${productIdArg})">🗑️</button>
                     ` : `
-                      <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${p.id}')">–</button>
+                      <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease(${productIdArg})">–</button>
                     `}
                     <span class="cart-active-qty">${inCartQty}</span>
-                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${p.id}', event)">+</button>
+                    <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd(${productIdArg}, event)">+</button>
                   </div>
                 ` : `
-                  <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${p.id}', event)">+</button>
+                  <button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd(${productIdArg}, event)">+</button>
                 `)}
               </div>
             ` : `
@@ -346,25 +349,26 @@ function quickDecrease(id) {
 window.quickDecrease = quickDecrease;
 
 function updateProductCardAction(id) {
+  const productIdArg = shopEscape(JSON.stringify(String(id ?? '')));
   const directItem = catalog.find(i => String(i.id) === String(id));
   if (directItem) {
     const groupParent = displayCatalog.find(g => g.is_group && (g.title || '').trim() === (directItem.title || '').trim());
     if (groupParent) {
-      const groupActionEl = document.getElementById(`product-action-${groupParent.id}`);
+      const groupActionEl = document.getElementById(`product-action-${String(groupParent.id ?? '')}`);
       if (groupActionEl) {
         const hasItems = isGroupInCart(groupParent.id);
-        groupActionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${groupParent.id}')">Выбрать</button>`;
+        groupActionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal(${shopEscape(JSON.stringify(String(groupParent.id ?? '')))})">Выбрать</button>`;
       }
     }
   }
 
-  const actionEl = document.getElementById(`product-action-${id}`);
+  const actionEl = document.getElementById(`product-action-${String(id ?? '')}`);
   if (!actionEl) return;
 
   const groupParent = displayCatalog.find(g => String(g.id) === String(id));
   if (groupParent && groupParent.is_group) {
     const hasItems = isGroupInCart(groupParent.id);
-    actionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal('${groupParent.id}')">Выбрать</button>`;
+    actionEl.innerHTML = `<button class="btn-select-variant ${hasItems ? 'has-items' : ''}" onclick="event.stopPropagation(); triggerHaptic('selection'); openProductModal(${shopEscape(JSON.stringify(String(groupParent.id ?? '')))})">Выбрать</button>`;
     return;
   }
 
@@ -373,16 +377,16 @@ function updateProductCardAction(id) {
     actionEl.innerHTML = `
       <div class="cart-active-stepper" onclick="event.stopPropagation();">
         ${inCartQty === 1 ? `
-          <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart('${id}')">🗑️</button>
+          <button class="btn-trash-mini" onclick="event.stopPropagation(); removeAllOfItemFromCart(${productIdArg})">🗑️</button>
         ` : `
-          <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease('${id}')">–</button>
+          <button class="btn-trash-mini" style="font-weight:800; font-size:16px; color:var(--text);" onclick="event.stopPropagation(); quickDecrease(${productIdArg})">–</button>
         `}
         <span class="cart-active-qty">${inCartQty}</span>
-        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd('${id}', event)">+</button>
+        <button class="btn-trash-mini" style="font-weight:800; font-size:15px; color:var(--green);" onclick="event.stopPropagation(); quickAdd(${productIdArg}, event)">+</button>
       </div>
     `;
   } else {
-    actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd('${id}', event)">+</button>`;
+    actionEl.innerHTML = `<button class="btn-quick-add" onclick="event.stopPropagation(); quickAdd(${productIdArg}, event)">+</button>`;
   }
 }
 window.updateProductCardAction = updateProductCardAction;

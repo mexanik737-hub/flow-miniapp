@@ -46,6 +46,53 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function syncClickTargetState(el) {
+  if (!el.matches('.toggle-btn, .custom-checkbox-wrap')) return;
+  const pressed = el.classList.contains('active') || !!el.querySelector('.custom-checkbox.checked');
+  el.setAttribute('aria-pressed', String(pressed));
+}
+
+function enhanceLeafClickTargets(root = document) {
+  const candidates = [];
+  if (root.nodeType === 1 && root.matches('[onclick]')) candidates.push(root);
+  if (root.querySelectorAll) candidates.push(...root.querySelectorAll('[onclick]'));
+  candidates.forEach(el => {
+    if (el.matches('button, a, input, select, textarea, [role="button"]')) return;
+    if (el.querySelector('button, a, input, select, textarea, [onclick], [role="button"]')) return;
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.dataset.keyboardClickTarget = 'true';
+    syncClickTargetState(el);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  enhanceLeafClickTargets();
+  const clickTargetObserver = new MutationObserver(records => {
+    records.forEach(record => record.addedNodes.forEach(node => {
+      if (node.nodeType === 1) enhanceLeafClickTargets(node);
+    }));
+  });
+  clickTargetObserver.observe(document.body, { childList: true, subtree: true });
+
+  document.addEventListener('keydown', event => {
+    const target = event.target.closest?.('[data-keyboard-click-target]');
+    if (!target || (event.key !== 'Enter' && event.key !== ' ')) return;
+    event.preventDefault();
+    if (event.key === 'Enter' && !event.repeat) target.click();
+  });
+  document.addEventListener('keyup', event => {
+    const target = event.target.closest?.('[data-keyboard-click-target]');
+    if (!target || event.key !== ' ') return;
+    event.preventDefault();
+    target.click();
+  });
+  document.addEventListener('click', event => {
+    const target = event.target.closest?.('[data-keyboard-click-target]');
+    if (target) syncClickTargetState(target);
+  });
+});
+
 // Анимация полета лепестка из точки нажатия в корзину
 function animateFlyToCart(sourceEventOrElement) {
   try {
