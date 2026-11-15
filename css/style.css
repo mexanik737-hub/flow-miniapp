@@ -218,8 +218,9 @@ header {
 
 .hud-notif-btn {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   border-radius: 50%;
   background: var(--dock-bg);
   border: 1px solid var(--border-accent);
@@ -413,6 +414,7 @@ header {
 }
 
 .filter-btn-pill {
+  min-height: 44px;
   padding: 7px 14px;
   border-radius: 20px;
   background: rgba(229, 193, 88, 0.14);
@@ -426,8 +428,8 @@ header {
 .filter-btn-pill:active { transform: scale(0.94); }
 
 .sync-mini-btn {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--card-inner);
   border: 1px solid var(--border-accent);
@@ -645,8 +647,8 @@ header {
 }
 
 .btn-quick-add {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--green) 0%, #087f52 100%);
   color: #fff;
@@ -706,6 +708,11 @@ header {
 }
 
 .btn-trash-mini {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
   font-size: 13px;
@@ -802,8 +809,8 @@ header {
 }
 
 .qty-btn {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   background: var(--card-inner);
   border: 1px solid var(--border);
@@ -1005,7 +1012,7 @@ header {
 }
 
 .modal-title { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: 0.3px; }
-.close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; transition: transform 0.15s ease; }
+.close-btn { min-width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; transition: transform 0.15s ease; }
 .close-btn:active { transform: scale(0.88); }
 
 .metro-input {
@@ -1084,6 +1091,7 @@ header {
 .custom-checkbox-wrap {
   display: flex;
   align-items: center;
+  min-height: 44px;
   gap: 10px;
   cursor: pointer;
   margin-bottom: 12px;
@@ -1160,6 +1168,7 @@ header {
 }
 
 .toggle-btn {
+  min-height: 44px;
   padding: 10px 4px;
   border-radius: var(--radius-sm);
   background: var(--card-inner);

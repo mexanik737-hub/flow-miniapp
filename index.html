@@ -42,13 +42,13 @@
         <button type="button" class="wordmark" onclick="handleHudRootTap()"><span class="wordmark__seal" aria-hidden="true">✳</span><span><strong data-config-key="txt_shop_title">ЦВЕТЫ</strong><small data-config-key="txt_shop_address">Георгиевский пр-т, 37к2</small></span></button>
         
         <div class="hud-right-group">
-          <div class="hud-notif-btn" onclick="openNotificationsModal()" title="Уведомления">
+          <button type="button" class="hud-notif-btn" onclick="openNotificationsModal()" title="Уведомления" aria-label="Открыть уведомления">
             🔔
             <span class="hud-notif-badge" id="hud-notif-counter">0</span>
-          </div>
-          <div class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])">
+          </button>
+          <button type="button" class="hud-pill hud-user-btn" onclick="navigateTab('profile', document.querySelectorAll('.dock-tab')[2])" aria-label="Открыть профиль">
             <span id="hud-name">Клиент</span>
-          </div>
+          </button>
         </div>
       </div>
     </header>
@@ -297,7 +297,7 @@
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <div style="font-size:12px; font-weight:800; color:var(--text); text-transform:uppercase;">История рассылок</div>
-          <button class="sync-mini-btn" style="width:26px; height:26px;" onclick="loadRootNotifications(true, this)" title="Обновить">
+          <button class="sync-mini-btn" onclick="loadRootNotifications(true, this)" title="Обновить" aria-label="Обновить историю рассылок">
             <svg viewBox="0 0 24 24" style="width:12px; height:12px;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
           </button>
         </div>

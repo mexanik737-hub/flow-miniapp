@@ -1,6 +1,22 @@
 let selectedDriveMediaUrls = new Set();
 let selectedCategoryProductsForBatch = new Set();
 
+function rootFiniteNumber(value) {
+  if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) return null;
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function rootNumberLabel(value) {
+  const number = rootFiniteNumber(value);
+  return number === null ? '—' : String(number);
+}
+
+function sumRootNumbers(rows, key) {
+  return (Array.isArray(rows) ? rows : []).reduce((sum, row) => sum + (rootFiniteNumber(row?.[key]) ?? 0), 0);
+}
+
 window.switchRootSection = function(sec) {
   const sections = ['orders', 'catalog', 'clients', 'notifs', 'stats', 'faq'];
 
@@ -46,6 +62,7 @@ window.switchRootSubTab = function(tab) {
   const tabArchive = document.getElementById('tab-root-archive');
   if (tabActive) tabActive.classList.toggle('active', tab === 'active');
   if (tabArchive) tabArchive.classList.toggle('active', tab === 'archive');
+  if (tabActive && typeof syncToggleClickTargetGroup === 'function') syncToggleClickTargetGroup(tabActive);
   renderRootOrders();
 };
 
@@ -68,8 +85,10 @@ function renderRootOrders() {
   const container = document.getElementById('root-orders-container');
   if (!container) return;
 
-  const filtered = allRootOrders.filter(ord => {
-    const isClosed = ord.status === 'Завершен' || ord.status.startsWith('Отменен');
+  const filtered = (Array.isArray(allRootOrders) ? allRootOrders : []).filter(ord => {
+    if (!ord || typeof ord !== 'object') return false;
+    const status = typeof ord.status === 'string' ? ord.status : '';
+    const isClosed = status === 'Завершен' || status.startsWith('Отменен');
     return currentRootSubTab === 'active' ? !isClosed : isClosed;
   });
 
@@ -79,45 +98,50 @@ function renderRootOrders() {
   }
 
   container.innerHTML = filtered.map(ord => {
-    const isAwaiting = (ord.status === 'Ожидает оплаты' || ord.status === 'Ожидает подтверждения оплаты');
-    const isAssembly = (ord.status === 'Ожидает согласования упаковки');
+    const orderIdArg = shopEscape(JSON.stringify(String(ord.order_id ?? '')));
+    const orderAddressArg = shopEscape(JSON.stringify(String(ord.address ?? '')));
+    const status = typeof ord.status === 'string' ? ord.status : '';
+    const isAwaiting = (status === 'Ожидает оплаты' || status === 'Ожидает подтверждения оплаты');
+    const isAssembly = (status === 'Ожидает согласования упаковки');
     const deliveryCostText = ord.delivery_type === 'delivery' 
       ? (ord.delivery_cost ? `${ord.delivery_cost} ₽` : 'Рассчитана при оформлении')
       : '0 ₽ (Самовывоз)';
 
-    const itemsListText = (ord.items || []).map(i => {
+    const itemsListText = (Array.isArray(ord.items) ? ord.items : []).filter(i => i && typeof i === 'object').map(i => {
       const fullTitle = formatFullItemTitle(i.title, i.unit, i.variant, i.color);
       const bqTag = i.in_bouquet ? ' [в букет]' : '';
-      return `• ${fullTitle} × ${i.qty} шт. = ${i.price * i.qty} ₽${bqTag}`;
+      const quantity = rootFiniteNumber(i.qty);
+      const price = rootFiniteNumber(i.price);
+      const amount = quantity !== null && price !== null ? String(price * quantity) : '—';
+      return `• ${shopEscape(fullTitle)} × ${rootNumberLabel(i.qty)} шт. = ${amount} ₽${bqTag}`;
     }).join('<br>');
 
-    const hasDistinctRecipient = ord.recipient_info && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
-    const safeAddr = (ord.address || "").replace(/'/g, "\\'");
+    const hasDistinctRecipient = typeof ord.recipient_info === 'string' && ord.recipient_info.trim() !== "" && ord.recipient_info !== "Заказчик лично";
 
-    const statusClass = ord.status.startsWith('Отменен') ? 'st-cancelled'
-      : ord.status === 'Завершен' ? 'st-completed'
-      : ord.status === 'В пути' || ord.status === 'Готов к выдаче' ? 'st-transit'
-      : ord.status === 'Ожидает подтверждения оплаты' ? 'st-check-pay'
-      : ord.status === 'Ожидает оплаты' ? 'st-await-pay' : 'st-building';
+    const statusClass = status.startsWith('Отменен') ? 'st-cancelled'
+      : status === 'Завершен' ? 'st-completed'
+      : status === 'В пути' || status === 'Готов к выдаче' ? 'st-transit'
+      : status === 'Ожидает подтверждения оплаты' ? 'st-check-pay'
+      : status === 'Ожидает оплаты' ? 'st-await-pay' : 'st-building';
 
     return `
       <article class="order-record">
         <div class="order-record__header">
-          <b>${ord.order_id}</b>
-          <span class="status-badge ${statusClass}">${ord.status}</span>
+          <b>${shopEscape(ord.order_id)}</b>
+          <span class="status-badge ${statusClass}">${shopEscape(status || 'Статус не указан')}</span>
         </div>
         <div style="font-size:12px; line-height:1.55; color:var(--text); background:var(--card-inner); padding:8px 10px; border-radius:8px; margin-bottom:8px;">
-          <b>Заказчик:</b> ${ord.user_name} (${ord.user_phone})<br>
-          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--gold);">${ord.recipient_info}</span><br>` : ''}
-          <b>Адрес:</b> ${ord.address}<br>
-          <b>Стоимость доставки:</b> ${deliveryCostText}<br>
-          <b>Желаемое время:</b> ${ord.delivery_time || 'Как можно скорее'}<br>
-          ${ord.shop_comment ? `<b>Комментарий салону:</b> ${ord.shop_comment}<br>` : ''}
+          <b>Заказчик:</b> ${shopEscape(ord.user_name)} (${shopEscape(ord.user_phone)})<br>
+          ${hasDistinctRecipient ? `<b>Получатель:</b> <span style="color:var(--gold);">${shopEscape(ord.recipient_info)}</span><br>` : ''}
+          <b>Адрес:</b> ${shopEscape(ord.address)}<br>
+          <b>Стоимость доставки:</b> ${shopEscape(deliveryCostText)}<br>
+          <b>Желаемое время:</b> ${shopEscape(ord.delivery_time || 'Как можно скорее')}<br>
+          ${ord.shop_comment ? `<b>Комментарий салону:</b> ${shopEscape(ord.shop_comment)}<br>` : ''}
           <div style="margin:6px 0; padding-top:6px; border-top:1px dashed var(--border);">
             <b>Состав заказа:</b><br>
             ${itemsListText || '<i>Нет данных о составе</i>'}
           </div>
-          <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${ord.total_amount} ₽</span>
+          <b>Сумма заказа:</b> <span style="color:var(--green); font-weight:800;">${rootNumberLabel(ord.total_amount)}${rootFiniteNumber(ord.total_amount) === null ? '' : ' ₽'}</span>
         </div>
         ${isAssembly ? `
           <div style="background:rgba(197,125,30,0.12); border:1px solid rgba(197,125,30,0.3); border-radius:8px; padding:8px; font-size:11px; color:var(--amber); margin-bottom:6px;">
@@ -125,23 +149,23 @@ function renderRootOrders() {
           </div>
         ` : ''}
         ${isAwaiting ? `
-          <button class="btn-metro" style="font-size:11px; padding:7px; margin-bottom:6px;" onclick="confirmOrderRoot('${ord.order_id}')">
+          <button class="btn-metro" style="font-size:11px; padding:7px; margin-bottom:6px;" onclick="confirmOrderRoot(${orderIdArg})">
             ✅ Оплата поступила ➔ В «Собирается»
           </button>
         ` : ''}
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openCourierModal('${ord.order_id}')">📋 Для курьера</button>
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber);" onclick="openYandexGoDelivery('${safeAddr}')">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openCourierModal(${orderIdArg})">📋 Для курьера</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--amber);" onclick="openYandexGoDelivery(${orderAddressArg})">
             🚚 Яндекс Go
           </button>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openStatusModal('${ord.order_id}')">Сменить статус</button>
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openEditItemsModal('${ord.order_id}')">Состав заказа</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openStatusModal(${orderIdArg})">Сменить статус</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="openEditItemsModal(${orderIdArg})">Состав заказа</button>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="triggerOrderPhotoUpload('${ord.order_id}')">📸 Фото букета</button>
-          <button class="btn-metro btn-danger" style="font-size:11px; padding:7px;" onclick="openTopConfirm('${ord.order_id}')">Удалить заказ</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px;" onclick="triggerOrderPhotoUpload(${orderIdArg})">📸 Фото букета</button>
+          <button class="btn-metro btn-danger" style="font-size:11px; padding:7px;" onclick="openTopConfirm(${orderIdArg})">Удалить заказ</button>
         </div>
       </article>
     `;
@@ -501,7 +525,7 @@ function renderProductEditorPhotos(urlsStr) {
 
   box.innerHTML = urls.map((u, idx) => `
     <div class="prod-photo-thumb-wrap">
-      <img src="${u}">
+      <img src="${shopEscape(u)}" alt="">
       <button class="prod-photo-del-btn" onclick="removeProductPhoto(${idx})">✕</button>
       ${idx > 0 ? `<button class="prod-photo-move-btn prod-photo-move-left" onclick="moveProductPhoto(${idx}, -1)">◄</button>` : ''}
       ${idx < urls.length - 1 ? `<button class="prod-photo-move-btn prod-photo-move-right" onclick="moveProductPhoto(${idx}, 1)">►</button>` : ''}
@@ -548,7 +572,7 @@ function renderGroupEditorPhotos(urlsStr) {
 
   box.innerHTML = urls.map((u, idx) => `
     <div class="prod-photo-thumb-wrap">
-      <img src="${u}">
+      <img src="${shopEscape(u)}" alt="">
       <button class="prod-photo-del-btn" onclick="removeGroupPhoto(${idx})">✕</button>
       ${idx > 0 ? `<button class="prod-photo-move-btn prod-photo-move-left" onclick="moveGroupPhoto(${idx}, -1)">◄</button>` : ''}
       ${idx < urls.length - 1 ? `<button class="prod-photo-move-btn prod-photo-move-right" onclick="moveGroupPhoto(${idx}, 1)">►</button>` : ''}
@@ -627,16 +651,21 @@ window.syncDriveMediaCache = syncDriveMediaCache;
 
 function renderDriveMediaGrid(media) {
   const box = document.getElementById('drive-media-container');
-  if (!media || !media.length) {
+  if (!box) return;
+  const entries = Array.isArray(media) ? media.filter(item => item && typeof item === 'object') : [];
+  if (!entries.length) {
     box.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:20px;">Папка пуста</div>';
     return;
   }
 
-  box.innerHTML = media.map(m => {
-    const isSel = selectedDriveMediaUrls.has(m.url);
+  box.innerHTML = entries.map(m => {
+    const mediaUrl = String(m.url || '');
+    const mediaUrlArg = shopEscape(JSON.stringify(mediaUrl));
+    const safeMediaUrl = /^https:\/\//i.test(mediaUrl) ? shopEscape(mediaUrl) : '';
+    const isSel = selectedDriveMediaUrls.has(mediaUrl);
     return `
-      <div class="drive-media-item ${isSel ? 'selected' : ''}" onclick="toggleDrivePhotoSelection('${m.url}', this)">
-        <img src="${m.url}" loading="lazy">
+      <div class="drive-media-item ${isSel ? 'selected' : ''}" onclick="toggleDrivePhotoSelection(${mediaUrlArg}, this)">
+        <img src="${safeMediaUrl}" loading="lazy" alt="">
         <div class="drive-media-check">${isSel ? '✓' : ''}</div>
       </div>
     `;
@@ -695,14 +724,14 @@ function populateCategorySelectBoxes() {
   const pOptions = document.getElementById('prod-edit-cat-options');
   if (pOptions) {
     pOptions.innerHTML = categories.map(cat => `
-      <div class="custom-select-option" onclick="selectCategoryForProductEditor('${cat}')">${cat}</div>
+      <div class="custom-select-option" onclick="selectCategoryForProductEditor(${shopEscape(JSON.stringify(String(cat)))})">${shopEscape(cat)}</div>
     `).join('');
   }
 
   const gOptions = document.getElementById('group-edit-cat-options');
   if (gOptions) {
     gOptions.innerHTML = categories.map(cat => `
-      <div class="custom-select-option" onclick="selectCategoryForGroupEditor('${cat}')">${cat}</div>
+      <div class="custom-select-option" onclick="selectCategoryForGroupEditor(${shopEscape(JSON.stringify(String(cat)))})">${shopEscape(cat)}</div>
     `).join('');
   }
 }
@@ -764,7 +793,7 @@ function renderCategoriesManagerList() {
     <div class="cat-item-card" id="cat-card-${encodeURIComponent(catName)}">
         <div class="cat-item-header" onclick="toggleCatCardAccordion('${encodeURIComponent(catName)}')">
           <div class="cat-item-title-box">
-            <span class="cat-item-name">${catName}</span>
+            <span class="cat-item-name">${shopEscape(catName)}</span>
             <span class="cat-item-count">${items.length}</span>
           </div>
           <div style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation();">
@@ -776,13 +805,14 @@ function renderCategoriesManagerList() {
           ${items.map(it => {
             const isChecked = selectedCategoryProductsForBatch.has(String(it.id));
             const fullTitle = formatFullItemTitle(it.title, it.unit, it.variant, it.color);
+            const itemIdArg = shopEscape(JSON.stringify(String(it.id ?? '')));
             return `
               <div class="cat-prod-row">
                 <div style="display:flex; align-items:center; gap:8px; max-width:80%;">
-                  <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:16px; height:16px; font-size:10px;" onclick="toggleCatBatchProduct('${it.id}', this)">${isChecked ? '✓' : ''}</div>
-                  <span style="color:var(--text);">${fullTitle} (${it.price} ₽)</span>
+                  <div class="custom-checkbox ${isChecked ? 'checked' : ''}" style="width:16px; height:16px; font-size:10px;" onclick="toggleCatBatchProduct(${itemIdArg}, this)">${isChecked ? '✓' : ''}</div>
+                  <span style="color:var(--text);">${shopEscape(fullTitle)} (${rootNumberLabel(it.price)}${rootFiniteNumber(it.price) === null ? '' : ' ₽'})</span>
                 </div>
-                <button class="btn-trash-mini" style="color:var(--gold); font-size:11px;" onclick="moveSingleProductCategory('${it.id}')">Перенести</button>
+                <button class="btn-trash-mini" style="color:var(--gold); font-size:11px;" onclick="moveSingleProductCategory(${itemIdArg})">Перенести</button>
               </div>
             `;
           }).join('')}
@@ -887,8 +917,8 @@ function renderRootDailyCategories() {
   const selected = new Set(getCategoryConfigList('daily_item_categories'));
   container.innerHTML = categories.map(cat => `
     <label class="daily-category-option">
-      <input type="checkbox" value="${cat.replace(/"/g, '&quot;')}" ${selected.has(cat) ? 'checked' : ''}>
-      <span>${cat}</span>
+      <input type="checkbox" value="${shopEscape(cat)}" ${selected.has(cat) ? 'checked' : ''}>
+      <span>${shopEscape(cat)}</span>
     </label>
   `).join('') || '<span class="daily-category-empty">Сначала добавьте категорию товаров</span>';
 }
@@ -1031,8 +1061,8 @@ function renderRootCatalogUI() {
   if (!container) return;
 
   const groups = {};
-  allRootCatalog.forEach(item => {
-    const titleKey = (item.title || '').trim();
+  (Array.isArray(allRootCatalog) ? allRootCatalog : []).filter(item => item && typeof item === 'object').forEach(item => {
+    const titleKey = String(item.title ?? '').trim();
     if (!groups[titleKey]) groups[titleKey] = [];
     groups[titleKey].push(item);
   });
@@ -1050,42 +1080,48 @@ function renderRootCatalogUI() {
   container.innerHTML = rootCards.map(c => {
     if (c.is_group) {
       const activeCount = c.items.filter(i => i.is_active).length;
-      const prices = c.items.map(i => i.price);
-      const minP = Math.min(...prices);
-      const maxP = Math.max(...prices);
-      const photoCount = (c.items[0].photo_url ? c.items[0].photo_url.split(',').length : 0);
+      const prices = c.items.map(i => rootFiniteNumber(i.price));
+      const hasInvalidPrice = prices.some(price => price === null);
+      const validPrices = prices.filter(price => price !== null);
+      const minP = validPrices.length && !hasInvalidPrice ? Math.min(...validPrices) : null;
+      const maxP = validPrices.length && !hasInvalidPrice ? Math.max(...validPrices) : null;
+      const photoCount = (c.items[0].photo_url ? String(c.items[0].photo_url).split(',').length : 0);
+      const titleText = shopEscape(c.title);
+      const categoryText = shopEscape(c.items[0].category || '—');
+      const titleArg = shopEscape(JSON.stringify(encodeURIComponent(String(c.title ?? ''))));
 
       return `
         <div class="box-card" style="margin-bottom:8px; border-left: 3px solid var(--gold);">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
-              <b>${c.title}</b> <span style="font-size:10px; background:rgba(197,160,89,0.18); color:var(--gold); padding:2px 6px; border-radius:4px; font-weight:800;">Группа (${c.items.length})</span>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Категория: ${c.items[0].category} · Фото: ${photoCount}</div>
+              <b>${titleText}</b> <span style="font-size:10px; background:rgba(197,160,89,0.18); color:var(--gold); padding:2px 6px; border-radius:4px; font-weight:800;">Группа (${c.items.length})</span>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Категория: ${categoryText} · Фото: ${photoCount}</div>
               <div style="font-size:11px; color:var(--amber); margin-top:2px;">Наличие: ${activeCount} из ${c.items.length} активны</div>
             </div>
             <div style="text-align:right;">
-              <span style="color:var(--green); font-weight:800; font-size:13px;">${minP === maxP ? minP + ' ₽' : minP + '–' + maxP + ' ₽'}</span>
+              <span style="color:var(--green); font-weight:800; font-size:13px;">${minP === null ? '—' : minP === maxP ? minP + ' ₽' : minP + '–' + maxP + ' ₽'}</span>
             </div>
           </div>
           <div style="display:flex; gap:6px; margin-top:8px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditGroupModal('${encodeURIComponent(c.title)}')">⚙️ Редактировать группу</button>
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditGroupModal(${titleArg})">⚙️ Редактировать группу</button>
           </div>
         </div>
       `;
     } else {
       const it = c.item;
+      const productIdArg = shopEscape(JSON.stringify(String(it.id ?? '')));
       return `
         <div class="box-card" style="margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between;">
-            <b>${it.title} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
-            <span style="color:var(--green); font-weight:800;">${it.price} ₽</span>
+            <b>${shopEscape(it.title)} ${it.is_popular ? '(🔥 Хит)' : ''}</b>
+            <span style="color:var(--green); font-weight:800;">${rootNumberLabel(it.price)}${rootFiniteNumber(it.price) === null ? '' : ' ₽'}</span>
           </div>
-          <div style="font-size:11px; color:var(--gold); margin:2px 0;">Формат: ${it.unit || '1 шт.'} · Высота: ${it.variant || '—'} · Цвет: ${it.color || '—'}</div>
-          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Категория: ${it.category} · На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
+          <div style="font-size:11px; color:var(--gold); margin:2px 0;">Формат: ${shopEscape(it.unit || '1 шт.')} · Высота: ${shopEscape(it.variant || '—')} · Цвет: ${shopEscape(it.color || '—')}</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Категория: ${shopEscape(it.category || '—')} · На витрине: ${it.is_active ? 'Да' : 'Нет'}</div>
           <div style="display:flex; gap:6px;">
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal('${it.id}')">Редактировать</button>
-            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="convertProductToGroup('${it.id}')">+ В группу</button>
-            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot('${it.id}')">Удалить</button>
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditProductModal(${productIdArg})">Редактировать</button>
+            <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="convertProductToGroup(${productIdArg})">+ В группу</button>
+            <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteProductRoot(${productIdArg})">Удалить</button>
           </div>
         </div>
       `;
@@ -1335,7 +1371,7 @@ async function saveProductEditor() {
   const catVal = document.getElementById('prod-edit-cat').value.trim() || document.getElementById('prod-edit-cat-display').innerText.trim();
 
   const payload = {
-    action: editingProductId ? "admin_update_product" : "admin_add_product",
+    action: editingProductId !== null && editingProductId !== undefined ? "admin_update_product" : "admin_add_product",
     admin_id: userId, admin_passcode: sessionPasscode,
     id: editingProductId,
     title: document.getElementById('prod-edit-name').value.trim(),
@@ -1399,37 +1435,48 @@ function filterRootClients() {
 
 function renderRootClients(clients) {
   const container = document.getElementById('root-clients-container');
-  container.innerHTML = clients.map(c => {
-    const hasTgUser = c.username && c.username !== 'скрыт' && c.username.length > 2;
-    const tgLink = hasTgUser 
-      ? `https://t.me/${c.username.replace('@','')}`
-      : (!c.user_id.startsWith('anon_') ? `tg://user?id=${c.user_id}` : '');
+  if (!container) return;
+  const safeClients = Array.isArray(clients) ? clients.filter(c => c && typeof c === 'object') : [];
+  container.innerHTML = safeClients.map(c => {
+    const userId = String(c.user_id ?? '');
+    const userIdArg = shopEscape(JSON.stringify(userId));
+    const username = String(c.username || '');
+    const telegramUsername = username.replace(/^@/, '');
+    const hasTgUser = /^[A-Za-z0-9_]{3,32}$/.test(telegramUsername);
+    const tgLink = hasTgUser
+      ? `https://t.me/${telegramUsername}`
+      : (/^\d+$/.test(userId) ? `tg://user?id=${userId}` : '');
+    const rawPhone = String(c.phone || '');
+    const telPhone = rawPhone.replace(/[^\d+]/g, '');
+    const safeTelPhone = /^\+?\d{5,20}$/.test(telPhone) ? telPhone : '';
+    const spentValue = rootFiniteNumber(c.total_spent);
+    const spentValueArg = JSON.stringify(spentValue);
 
-    const isClientAdmin = c.is_admin === true || String(c.is_admin).trim().toUpperCase() === 'TRUE' || String(c.user_id) === ADMIN_TELEGRAM_ID;
+    const isClientAdmin = c.is_admin === true || String(c.is_admin).trim().toUpperCase() === 'TRUE' || userId === String(ADMIN_TELEGRAM_ID);
 
     return `
       <div class="box-card" style="margin-bottom:8px;">
         <div style="display:flex; justify-content:space-between;">
           <div>
-            <b>${c.name}</b> ${isClientAdmin ? '<span style="font-size:10px; background:rgba(13,148,104,0.18); color:var(--green); padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}<br>
-            <span style="font-size:12px; color:var(--text-muted);">${c.phone}</span>
+            <b>${shopEscape(c.name || 'Клиент')}</b> ${isClientAdmin ? '<span style="font-size:10px; background:rgba(13,148,104,0.18); color:var(--green); padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}<br>
+            <span style="font-size:12px; color:var(--text-muted);">${shopEscape(rawPhone || '—')}</span>
           </div>
-          <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${c.total_spent} ₽</span></div>
+            <div style="text-align:right;"><span style="color:var(--green); font-weight:800;">${spentValue === null ? '—' : spentValue.toLocaleString('ru-RU') + ' ₽'}</span></div>
         </div>
-        <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Telegram: ${c.username || 'скрыт'} · Рег: ${c.reg_date}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">Telegram: ${shopEscape(username || 'скрыт')} · Рег: ${shopEscape(c.reg_date || '—')}</div>
  
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;">
-          <a href="tel:${c.phone}" class="btn-metro btn-emerald" style="font-size:11px; padding:7px; text-decoration:none;">📞 Позвонить</a>
+          ${safeTelPhone ? `<a href="tel:${shopEscape(safeTelPhone)}" class="btn-metro btn-emerald" style="font-size:11px; padding:7px; text-decoration:none;">📞 Позвонить</a>` : '<span class="btn-metro btn-emerald" aria-disabled="true" style="font-size:11px; padding:7px; opacity:.55;">📞 Нет номера</span>'}
           ${tgLink ? `
-            <a href="${tgLink}" target="_blank" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--gold); text-decoration:none;">💬 Написать</a>
+            <a href="${shopEscape(tgLink)}" target="_blank" rel="noopener noreferrer" class="btn-metro btn-secondary" style="font-size:11px; padding:7px; color:var(--gold); text-decoration:none;">💬 Написать</a>
           ` : `
             <button class="btn-metro btn-secondary" style="font-size:11px; padding:7px; opacity:0.45;" disabled>💬 Чат скрыт</button>
           `}
         </div>
 
         <div style="display:flex; gap:6px; margin-top:6px;">
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt('${c.user_id}', ${c.total_spent})">Изменить выкуп</button>
-          <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteUserRoot('${c.user_id}')">Сбросить</button>
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="editSpentPrompt(${userIdArg}, ${spentValueArg})">Изменить выкуп</button>
+          <button class="btn-metro btn-danger" style="font-size:11px; padding:6px;" onclick="deleteUserRoot(${userIdArg})">Сбросить</button>
         </div>
       </div>
     `;
@@ -1493,35 +1540,36 @@ function renderRootNotifications() {
   const container = document.getElementById('root-notifs-container');
   if (!container) return;
 
-  if (!allRootNotifs.length) {
+  const notifications = Array.isArray(allRootNotifs) ? allRootNotifs.filter(n => n && typeof n === 'object') : [];
+  if (!notifications.length) {
     container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px 0; font-size:12px;">Рассылок пока нет</div>';
     return;
   }
 
-  container.innerHTML = allRootNotifs.map(n => {
+  container.innerHTML = notifications.map(n => {
     const targetTitle = getTabDisplayTitle(n.target_tab);
     return `
       <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${n.is_active ? 'var(--gold)' : 'var(--border)'};">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
           <div>
-            <b style="font-size:13px; color:var(--text);">${n.title}</b>
+            <b style="font-size:13px; color:var(--text);">${shopEscape(n.title)}</b>
             <span style="font-size:10px; margin-left:6px; color:${n.is_active ? 'var(--gold)' : 'var(--text-muted)'}; font-weight:800;">
               ${n.is_active ? 'АКТИВНО' : 'В АРХИВЕ'}
             </span>
           </div>
-          <span style="font-size:10px; color:var(--text-muted);">${n.created_at || ''}</span>
+          <span style="font-size:10px; color:var(--text-muted);">${shopEscape(n.created_at || '')}</span>
         </div>
-        <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:6px;">${n.text}</div>
-        <div style="font-size:11px; color:var(--gold); margin-bottom:8px;">Целевой экран: <b>${targetTitle}</b></div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.45; margin-bottom:6px;">${shopEscape(n.text)}</div>
+        <div style="font-size:11px; color:var(--gold); margin-bottom:8px;">Целевой экран: <b>${shopEscape(targetTitle)}</b></div>
 
         <div style="display:flex; gap:6px;">
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="toggleNotificationActiveRoot('${n.id}')">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="toggleNotificationActiveRoot(${shopEscape(JSON.stringify(String(n.id ?? '')))})">
             ${n.is_active ? 'В архив' : 'Восстановить'}
           </button>
-          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="repeatNotificationRoot('${n.id}')">
+          <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:var(--gold);" onclick="repeatNotificationRoot(${shopEscape(JSON.stringify(String(n.id ?? '')))})">
             Повторить TG
           </button>
-          <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteNotificationRoot('${n.id}')">
+          <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteNotificationRoot(${shopEscape(JSON.stringify(String(n.id ?? '')))})">
             Удалить
           </button>
         </div>
@@ -1621,6 +1669,8 @@ function switchStatsPeriod(period) {
     const el = document.getElementById('tab-stat-' + p);
     if (el) el.classList.toggle('active', p === period);
   });
+  const activeTab = document.getElementById('tab-stat-' + period);
+  if (activeTab && typeof syncToggleClickTargetGroup === 'function') syncToggleClickTargetGroup(activeTab);
   renderRootStats();
 }
 window.switchStatsPeriod = switchStatsPeriod;
@@ -1650,39 +1700,35 @@ function renderRootStats() {
 
   if (currentStatsPeriod === 'today') {
     if (breakdownBox) breakdownBox.style.display = 'none';
-    totalVisits = cachedStatsData.today?.visits || 0;
-    totalOrdersCount = cachedStatsData.today?.orders?.count || 0;
-    totalRevenue = cachedStatsData.today?.orders?.total || 0;
-    totalCompleted = cachedStatsData.today?.orders?.completed || 0;
+    totalVisits = rootFiniteNumber(cachedStatsData.today?.visits) ?? '—';
+    totalOrdersCount = rootFiniteNumber(cachedStatsData.today?.orders?.count) ?? '—';
+    totalRevenue = rootFiniteNumber(cachedStatsData.today?.orders?.total) ?? '—';
+    totalCompleted = rootFiniteNumber(cachedStatsData.today?.orders?.completed) ?? '—';
   } else if (currentStatsPeriod === '7days') {
     if (breakdownBox) breakdownBox.style.display = 'block';
-    const list = cachedStatsData.past7days || [];
-    list.forEach(d => {
-      totalVisits += d.visits;
-      totalOrdersCount += d.orders_count;
-      totalRevenue += d.orders_total;
-      totalCompleted += d.completed_count;
-    });
+    const list = Array.isArray(cachedStatsData.past7days) ? cachedStatsData.past7days : [];
+    totalVisits = sumRootNumbers(list, 'visits');
+    totalOrdersCount = sumRootNumbers(list, 'orders_count');
+    totalRevenue = sumRootNumbers(list, 'orders_total');
+    totalCompleted = sumRootNumbers(list, 'completed_count');
 
     if (breakdownTbody) {
-      breakdownTbody.innerHTML = list.map(d => `
+      breakdownTbody.innerHTML = list.filter(d => d && typeof d === 'object').map(d => `
         <tr>
-          <td><b>${d.date}</b></td>
-          <td>${d.visits}</td>
-          <td>${d.orders_count} (${d.completed_count})</td>
-          <td style="color:var(--green); font-weight:700;">${d.orders_total} ₽</td>
+          <td><b>${shopEscape(d.date)}</b></td>
+          <td>${rootNumberLabel(d.visits)}</td>
+          <td>${rootNumberLabel(d.orders_count)} (${rootNumberLabel(d.completed_count)})</td>
+          <td style="color:var(--green); font-weight:700;">${rootNumberLabel(d.orders_total)}${rootFiniteNumber(d.orders_total) === null ? '' : ' ₽'}</td>
         </tr>
       `).join('');
     }
   } else if (currentStatsPeriod === 'month') {
     if (breakdownBox) breakdownBox.style.display = 'none';
-    const list = cachedStatsData.past7days || [];
-    list.forEach(d => {
-      totalVisits += d.visits;
-      totalOrdersCount += d.orders_count;
-      totalRevenue += d.orders_total;
-      totalCompleted += d.completed_count;
-    });
+    const list = Array.isArray(cachedStatsData.past7days) ? cachedStatsData.past7days : [];
+    totalVisits = sumRootNumbers(list, 'visits');
+    totalOrdersCount = sumRootNumbers(list, 'orders_count');
+    totalRevenue = sumRootNumbers(list, 'orders_total');
+    totalCompleted = sumRootNumbers(list, 'completed_count');
   }
 
   const vEl = document.getElementById('stat-val-visits');
@@ -1697,14 +1743,14 @@ function renderRootStats() {
 
   const pList = document.getElementById('stats-products-list');
   if (pList) {
-    const products = cachedStatsData.products_views || [];
+    const products = Array.isArray(cachedStatsData.products_views) ? cachedStatsData.products_views.filter(p => p && typeof p === 'object') : [];
     if (!products.length) {
       pList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о просмотрах</div>';
     } else {
       pList.innerHTML = products.slice(0, 15).map((p, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
-          <div><b>${idx + 1}.</b> ${p.title}</div>
-          <div style="color:var(--gold); font-weight:800;">${p.views} просм. · ${p.unique_views || 0} уник.</div>
+          <div><b>${idx + 1}.</b> ${shopEscape(p.title)}</div>
+          <div style="color:var(--gold); font-weight:800;">${rootNumberLabel(p.views)} просм. · ${rootNumberLabel(p.unique_views)} уник.</div>
         </div>
       `).join('');
     }
@@ -1712,17 +1758,17 @@ function renderRootStats() {
 
   const nList = document.getElementById('stats-notifs-list');
   if (nList) {
-    const notifs = cachedStatsData.notifications_stats || [];
+    const notifs = Array.isArray(cachedStatsData.notifications_stats) ? cachedStatsData.notifications_stats.filter(n => n && typeof n === 'object') : [];
     if (!notifs.length) {
       nList.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">Нет данных о рассылках</div>';
     } else {
       nList.innerHTML = notifs.map(n => `
         <div style="background:var(--card-inner); border-radius:6px; padding:8px 10px; margin-bottom:6px; border:1px solid var(--border); font-size:12px;">
-          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${n.title}</div>
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">${shopEscape(n.title)}</div>
           <div style="display:flex; gap:12px; font-size:11px; color:var(--text-muted);">
-            <span>Показов: <b style="color:var(--text);">${n.views}</b></span>
-            <span>Прочтений: <b style="color:var(--gold);">${n.reads}</b></span>
-            <span>Переходов: <b style="color:var(--green);">${n.clicks}</b></span>
+            <span>Показов: <b style="color:var(--text);">${rootNumberLabel(n.views)}</b></span>
+            <span>Прочтений: <b style="color:var(--gold);">${rootNumberLabel(n.reads)}</b></span>
+            <span>Переходов: <b style="color:var(--green);">${rootNumberLabel(n.clicks)}</b></span>
           </div>
         </div>
       `).join('');
@@ -1756,25 +1802,26 @@ function renderRootFaqUI() {
   const container = document.getElementById('root-faq-container');
   if (!container) return;
 
-  container.innerHTML = allRootFaq.map(f => `
+  const entries = Array.isArray(allRootFaq) ? allRootFaq.filter(f => f && typeof f === 'object') : [];
+  container.innerHTML = entries.map(f => `
     <div class="box-card" style="margin-bottom:8px; border-left: 3px solid ${f.is_active ? 'var(--green)' : 'var(--red)'};">
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div style="font-weight:700; font-size:13px; max-width:70%;">${f.question}</div>
+        <div style="font-weight:700; font-size:13px; max-width:70%;">${shopEscape(f.question)}</div>
         <div style="display:flex; align-items:center; gap:6px;">
           <span style="font-size:10px; font-weight:800; color:${f.is_active ? 'var(--green)' : 'var(--red)'};">
             ${f.is_active ? 'АКТИВЕН' : 'СКРЫТ'}
           </span>
-          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'up')">▲</button>
-          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder('${f.id}', 'down')">▼</button>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder(${shopEscape(JSON.stringify(String(f.id ?? '')))}, 'up')">▲</button>
+          <button class="btn-trash-mini" style="font-size:14px; color:var(--gold); padding:2px;" onclick="moveFaqOrder(${shopEscape(JSON.stringify(String(f.id ?? '')))}, 'down')">▼</button>
         </div>
       </div>
-      <div style="font-size:12px; color:var(--text-muted); margin:4px 0;">${f.answer}</div>
+      <div style="font-size:12px; color:var(--text-muted); margin:4px 0;">${shopEscape(f.answer)}</div>
       <div style="display:flex; gap:6px; margin-top:6px;">
-        <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditFaqModal('${f.id}')">Редактировать</button>
-        <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:${f.is_active ? 'var(--red)' : 'var(--green)'};" onclick="toggleFaqActiveRoot('${f.id}', ${!f.is_active})">
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px;" onclick="openEditFaqModal(${shopEscape(JSON.stringify(String(f.id ?? '')))})">Редактировать</button>
+        <button class="btn-metro btn-secondary" style="font-size:11px; padding:6px; color:${f.is_active ? 'var(--red)' : 'var(--green)'};" onclick="toggleFaqActiveRoot(${shopEscape(JSON.stringify(String(f.id ?? '')))}, ${!f.is_active})">
           ${f.is_active ? 'Скрыть' : 'Показать'}
         </button>
-        <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteFaqRoot('${f.id}')">Удалить</button>
+        <button class="btn-metro btn-danger" style="font-size:11px; padding:6px; max-width:80px;" onclick="deleteFaqRoot(${shopEscape(JSON.stringify(String(f.id ?? '')))})">Удалить</button>
       </div>
     </div>
   `).join('');
@@ -1834,7 +1881,7 @@ async function saveFaqEditor() {
       action: "admin_update_faq",
       admin_id: userId,
       admin_passcode: sessionPasscode,
-      id: editingFaqId || "new",
+      id: editingFaqId ?? "new",
       question: q,
       answer: a,
       is_active: isActive
